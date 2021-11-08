@@ -73,11 +73,11 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
 
   const { register, handleSubmit, setValue, getValues, watch, reset, formState } = useForm();
 
-  const updateRealm = ({ ...rest }: RealmProfile) => {
-    const keys = Object.keys(rest);
+  const updateRealm = (profile: RealmProfile) => {
+    const keys = Object.keys(profile);
     for (let x = 0; x < keys.length; x++) {
       const key = keys[x];
-      setValue(key, rest[key]);
+      setValue(key, profile[key]);
     }
 
     setInitialLoad(true);
