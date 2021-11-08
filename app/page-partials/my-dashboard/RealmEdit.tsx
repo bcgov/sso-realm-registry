@@ -72,11 +72,12 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
 
     if (err) setBranches([]);
     else {
-      setBranches(data || []);
+      const list = data || [];
+      setBranches(list);
 
-      const first = data && data[0];
+      const first = list?.length > 0 ? list[0] : null;
 
-      if (data?.length > 1 && !data?.includes(value?.branch)) {
+      if (list.length > 1 && !list.includes(value?.branch)) {
         if (value?.branch !== first) setValue('branch', first);
       } else if (value?.branch !== first) {
         setValue('branch', first);
@@ -89,11 +90,12 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
 
     if (err) setDivisions([]);
     else {
-      setDivisions(data || []);
+      const list = data || [];
+      setDivisions(list);
 
-      const first = data && data[0];
+      const first = list?.length > 0 ? list[0] : null;
 
-      if (data?.length > 1 && !data?.includes(value?.division)) {
+      if (list.length > 1 && !list.includes(value?.division)) {
         if (value?.division !== first) setValue('division', first);
       } else if (value?.division !== first) {
         setValue('division', first);
