@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
@@ -52,10 +52,17 @@ interface Props {
   onCancel: () => void;
 }
 
+let time = 0;
+setInterval(() => {
+  time++;
+}, 1000);
+
 function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
   const [ministries, setMinistries] = useState<string[]>([]);
   const [divisions, setDivisions] = useState<string[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
+  const [, updateState] = useState(0);
+  const forceUpdate = useCallback(() => updateState((tick) => tick + 1), []);
 
   const { register, handleSubmit, setValue, getValues, watch, formState } = useForm();
 
@@ -118,7 +125,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
       } else if (name === 'branch') {
         if (!type) loadBranches(value);
         // just to trigger state update and re-rendering
-        else setMinistries([...ministries]);
+        else forceUpdate();
       }
     });
 

@@ -1,3 +1,6 @@
+route:
+  host: realm-registry-b861c7-dev.apps.silver.devops.gov.bc.ca
+
 sso:
   url: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth
   redirectUri: http://realm-registry-b861c7-dev.apps.silver.devops.gov.bc.ca/oidc/keycloak
