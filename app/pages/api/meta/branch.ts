@@ -10,10 +10,10 @@ type Data = ErrorData | string[];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   try {
-    const { ministry, division } = req.query;
+    const { ministry, division } = req.body;
     if (!ministry || !division) return res.send([]);
 
-    if (req.method === 'GET') {
+    if (req.method === 'POST') {
       const result: any = await runQuery(
         'SELECT DISTINCT branch from rosters WHERE ministry=$1 AND division=$2 ORDER BY branch asc',
         [ministry, division],
