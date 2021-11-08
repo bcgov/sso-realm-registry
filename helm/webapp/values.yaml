@@ -8,8 +8,8 @@ image:
 imagePullSecrets:
   - name: gh-registry-config
 
-nameOverride: realm-registryy-app
-fullnameOverride: realm-registryy-app
+nameOverride: realm-registry-app
+fullnameOverride: realm-registry-app
 
 service:
   type: ClusterIP
