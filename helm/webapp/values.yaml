@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/bcgov/realm-registry-app
+  repository: ghcr.io/bcgov/sso-realm-registry
   tag: dev
   pullPolicy: Always
 
