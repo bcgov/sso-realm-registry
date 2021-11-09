@@ -129,6 +129,7 @@ function MyDashboard({ currentUser }: Props) {
               {selectedId && (
                 <Grid.Col span={4}>
                   <RealmEdit
+                    key={selectedId}
                     realm={realms.find((v) => v.id === selectedId)}
                     currentUser={currentUser}
                     onUpdate={handleUpdate}
