@@ -10,6 +10,16 @@ interface TOKEN_RESPONSE {
   expires_in?: number;
   token_type?: string;
 }
+
+interface AUTHORIZATION_REQUEST_PARAMETERS {
+  client_id: string;
+  response_type: string; // 'code' | 'id_token token' | 'code id_token token'
+  scope: string;
+  redirect_uri: string;
+  response_mode?: string; // 'query' | 'fragment'
+  nonce?: string;
+}
+
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const {
   sso_url,
@@ -31,13 +41,31 @@ const getUrlQuerySeparator = (url: string) => (url.includes('?') ? '&' : '?');
 // see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.1
 export const getAuthorizationUrl = async (extraParams = {}) => {
   const providerConfig = await fetchIssuerConfiguration();
-  const params = {
+  const params: AUTHORIZATION_REQUEST_PARAMETERS = {
     client_id: sso_client_id,
     response_type: sso_authorization_response_type,
     scope: sso_authorization_scope,
     redirect_uri: sso_redirect_uri,
     ...extraParams,
   };
+
+  if (params.response_type === 'code') {
+    params.response_mode = 'query';
+  } else {
+    params.response_mode = 'fragment';
+
+    if (!params.nonce) {
+      throw Error('Missing parameter "nonce"');
+    }
+
+    // Example using response_type=id_token token
+    // http://localhost:3000/oidc/keycloak
+    // #session_state=xxxxxxxx-7af1-40e9-bc2f-xxxxxxxxxxxx
+    // &id_token=hhhhh.pppppppppp.fffff
+    // &access_token=hhhhh.pppppppppp.fffff
+    // &token_type=bearer
+    // &expires_in=900
+  }
 
   // TODO: let's apply PKCE workflow for public clients
   if (!confidential) {

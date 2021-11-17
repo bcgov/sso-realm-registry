@@ -16,39 +16,6 @@ const AlignCenter = styled.div`
   text-align: center;
 `;
 
-const Container = styled.div`
-  font-size: 1rem;
-  padding: 0 0.5rem 0 0.5rem;
-
-  label {
-    display: block;
-    margin-bottom: 0.2777em;
-    .required {
-      color: red;
-    }
-    font-weight: 700;
-    font-size: 0.8rem;
-  }
-  input,
-  select {
-    display: block;
-    border: 2px solid #606060;
-    padding: 0.5em 0.6em;
-    border-radius: 0.25em;
-    margin-bottom: 1rem;
-    width: 100%;
-
-    &:focus {
-      outline: 4px solid #3b99fc;
-      outline-offset: 1px;
-    }
-
-    &:disabled {
-      background: #dddddd;
-    }
-  }
-`;
-
 interface Props {
   alert: BottomAlert;
   realm: RealmProfile;
@@ -177,7 +144,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
   const values = getValues();
 
   return (
-    <Container>
+    <>
       <h2>Realm Name: {realm.realm}</h2>
       <form onSubmit={handleSubmit(onSubmit)}>
         <label htmlFor="displayName">Realm Descriptive Name</label>
@@ -308,7 +275,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           Cancel
         </Button>
       </form>
-    </Container>
+    </>
   );
 }
 

@@ -1,5 +1,7 @@
 import getConfig from 'next/config';
 import KcAdminClient from 'keycloak-admin';
+import UserRepresentation from 'keycloak-admin/lib/defs/userRepresentation';
+import flatten from 'lodash/flatten';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { kc_url, kc_client_id, kc_client_secret } = serverRuntimeConfig;
@@ -28,7 +30,25 @@ export async function getAdminClient() {
   }
 }
 
-export async function getIdirUser(idirUsername: string) {
+let _cachedRealmNames: any[] = [];
+export async function getRealmNames() {
+  try {
+    if (_cachedRealmNames.length > 0) return _cachedRealmNames;
+
+    const kcAdminClient = await getAdminClient();
+    if (!kcAdminClient) return null;
+
+    const realms = await kcAdminClient.realms.find({});
+
+    _cachedRealmNames = realms.map((realm) => realm.realm);
+    return _cachedRealmNames;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+export async function findIdirUser(idirUsername: string) {
   try {
     const kcAdminClient = await getAdminClient();
     if (!kcAdminClient) return null;
@@ -48,11 +68,42 @@ export async function getIdirUser(idirUsername: string) {
   }
 }
 
+export async function findUser(username: string) {
+  try {
+    const kcAdminClient = await getAdminClient();
+    if (!kcAdminClient) return null;
+
+    const realmNames = (await getRealmNames()) || [];
+    let users = await Promise.all(
+      realmNames.map(async (realm) => {
+        const getProms = (query: any) =>
+          kcAdminClient.users.find(query).then((users) => users.map((user) => ({ ...user, realm })));
+
+        const searchKey = realm !== 'idir' ? `${username}@idir` : username;
+        const results = await Promise.all([
+          getProms({ realm, username: searchKey }),
+          getProms({ realm, email: username }),
+        ]);
+        return flatten(results) as any[];
+      }),
+    );
+
+    users = flatten(users) as any[];
+    return users.filter((user: any) => {
+      const searchKey = user.realm !== 'idir' ? `${username}@idir` : username;
+      return user.username === searchKey || user.email === username;
+    });
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
 const _cachedNames: any = {};
 export async function getIdirUserName(idirUsername: string) {
   try {
     if (_cachedNames[idirUsername]) return _cachedNames[idirUsername];
-    const user = await getIdirUser(idirUsername);
+    const user = await findIdirUser(idirUsername);
     if (!user) return null;
 
     const name = `${user.firstName} ${user.lastName}`;
@@ -102,6 +153,18 @@ export async function getRealm(realm: string) {
     const realmData = await kcAdminClient.realms.findOne({ realm } as any);
 
     return realmData;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+export async function deleteUser(realm: string, userid: string) {
+  try {
+    const kcAdminClient = await getAdminClient();
+    if (!kcAdminClient) return null;
+
+    return kcAdminClient.users.del({ id: userid, realm });
   } catch (err) {
     console.error(err);
     return null;

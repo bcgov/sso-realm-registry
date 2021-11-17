@@ -32,7 +32,6 @@ export default function OauthCallback({ appToken, session }: Props) {
 
 export async function getServerSideProps({ req, res, query }: GetServerSidePropsContext) {
   try {
-    console.log(query);
     const { code } = query;
 
     const tokens = await getAccessToken({ code: String(code) });
