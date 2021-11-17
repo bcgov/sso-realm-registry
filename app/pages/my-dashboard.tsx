@@ -130,7 +130,7 @@ function MyDashboard({ currentUser }: Props) {
               {selectedId && (
                 <Grid.Col span={4}>
                   <RealmRightPanel
-                    key={selectedId}
+                    key={new Date().getTime()}
                     realm={realms.find((v) => v.id === selectedId) as RealmProfile}
                     currentUser={currentUser}
                     onUpdate={handleUpdate}
