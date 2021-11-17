@@ -16,7 +16,34 @@ const Container = styled.div`
 
 const Italic = styled.p`
   font-style: italic;
+
+  a {
+    color: #38598a;
+    font-weight: 600;
+  }
 `;
+
+const BottomSection = styled.div`
+  position: absolute;
+  bottom: 0;
+`;
+
+const NeedHelp = () => {
+  return (
+    <BottomSection>
+      <Italic>
+        Need help? Message us on the{' '}
+        <a href="https://chat.developer.gov.bc.ca/channel/sso" target="_blank" title="Rocket Chat">
+          #SSO channel
+        </a>{' '}
+        or{' '}
+        <a href="mailto:bcgov.sso@gov.bc.ca" title="Pathfinder SSO">
+          email us
+        </a>
+      </Italic>
+    </BottomSection>
+  );
+};
 
 interface Props {
   realm: RealmProfile;
@@ -66,12 +93,15 @@ function RealmIDIR({ realm }: Props) {
   console.log(result);
   if (result.result === 'notfound') {
     bottomSection = (
-      <NumberedContents
-        title={`Your user was not found. Please search again and enter an exact match.`}
-        variant="black"
-        symbol={'!'}
-        showLine={false}
-      />
+      <>
+        <NumberedContents
+          title={`Your user was not found. Please search again and enter an exact match.`}
+          variant="black"
+          symbol={'!'}
+          showLine={false}
+        />
+        <NeedHelp />
+      </>
     );
   } else if (result.result === 'idironly') {
     if (deleted) {
@@ -89,6 +119,7 @@ function RealmIDIR({ realm }: Props) {
             <Italic>{result.username}</Italic>
             <p>Please ask your user to re-login to your realm. This will automatically re-create the user.</p>
           </NumberedContents>
+          <NeedHelp />
         </>
       );
     } else {
@@ -110,6 +141,7 @@ function RealmIDIR({ realm }: Props) {
             </Button>
           </NumberedContents>
           <DeleteUserConfirmationModal open={openDelete} onChange={handleDeleteChange} />
+          <NeedHelp />
         </>
       );
     }
@@ -122,6 +154,7 @@ function RealmIDIR({ realm }: Props) {
           symbol={'!'}
           showLine={false}
         />
+        <NeedHelp />
       </>
     );
   } else if (result.result === 'found' && result.affected) {
@@ -143,6 +176,7 @@ function RealmIDIR({ realm }: Props) {
             ))}
           </ul>
         </NumberedContents>
+        <NeedHelp />
       </>
     );
   }
