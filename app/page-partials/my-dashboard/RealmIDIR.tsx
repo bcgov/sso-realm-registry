@@ -24,8 +24,7 @@ const Italic = styled.p`
 `;
 
 const BottomSection = styled.div`
-  position: absolute;
-  bottom: 0;
+  padding-top: 25px;
 `;
 
 const NeedHelp = () => {

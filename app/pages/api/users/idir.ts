@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const idirId = session?.preferred_username.split('@')[0];
 
     const runIdirUser = async () => {
-      const users: any[] = (await findUser(search as string)) || [];
+      let users: any[] = (await findUser(search as string)) || [];
       if (users.length === 0) {
         return { result: 'notfound' };
       }
@@ -27,6 +27,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (users.length === 1 && users[0].realm === 'idir') {
         return { result: 'idironly', username: users[0].username, userid: users[0].id };
       }
+
+      users = users.filter((user) => user.realm !== 'idir');
 
       const myRealms = await getMyRealms(idirId);
       const myRealmNames = myRealms.map((v: any) => v.realm);
