@@ -3,8 +3,7 @@ import { GetStaticProps, GetStaticPaths, GetServerSidePropsContext } from 'next'
 import getConfig from 'next/config';
 import jwt from 'jsonwebtoken';
 import store2 from 'store2';
-import { getAccessToken } from 'utils/oidc';
-import { verifyToken } from 'utils/jwt';
+import { createOIDC } from 'utils/oidc-conn';
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { jwt_secret, jwt_token_expiry } = serverRuntimeConfig;
 
@@ -34,7 +33,8 @@ export async function getServerSideProps({ req, res, query }: GetServerSideProps
   try {
     const { code } = query;
 
-    const tokens = await getAccessToken({ code: String(code) });
+    const oidc = createOIDC();
+    const tokens = await oidc.getAccessToken({ code: String(code) });
     const { access_token = '' } = tokens;
     const {
       preferred_username = '',
@@ -42,7 +42,7 @@ export async function getServerSideProps({ req, res, query }: GetServerSideProps
       family_name = '',
       email = '',
       client_roles = [],
-    } = (await verifyToken(access_token)) as any;
+    } = (await oidc.verifyToken(access_token)) as any;
 
     const session = {
       preferred_username,

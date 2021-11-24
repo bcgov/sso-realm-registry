@@ -7,6 +7,8 @@ create table if not exists public.rosters (
     product_owner_idir_userid varchar(1000),
     technical_contact_email varchar(1000),
     technical_contact_idir_userid varchar(1000),
+    admin_note_1 text,
+    admin_note_2 text,
     ministry varchar(1000),
     division varchar(1000),
     branch varchar(1000),

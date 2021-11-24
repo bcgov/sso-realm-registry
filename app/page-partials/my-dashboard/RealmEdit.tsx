@@ -137,7 +137,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
     }
   };
 
-  const isPO = currentUser.idir_userid === realm.product_owner_idir_userid;
+  const isPO = currentUser.idir_userid.toLocaleLowerCase() === realm.product_owner_idir_userid.toLocaleLowerCase();
 
   if (!realm) return null;
 

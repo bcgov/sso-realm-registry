@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { runQuery } from 'utils/db';
 import { validateRequest } from 'utils/jwt';
-import { getAdminClient, getIdirUserName, getRealm } from 'utils/keycloak-core';
+import KeycloakCore from 'utils/keycloak-core';
 
 interface ErrorData {
   success: boolean;
@@ -17,6 +17,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const session = await validateRequest(req, res);
     if (!session) return res.status(401).json({ success: false, error: 'jwt expired' });
 
+    const kcCore = new KeycloakCore('prod');
+
     if (req.method === 'GET') {
       const result: any = await runQuery(
         'SELECT * from rosters WHERE id=$1 AND (LOWER(technical_contact_idir_userid)=LOWER($2) OR LOWER(product_owner_idir_userid)=LOWER($2))',
@@ -26,9 +28,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       const realm = result?.rows.length > 0 ? result?.rows[0] : null;
       if (realm) {
         const [realmData, poName, techName] = await Promise.all([
-          getRealm(realm.realm),
-          getIdirUserName(realm.product_owner_idir_userid),
-          getIdirUserName(realm.technical_contact_idir_userid),
+          kcCore.getRealm(realm.realm),
+          kcCore.getIdirUserName(realm.product_owner_idir_userid),
+          kcCore.getIdirUserName(realm.technical_contact_idir_userid),
         ]);
 
         realm.product_owner_name = poName;

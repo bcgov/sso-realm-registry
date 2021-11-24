@@ -2,7 +2,6 @@ import { Realms } from 'keycloak-admin/lib/resources/realms';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { runQuery } from 'utils/db';
 import { validateRequest } from 'utils/jwt';
-import { getAdminClient, getIdirUserName, getIDPNames, getRealm } from 'utils/keycloak-core';
 import { getMyRealms } from 'controllers/realm';
 
 interface ErrorData {

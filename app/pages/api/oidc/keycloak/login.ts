@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getAuthorizationUrl } from 'utils/oidc';
+import { createOIDC } from 'utils/oidc-conn';
 
 type Data = {
   success: boolean;
@@ -8,7 +8,8 @@ type Data = {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   try {
-    const authUrl = await getAuthorizationUrl();
+    const oidc = createOIDC();
+    const authUrl = await oidc.getAuthorizationUrl({ kc_idp_hint: 'idir' });
     return res.redirect(authUrl);
   } catch (err: any) {
     console.error(err);

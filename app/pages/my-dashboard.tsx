@@ -10,7 +10,7 @@ import Alert from '@button-inc/bcgov-theme/Alert';
 import StyledLink from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
 import { UserSession } from 'types/user-session';
-import RealmTable from 'page-partials/my-dashboard/RealmTable';
+import RealmLeftPanel from 'page-partials/my-dashboard/RealmLeftPanel';
 import RealmRightPanel from 'page-partials/my-dashboard/RealmRightPanel';
 import PopupModal from 'page-partials/my-dashboard/PopupModal';
 import TopAlertWrapper from 'components/TopAlertWrapper';
@@ -125,7 +125,7 @@ function MyDashboard({ currentUser }: Props) {
           <Grid cols={10} style={{ overflowX: 'hidden' }}>
             <Grid.Row collapse="800" gutter={[15, 2]}>
               <Grid.Col span={selectedId ? 6 : 10} style={{ overflowX: 'auto' }}>
-                <RealmTable realms={realms} onEditClick={handleEditClick}></RealmTable>
+                <RealmLeftPanel realms={realms} onEditClick={handleEditClick}  onCancel={handleCancel}></RealmLeftPanel>
               </Grid.Col>
               {selectedId && (
                 <Grid.Col span={4}>
