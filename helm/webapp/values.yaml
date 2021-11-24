@@ -31,11 +31,24 @@ sso:
   tokenGrantType: authorization_code
 
 kc:
-  url: https://dev.oidc.gov.bc.ca
-  clientId: 'script-cli'
-  clientSecret:
-    secret: keycloak-cli-service-account
-    key: client-secret
+  dev:
+    url: https://dev.oidc.gov.bc.ca
+    clientId: 'script-cli'
+    clientSecret:
+      secret: keycloak-cli-service-account
+      key: client-secret-dev
+  test:
+    url: https://test.oidc.gov.bc.ca
+    clientId: 'script-cli'
+    clientSecret:
+      secret: keycloak-cli-service-account
+      key: client-secret-test
+  prod:
+    url: https://oidc.gov.bc.ca
+    clientId: 'script-cli'
+    clientSecret:
+      secret: keycloak-cli-service-account
+      key: client-secret-prod
 
 postgres:
   host: realm-registry-patroni

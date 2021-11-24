@@ -59,6 +59,8 @@ spec:
               name: http
               protocol: TCP
           env:
+            - name: RELEASE_REVISION
+              value: "{{ .Release.Revision }}"
             - name: SSO_URL
               value: {{ .Values.sso.url }}
             - name: SSO_CLIENT_ID
@@ -79,15 +81,33 @@ spec:
             - name: SSO_TOKEN_GRANT_TYPE
               value: {{ .Values.sso.tokenGrantType }}
 
-            - name: KC_URL
-              value: {{ .Values.kc.url }}
-            - name: KC_CLIENT_ID
-              value: {{ .Values.kc.clientId }}
-            - name: KC_CLIENT_SECRET
+            - name: DEV_KC_URL
+              value: {{ .Values.kc.dev.url }}
+            - name: DEV_KC_CLIENT_ID
+              value: {{ .Values.kc.dev.clientId }}
+            - name: DEV_KC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.kc.clientSecret.secret }}
-                  key: {{ .Values.kc.clientSecret.key }}
+                  name: {{ .Values.kc.dev.clientSecret.secret }}
+                  key: {{ .Values.kc.dev.clientSecret.key }}
+            - name: TEST_KC_URL
+              value: {{ .Values.kc.test.url }}
+            - name: TEST_KC_CLIENT_ID
+              value: {{ .Values.kc.test.clientId }}
+            - name: TEST_KC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kc.test.clientSecret.secret }}
+                  key: {{ .Values.kc.test.clientSecret.key }}
+            - name: PROD_KC_URL
+              value: {{ .Values.kc.prod.url }}
+            - name: PROD_KC_CLIENT_ID
+              value: {{ .Values.kc.prod.clientId }}
+            - name: PROD_KC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kc.prod.clientSecret.secret }}
+                  key: {{ .Values.kc.prod.clientSecret.key }}
 
             - name: JWT_SECRET
               {{- if .Values.jwt.secret }}
