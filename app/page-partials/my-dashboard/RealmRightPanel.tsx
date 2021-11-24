@@ -73,18 +73,13 @@ function RealmNavigator({ realm, currentUser, onUpdate, onCancel }: Props) {
         <a className={`nav-link ${tab === 'uris' ? 'active' : ''}`} onClick={() => setTab('uris')}>
           URIs
         </a>
-        <a className={`nav-link ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>
-          Duplicate IDIR Users
-        </a>
       </Tabs>
       <br />
       {tab === 'details' ? (
         <RealmEdit realm={realm} currentUser={currentUser} onUpdate={onUpdate} onCancel={onCancel} />
       ) : tab === 'uris' ? (
         <RealmURIs realm={realm} />
-      ) : (
-        <RealmIDIR realm={realm} />
-      )}
+      ) : null}
     </Container>
   );
 }
