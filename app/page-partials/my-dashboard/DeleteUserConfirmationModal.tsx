@@ -33,9 +33,9 @@ function DeleteUserConfirmationModal({ open, onChange }: Props) {
 
   return (
     <CenteredModal id="delete-user-confirmation">
-      <Modal.Header>Deleting Your IDIR User</Modal.Header>
+      <Modal.Header>Deleting IDIR User</Modal.Header>
       <Modal.Content>
-        <p>Are you sure you want to delete your IDIR user?</p>
+        <p>Are you sure you want to delete this IDIR user?</p>
         <JustifyContent>
           <Button type="submit" variant="primary-inverse" onClick={handleCancel}>
             Cancel

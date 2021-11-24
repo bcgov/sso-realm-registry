@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { validateRequest } from 'utils/jwt';
-import { findUser, deleteUser } from 'utils/keycloak-core';
+import KeycloakCore from 'utils/keycloak-core';
 import { getMyRealms } from 'controllers/realm';
 
 interface ErrorData {
@@ -15,11 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const session = await validateRequest(req, res);
     if (!session) return res.status(401).json({ success: false, error: 'jwt expired' });
 
-    const { search } = req.query;
+    const { search, env } = req.query;
+    if (search?.length < 3) return res.status(401).json({ success: false, error: 'search key less than 3 characters' });
     const idirId = session?.preferred_username.split('@')[0];
 
-    const runIdirUser = async () => {
-      let users: any[] = (await findUser(search as string)) || [];
+    const runIdirUser = async (kcCore: any) => {
+      let users: any[] = (await kcCore.findUser(search as string)) || [];
       if (users.length === 0) {
         return { result: 'notfound' };
       }
@@ -52,12 +53,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     };
 
     if (req.method === 'GET') {
-      const result = await runIdirUser();
-      return res.send(result);
+      const kcCoreDev = new KeycloakCore('dev');
+      const kcCoreTest = new KeycloakCore('test');
+      const kcCoreProd = new KeycloakCore('prod');
+
+      const [dev, test, prod] = await Promise.all([
+        runIdirUser(kcCoreDev),
+        runIdirUser(kcCoreTest),
+        runIdirUser(kcCoreProd),
+      ]);
+
+      return res.send({ dev, test, prod });
     } else if (req.method === 'DELETE') {
-      const result = await runIdirUser();
+      const kcCore = new KeycloakCore(env as string);
+      const result = await runIdirUser(kcCore);
       if (result.result === 'idironly') {
-        await deleteUser('idir', result.userid);
+        await kcCore.deleteUser('idir', result.userid);
         return res.send({ success: true });
       }
       return res.send({ success: false });

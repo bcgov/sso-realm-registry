@@ -1,7 +1,24 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import qs from 'qs';
-import getConfig from 'next/config';
-import { fetchIssuerConfiguration } from './oidc-issuer';
+import jwt from 'jsonwebtoken';
+import jws from 'jws';
+import jwkToPem, { JWK } from 'jwk-to-pem';
+
+type _JWK = { kid: string } & JWK;
+
+const btoa = (str: string) => Buffer.from(str).toString('base64');
+
+const getUrlQuerySeparator = (url: string) => (url.includes('?') ? '&' : '?');
+
+interface OID_PROVIDER_CONFIGURATION {
+  issuer: string;
+  jwks_uri: string;
+  authorization_endpoint: string;
+  token_endpoint: string;
+  userinfo_endpoint: string;
+  end_session_endpoint: string;
+  jwks: _JWK[];
+}
 
 interface TOKEN_RESPONSE {
   id_token?: string;
@@ -20,132 +37,220 @@ interface AUTHORIZATION_REQUEST_PARAMETERS {
   nonce?: string;
 }
 
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const {
-  sso_url,
-  sso_client_id,
-  sso_client_secret,
-  sso_redirect_uri,
-  sso_logout_redirect_uri,
-  sso_authorization_response_type,
-  sso_authorization_scope,
-  sso_token_grant_type,
-} = serverRuntimeConfig;
+interface Props {
+  configurationUrl?: string;
+  url?: string;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  authResponseType: string;
+  authScope: string;
+  tokenGrantType: string;
+}
 
-const confidential = !!sso_client_secret;
-
-const btoa = (str: string) => Buffer.from(str).toString('base64');
-
-const getUrlQuerySeparator = (url: string) => (url.includes('?') ? '&' : '?');
-
-// see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.1
-export const getAuthorizationUrl = async (extraParams = {}) => {
-  const providerConfig = await fetchIssuerConfiguration();
-  const params: AUTHORIZATION_REQUEST_PARAMETERS = {
-    client_id: sso_client_id,
-    response_type: sso_authorization_response_type,
-    scope: sso_authorization_scope,
-    redirect_uri: sso_redirect_uri,
-    ...extraParams,
+class OIDC {
+  private _providerConfigurationUrl: string;
+  private _configurationUrl?: string;
+  private _url?: string;
+  private _clientId: string;
+  private _clientSecret: string;
+  private _redirectUri: string;
+  private _authResponseType: string;
+  private _authScope: string;
+  private _tokenGrantType: string;
+  private _confidential: boolean;
+  private _providerConfiguration: OID_PROVIDER_CONFIGURATION = {
+    issuer: '',
+    jwks_uri: '',
+    authorization_endpoint: '',
+    token_endpoint: '',
+    userinfo_endpoint: '',
+    end_session_endpoint: '',
+    jwks: [],
   };
 
-  if (params.response_type === 'code') {
-    params.response_mode = 'query';
-  } else {
-    params.response_mode = 'fragment';
+  constructor({
+    configurationUrl,
+    url,
+    clientId,
+    clientSecret,
+    redirectUri,
+    authResponseType,
+    authScope,
+    tokenGrantType,
+  }: Props) {
+    this._configurationUrl = configurationUrl;
+    this._url = url;
+    this._clientId = clientId;
+    this._clientSecret = clientSecret;
+    this._redirectUri = redirectUri;
+    this._authResponseType = authResponseType;
+    this._authScope = authScope;
+    this._tokenGrantType = tokenGrantType;
+    this._confidential = !!clientSecret;
+    this._providerConfigurationUrl = this._configurationUrl || `${this._url}/.well-known/openid-configuration`;
+  }
 
-    if (!params.nonce) {
-      throw Error('Missing parameter "nonce"');
+  get providerConfiguration() {
+    return this._providerConfiguration;
+  }
+
+  // https://github.com/vercel/next.js/discussions/15341
+  // https://flaviocopes.com/nextjs-cache-data-globally/
+  private async fetchIssuerConfiguration() {
+    if (this._providerConfiguration?.issuer) return this._providerConfiguration;
+
+    const { issuer, jwks_uri, authorization_endpoint, token_endpoint, userinfo_endpoint, end_session_endpoint } =
+      await axios.get(this._providerConfigurationUrl).then((res: { data: any }) => res.data, console.error);
+
+    const jwks = await axios.get(jwks_uri).then((res: any) => res.data?.keys, console.error);
+
+    this._providerConfiguration = {
+      issuer,
+      jwks_uri,
+      authorization_endpoint,
+      token_endpoint,
+      userinfo_endpoint,
+      end_session_endpoint,
+      jwks,
+    };
+
+    return this._providerConfiguration;
+  }
+
+  // see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.1
+  public async getAuthorizationUrl(extraParams = {}) {
+    const providerConfig = await this.fetchIssuerConfiguration();
+    const params: AUTHORIZATION_REQUEST_PARAMETERS = {
+      client_id: this._clientId,
+      response_type: this._authResponseType,
+      scope: this._authScope,
+      redirect_uri: this._redirectUri,
+      ...extraParams,
+    };
+
+    if (params.response_type === 'code') {
+      params.response_mode = 'query';
+    } else {
+      params.response_mode = 'fragment';
+
+      if (!params.nonce) {
+        throw Error('Missing parameter "nonce"');
+      }
+
+      // Example using response_type=id_token token
+      // http://localhost:3000/oidc/keycloak
+      // #session_state=xxxxxxxx-7af1-40e9-bc2f-xxxxxxxxxxxx
+      // &id_token=hhhhh.pppppppppp.fffff
+      // &access_token=hhhhh.pppppppppp.fffff
+      // &token_type=bearer
+      // &expires_in=900
     }
 
-    // Example using response_type=id_token token
-    // http://localhost:3000/oidc/keycloak
-    // #session_state=xxxxxxxx-7af1-40e9-bc2f-xxxxxxxxxxxx
-    // &id_token=hhhhh.pppppppppp.fffff
-    // &access_token=hhhhh.pppppppppp.fffff
-    // &token_type=bearer
-    // &expires_in=900
+    // TODO: let's apply PKCE workflow for public clients
+    if (!this._confidential) {
+    }
+
+    const separator = getUrlQuerySeparator(providerConfig?.authorization_endpoint);
+    return `${providerConfig?.authorization_endpoint}${separator}${qs.stringify(params, { encode: false })}`;
   }
 
-  // TODO: let's apply PKCE workflow for public clients
-  if (!confidential) {
+  // see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
+  // see https://aws.amazon.com/blogs/mobile/understanding-amazon-cognito-user-pool-oauth-2-0-grants/
+  public async getAccessToken({ code }: { code: string }) {
+    const providerConfig = await this.fetchIssuerConfiguration();
+    const params = {
+      grant_type: this._tokenGrantType,
+      client_id: this._clientId,
+      redirect_uri: this._redirectUri,
+      code,
+    };
+
+    // TODO: let's apply PKCE workflow for public clients
+    if (!this._confidential) {
+    }
+
+    // see https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+    // see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.4
+    // Oauth2 response + OpenID Connect spec; id_token
+    // {
+    //   id_token: "xxxxxxx...",
+    //   access_token: "xxxxxxx...",
+    //   refresh_token: "xxxxxxx...",
+    //   expires_in: 3600,
+    //   token_type: "Bearer",
+    // };
+    const config: AxiosRequestConfig = {
+      url: providerConfig?.token_endpoint,
+      method: 'post',
+      data: qs.stringify(params),
+    };
+
+    if (this._confidential) {
+      config.headers = { Authorization: `Basic ${btoa(`${this._clientId}:${this._clientSecret}`)}` };
+    }
+
+    const { data } = await axios(config);
+    return data as TOKEN_RESPONSE;
   }
 
-  const separator = getUrlQuerySeparator(providerConfig?.authorization_endpoint);
-  return `${providerConfig?.authorization_endpoint}${separator}${qs.stringify(params, { encode: false })}`;
-};
+  public async getUserInfo({ accessToken }: { accessToken: string }) {
+    const providerConfig = await this.fetchIssuerConfiguration();
 
-// see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
-// see https://aws.amazon.com/blogs/mobile/understanding-amazon-cognito-user-pool-oauth-2-0-grants/
-export const getAccessToken = async ({ code }: { code: string }) => {
-  const providerConfig = await fetchIssuerConfiguration();
-  const params = {
-    grant_type: sso_token_grant_type,
-    client_id: sso_client_id,
-    redirect_uri: sso_redirect_uri,
-    code,
-  };
+    const config: AxiosRequestConfig = {
+      url: providerConfig?.userinfo_endpoint,
+      method: 'get',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
 
-  // TODO: let's apply PKCE workflow for public clients
-  if (!confidential) {
+    const { data } = await axios(config);
+    return data as any;
   }
 
-  // see https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-  // see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.4
-  // Oauth2 response + OpenID Connect spec; id_token
-  // {
-  //   id_token: "xxxxxxx...",
-  //   access_token: "xxxxxxx...",
-  //   refresh_token: "xxxxxxx...",
-  //   expires_in: 3600,
-  //   token_type: "Bearer",
-  // };
-  const config: AxiosRequestConfig = {
-    url: providerConfig?.token_endpoint,
-    method: 'post',
-    data: qs.stringify(params),
-  };
+  public async refreshSession({ refreshToken }: { refreshToken: string }) {
+    const providerConfig = await this.fetchIssuerConfiguration();
 
-  if (confidential) {
-    config.headers = { Authorization: `Basic ${btoa(`${sso_client_id}:${sso_client_secret}`)}` };
+    const params = {
+      grant_type: 'refresh_token',
+      client_id: this._clientId,
+      refresh_token: refreshToken,
+    };
+
+    const config: AxiosRequestConfig = {
+      url: providerConfig?.token_endpoint,
+      method: 'post',
+      data: qs.stringify(params),
+    };
+
+    const { data } = await axios(config);
+    return data as any;
   }
 
-  const { data } = await axios(config);
-  return data as TOKEN_RESPONSE;
-};
+  public async verifyToken(token: string) {
+    // 1. Decode the ID token.
+    const { header } = jws.decode(token);
 
-export const getUserInfo = async ({ accessToken }: { accessToken: string }) => {
-  const providerConfig = await fetchIssuerConfiguration();
+    // 2. Compare the local key ID (kid) to the public kid.
+    const { jwks, issuer } = await this.fetchIssuerConfiguration();
 
-  const config: AxiosRequestConfig = {
-    url: providerConfig?.userinfo_endpoint,
-    method: 'get',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  };
+    const key = jwks.find((key) => key.kid === header.kid);
 
-  const { data } = await axios(config);
-  return data as any;
-};
+    if (!key) {
+      return false;
+    }
 
-export const refreshSession = async ({ refreshToken }: { refreshToken: string }) => {
-  const providerConfig = await fetchIssuerConfiguration();
+    // 3. Verify the signature using the public key
+    const pem = jwkToPem(key);
 
-  const params = {
-    grant_type: 'refresh_token',
-    client_id: sso_client_id,
-    refresh_token: refreshToken,
-  };
+    return jwt.verify(token, pem, {
+      audience: this._clientId,
+      issuer,
+      maxAge: '2h',
+      ignoreExpiration: true,
+    });
+  }
+}
 
-  const config: AxiosRequestConfig = {
-    url: providerConfig?.token_endpoint,
-    method: 'post',
-    data: qs.stringify(params),
-  };
-
-  const { data } = await axios(config);
-  return data as any;
-};
-
-export default { getAuthorizationUrl, getAccessToken, getUserInfo, refreshSession };
+export default OIDC;

@@ -80,7 +80,7 @@ function RealmIDIR({ realm }: Props) {
     if (loading) return;
     if (toDelete) {
       setDeleting(true);
-      const [result] = await deleteIdirUser(searchKey);
+      const [result] = await deleteIdirUser(searchKey, 'dev');
       setDeleted(result?.success === true);
       setDeleting(false);
     }

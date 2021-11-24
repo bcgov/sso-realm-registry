@@ -20,9 +20,19 @@ module.exports = {
     pg_password: process.env.PGPASSWORD,
     pg_database: process.env.PGDATABASE || 'realm_profile',
     pg_ssl: process.env.PGSSL === 'true',
-    kc_url: process.env.KC_URL || 'https://dev.oidc.gov.bc.ca',
-    kc_client_id: process.env.KC_CLIENT_ID || 'script-cli',
-    kc_client_secret: process.env.KC_CLIENT_SECRET,
+
+    dev_kc_url: process.env.DEV_KC_URL || 'https://dev.oidc.gov.bc.ca',
+    dev_kc_client_id: process.env.DEV_KC_CLIENT_ID || 'script-cli',
+    dev_kc_client_secret: process.env.DEV_KC_CLIENT_SECRET,
+
+    test_kc_url: process.env.TEST_KC_URL || 'https://dev.oidc.gov.bc.ca',
+    test_kc_client_id: process.env.TEST_KC_CLIENT_ID || 'script-cli',
+    test_kc_client_secret: process.env.TEST_KC_CLIENT_SECRET,
+
+    prod_kc_url: process.env.PROD_KC_URL || 'https://dev.oidc.gov.bc.ca',
+    prod_kc_client_id: process.env.PROD_KC_CLIENT_ID || 'script-cli',
+    prod_kc_client_secret: process.env.PROD_KC_CLIENT_SECRET,
+
     ches_api_endpoint: process.env.CHES_API_ENDPOINT || 'https://ches-dev.apps.silver.devops.gov.bc.ca/api/v1/email',
     ches_token_endpoint:
       process.env.CHES_TOKEN_ENDPOINT || 'https://dev.oidc.gov.bc.ca/auth/realms/xxxxxxx/protocol/openid-connect/token',
