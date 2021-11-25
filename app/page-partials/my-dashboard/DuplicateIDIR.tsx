@@ -31,7 +31,6 @@ const Container = styled.div`
 const TableContent = ({
   data,
   env,
-  realm,
   openDelete,
   deletedEnvs,
   deletingEnvs,
@@ -41,73 +40,59 @@ const TableContent = ({
   const info = data[env];
 
   if (info.result === 'notfound') {
-    if (realm === 'idir') {
-      return <div>--</div>;
-    }
+    return <div>The user was not found. Please search again and enter an exact match.</div>;
   } else if (info.result === 'idironly') {
-    if (realm === 'idir') {
-      if (!deletedEnvs.includes(env)) {
-        return (
-          <>
-            <Button type="button" size="small" onClick={handleDeleteClick}>
-              {deletingEnvs.includes(env) ? (
-                <Loader type="Grid" color="#fff" height={15} width={15} visible={true} />
-              ) : (
-                <span>Delete</span>
-              )}
-            </Button>
-            <DeleteUserConfirmationModal open={openDelete} onChange={(yes) => handleDeleteChange(yes, env)} />
-          </>
-        );
-      }
+    if (deletedEnvs.includes(env)) {
+      return <div>The user has been deleted.</div>;
+    } else {
+      return (
+        <>
+          <Button type="button" size="small" onClick={handleDeleteClick}>
+            {deletingEnvs.includes(env) ? (
+              <Loader type="Grid" color="#fff" height={15} width={15} visible={true} />
+            ) : (
+              <span>Delete</span>
+            )}
+          </Button>
+          <DeleteUserConfirmationModal open={openDelete} onChange={(yes) => handleDeleteChange(yes, env)} />
+        </>
+      );
     }
-
-    return <div>--</div>;
   } else if (info.result === 'others') {
-    if (realm === 'idir') {
-      return (
-        <Button type="button" size="small" disabled={true}>
-          <span>Delete</span>
-        </Button>
-      );
-    } else if (realm === 'others') {
-      return (
-        <div>
-          The user was found in a realm that you do not own.Need help? Message us on the{' '}
-          <Link href="https://chat.developer.gov.bc.ca/channel/sso" title="Rocket Chat" external>
-            Message
-          </Link>{' '}
-          or{' '}
-          <Link href="mailto:bcgov.sso@gov.bc.ca" title="Pathfinder SSO">
-            email
-          </Link>{' '}
-          the SSO team to delete the user.
-        </div>
-      );
-    }
-
-    return <div>--</div>;
-  } else if (info.result === 'found') {
-    if (realm === 'idir') {
-      return (
-        <Button type="button" size="small" disabled={true}>
-          <span>Delete</span>
-        </Button>
-      );
-    } else if (realm !== 'others') {
-      return (
-        <div>
-          Navigate to your{' '}
-          <Link href={`https://${env === 'prod' ? '' : env + '.'}oidc.gov.bc.ca/auth/admin/${realm}/console`} external>
-            Realm
-          </Link>{' '}
-          to delete the user, then search for the user again in this app.
-        </div>
-      );
-    }
+    return (
+      <div>
+        The user was found in a realm that you do not own.Need help? Message us on the{' '}
+        <Link href="https://chat.developer.gov.bc.ca/channel/sso" title="Rocket Chat" external>
+          Message
+        </Link>{' '}
+        or{' '}
+        <Link href="mailto:bcgov.sso@gov.bc.ca" title="Pathfinder SSO">
+          email
+        </Link>{' '}
+        the SSO team to delete the user.
+      </div>
+    );
+  } else if (info.result === 'found' && info.affected) {
+    return (
+      <>
+        <p>Navigate to your realm(s) below to delete this user, then search for the user again in this app.</p>
+        <ul>
+          {info.affected.map((realm: string) => (
+            <li key={realm}>
+              <Link
+                href={`https://${env === 'prod' ? '' : env + '.'}oidc.gov.bc.ca/auth/admin/${realm}/console`}
+                external
+              >
+                {realm}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </>
+    );
   }
 
-  return <div>--</div>;
+  return null;
 };
 
 interface Props {}
@@ -151,19 +136,6 @@ function DuplicateIDIR({}: Props) {
     setLoading(false);
   };
 
-  let realms = ['idir'];
-  let foundOthers = false;
-  forEach(result, (val, key) => {
-    if (val.result === 'found') {
-      realms = realms.concat(val.affected);
-    } else if (val.result === 'others') {
-      foundOthers = true;
-    }
-  });
-
-  realms = uniq(realms);
-  if (foundOthers) realms.push('others');
-
   return (
     <Container>
       <h3>Are your IDIR users having trouble authenticating?</h3>
@@ -201,9 +173,6 @@ function DuplicateIDIR({}: Props) {
           <thead>
             <tr>
               <th>
-                <h4>Realm</h4>
-              </th>
-              <th>
                 <h4>Dev</h4>
               </th>
               <th>
@@ -215,49 +184,41 @@ function DuplicateIDIR({}: Props) {
             </tr>
           </thead>
           <tbody>
-            {realms.map((realm) => {
-              return (
-                <tr key={realm}>
-                  <td style={{ width: '10%' }}>{realm}</td>
-                  <td style={{ width: '30%' }}>
-                    <TableContent
-                      data={result}
-                      env="dev"
-                      realm={realm}
-                      deletedEnvs={deletedEnvs}
-                      deletingEnvs={deletingEnvs}
-                      openDelete={openDelete}
-                      handleDeleteClick={handleDeleteClick}
-                      handleDeleteChange={handleDeleteChange}
-                    />
-                  </td>
-                  <td style={{ width: '30%' }}>
-                    <TableContent
-                      data={result}
-                      env="test"
-                      realm={realm}
-                      deletedEnvs={deletedEnvs}
-                      deletingEnvs={deletingEnvs}
-                      openDelete={openDelete}
-                      handleDeleteClick={handleDeleteClick}
-                      handleDeleteChange={handleDeleteChange}
-                    />
-                  </td>
-                  <td style={{ width: '30%' }}>
-                    <TableContent
-                      data={result}
-                      env="prod"
-                      realm={realm}
-                      deletedEnvs={deletedEnvs}
-                      deletingEnvs={deletingEnvs}
-                      openDelete={openDelete}
-                      handleDeleteClick={handleDeleteClick}
-                      handleDeleteChange={handleDeleteChange}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
+            <tr>
+              <td style={{ width: '30%', verticalAlign: 'top' }}>
+                <TableContent
+                  data={result}
+                  env="dev"
+                  deletedEnvs={deletedEnvs}
+                  deletingEnvs={deletingEnvs}
+                  openDelete={openDelete}
+                  handleDeleteClick={handleDeleteClick}
+                  handleDeleteChange={handleDeleteChange}
+                />
+              </td>
+              <td style={{ width: '30%', verticalAlign: 'top' }}>
+                <TableContent
+                  data={result}
+                  env="test"
+                  deletedEnvs={deletedEnvs}
+                  deletingEnvs={deletingEnvs}
+                  openDelete={openDelete}
+                  handleDeleteClick={handleDeleteClick}
+                  handleDeleteChange={handleDeleteChange}
+                />
+              </td>
+              <td style={{ width: '30%', verticalAlign: 'top' }}>
+                <TableContent
+                  data={result}
+                  env="prod"
+                  deletedEnvs={deletedEnvs}
+                  deletingEnvs={deletingEnvs}
+                  openDelete={openDelete}
+                  handleDeleteClick={handleDeleteClick}
+                  handleDeleteChange={handleDeleteChange}
+                />
+              </td>
+            </tr>
           </tbody>
         </StyledTable>
       )}
