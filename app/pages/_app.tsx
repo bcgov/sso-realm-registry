@@ -1,3 +1,5 @@
+import 'react-loader-spinner/dist/loader/css/react-spinner-loader.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/globals.css';
 import React, { useState, useEffect } from 'react';
 import { GetStaticProps, GetStaticPaths, GetServerSidePropsContext } from 'next';
@@ -7,6 +9,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import store2 from 'store2';
 import Layout from 'layout/Layout';
+
 // store2('app-session', { name, preferred_username, email });
 
 function MyApp({ Component, pageProps }: AppProps) {

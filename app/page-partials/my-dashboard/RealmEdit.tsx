@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Popover from 'react-bootstrap/Popover';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import Loader from 'react-loader-spinner';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import Button from '@button-inc/bcgov-theme/Button';
@@ -11,6 +15,29 @@ import { getMinistries, getDivisions, getBranches } from 'services/meta';
 import { UserSession } from 'types/user-session';
 import styled from 'styled-components';
 import { RealmProfile } from 'types/realm-profile';
+
+const LeftMargin = styled.span`
+  margin-left: 2px;
+`;
+
+const InfoPopover = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <OverlayTrigger
+      trigger={['hover', 'focus']}
+      placement="right-start"
+      overlay={
+        <Popover id="popover-basic">
+          <Popover.Body>{children}</Popover.Body>
+        </Popover>
+      }
+      delay={{ show: 200, hide: 200 }}
+    >
+      <LeftMargin>
+        <FontAwesomeIcon color="#777777" icon={faInfoCircle} />
+      </LeftMargin>
+    </OverlayTrigger>
+  );
+};
 
 const AlignCenter = styled.div`
   text-align: center;
@@ -147,7 +174,10 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
     <>
       <h2>Realm Name: {realm.realm}</h2>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <label htmlFor="displayName">Realm Descriptive Name</label>
+        <label htmlFor="displayName">
+          Realm Descriptive Name
+          <InfoPopover>This name is the name you've configured in custom realm setting</InfoPopover>
+        </label>
         <input
           type="text"
           placeholder="Realm Descriptive Name"
@@ -156,6 +186,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         />
         <label htmlFor="product_name">
           Product Name<span className="required">*</span>
+          <InfoPopover>Help us understand what product this realm is tied to</InfoPopover>
         </label>
         <input
           type="text"
@@ -164,6 +195,10 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         />
         <label htmlFor="openshift_namespace">
           Openshift Namespace<span className="required">*</span>
+          <InfoPopover>
+            If this realm is tied to OS, provide the license plate, if this realm is shared with multiple products type
+            **various**. If OS is not applicable, please help type **NA**
+          </InfoPopover>
         </label>
         <input
           type="text"
@@ -189,7 +224,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
                 {values?.ministry === 'Other' && (
                   <input
                     type="text"
-                    placeholder="Ministry"
+                    placeholder="<Please enter the ministry name>"
                     {...register('ministry_other', { required: true, minLength: 2, maxLength: 1000 })}
                   />
                 )}
@@ -208,7 +243,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
                 {values?.division === 'Other' && (
                   <input
                     type="text"
-                    placeholder="Division"
+                    placeholder="<Please enter the division name>"
                     {...register('division_other', { required: true, minLength: 2, maxLength: 1000 })}
                   />
                 )}
@@ -227,7 +262,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
                 {values?.branch === 'Other' && (
                   <input
                     type="text"
-                    placeholder="Branch"
+                    placeholder="<Please enter the branch name>"
                     {...register('branch_other', { required: true, minLength: 2, maxLength: 1000 })}
                   />
                 )}
@@ -237,6 +272,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         )}
         <label htmlFor="product_owner_email">
           Product Owner Email<span className="required">*</span>
+          <InfoPopover>If not dithered, you can update this field with the appropriate product owner IDIR</InfoPopover>
         </label>
         <input
           type="text"
@@ -253,6 +289,9 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         />
         <label htmlFor="technical_contact_email">
           Technical Contact Email<span className="required">*</span>
+          <InfoPopover>
+            If not dithered, you can update this field with the appropriate technical contact IDIR
+          </InfoPopover>
         </label>
         <input
           type="text"
