@@ -35,7 +35,7 @@ function DeleteUserConfirmationModal({ open, onChange }: Props) {
     <CenteredModal id="delete-user-confirmation">
       <Modal.Header>Deleting IDIR User</Modal.Header>
       <Modal.Content>
-        <p>Are you sure you want to delete this IDIR user?</p>
+        <p>You are deleting this user from a keycloak custom realm.</p>
         <JustifyContent>
           <Button type="submit" variant="primary-inverse" onClick={handleCancel}>
             Cancel

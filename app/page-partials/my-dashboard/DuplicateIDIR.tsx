@@ -43,7 +43,7 @@ const TableContent = ({
     return <div>The user was not found. Please search again and enter an exact match.</div>;
   } else if (info.result === 'idironly') {
     if (deletedEnvs.includes(env)) {
-      return <div>The user has been deleted.</div>;
+      return <div>User was successfully deleted, please verify and ask user to log into your realm.</div>;
     } else {
       return (
         <>
@@ -61,11 +61,19 @@ const TableContent = ({
   } else if (info.result === 'others') {
     return (
       <div>
-        The user was found in a realm that you do not own.Need help? Message us on the{' '}
+        The user was found in a realm that you do not own. Please fill out this{' '}
+        <Link
+          href="https://github.com/BCDevOps/devops-requests/issues/new?assignees=jlangy%2C+junminahn%2C+arcshiftsolutions%2C+zsamji%2CConradBoydElliottGustafson&labels=sso-delete-user%2C+sso&template=keycloak_user_removal_request.md&title="
+          title="Rocket Chat"
+          external
+        >
+          Github issue
+        </Link>
+        ,{' '}
         <Link href="https://chat.developer.gov.bc.ca/channel/sso" title="Rocket Chat" external>
-          Message
+          message
         </Link>{' '}
-        or{' '}
+        us on rocketchat or{' '}
         <Link href="mailto:bcgov.sso@gov.bc.ca" title="Pathfinder SSO">
           email
         </Link>{' '}
