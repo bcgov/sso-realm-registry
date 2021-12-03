@@ -196,8 +196,8 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <label htmlFor="openshift_namespace">
           Openshift Namespace<span className="required">*</span>
           <InfoPopover>
-            If this realm is tied to OS, provide the license plate, if this realm is shared with multiple products type
-            **various**. If OS is not applicable, please help type **NA**
+            If this realm is tied to OS, provide the license plate, if this realm is shared with multiple products type{' '}
+            <strong>Various</strong>. If OS is not applicable, please help type <strong>NA</strong>
           </InfoPopover>
         </label>
         <input
@@ -272,7 +272,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         )}
         <label htmlFor="product_owner_email">
           Product Owner Email<span className="required">*</span>
-          <InfoPopover>If not dithered, you can update this field with the appropriate product owner IDIR</InfoPopover>
+          <InfoPopover>If not dithered, you can update this field with the appropriate product owner Email</InfoPopover>
         </label>
         <input
           type="text"
@@ -289,16 +289,18 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         />
         <label htmlFor="technical_contact_email">
           Technical Contact Email<span className="required">*</span>
-          <InfoPopover>
-            If not dithered, you can update this field with the appropriate technical contact IDIR
-          </InfoPopover>
         </label>
         <input
           type="text"
           placeholder="Technical Contact Email"
           {...register('technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
         />
-        <label htmlFor="technical_contact_idir_userid">Technical Contact Idir</label>
+        <label htmlFor="technical_contact_idir_userid">
+          Technical Contact Idir
+          <InfoPopover>
+            If not dithered, you can update this field with the appropriate technical contact IDIR
+          </InfoPopover>
+        </label>
         <input
           type="text"
           placeholder="Technical Contact Idir"
