@@ -144,6 +144,12 @@ function DuplicateIDIR({}: Props) {
     setLoading(false);
   };
 
+  const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      handleSearchSubmit();
+    }
+  };
+
   return (
     <Container>
       <h3>Are your IDIR users having trouble authenticating?</h3>
@@ -162,6 +168,7 @@ function DuplicateIDIR({}: Props) {
               placeholder="Enter IDIR ID or Email"
               value={searchKey}
               disabled={loading}
+              onKeyUp={handleKeyUp}
               onChange={handleSearchChange}
             />
           </Grid.Col>

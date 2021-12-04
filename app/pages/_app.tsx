@@ -16,6 +16,14 @@ function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState(store2('app-session'));
 
+  useEffect(() => {
+    const redirect = async () => {
+      if (currentUser) await router.push('/my-dashboard');
+    };
+
+    redirect();
+  }, [currentUser]);
+
   const handleLogin = async () => {
     window.location.href = '/api/oidc/keycloak/login';
   };
