@@ -272,7 +272,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         )}
         <label htmlFor="product_owner_email">
           Product Owner Email<span className="required">*</span>
-          <InfoPopover>If not dithered, you can update this field with the appropriate product owner Email</InfoPopover>
+          <InfoPopover>If not dithered, you can update this field with the appropriate product owner email</InfoPopover>
         </label>
         <input
           type="text"
@@ -280,7 +280,10 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           disabled={!isPO}
           {...register('product_owner_email', { required: false, pattern: /^\S+@\S+$/i })}
         />
-        <label htmlFor="product_owner_idir_userid">Product Owner Idir</label>
+        <label htmlFor="product_owner_idir_userid">
+          Product Owner Idir
+          <InfoPopover>If not dithered, you can update this field with the appropriate product owner Idir</InfoPopover>
+        </label>
         <input
           type="text"
           placeholder="Product Owner Idir"
@@ -289,6 +292,9 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         />
         <label htmlFor="technical_contact_email">
           Technical Contact Email<span className="required">*</span>
+          <InfoPopover>
+            If not dithered, you can update this field with the appropriate technical contact email
+          </InfoPopover>
         </label>
         <input
           type="text"
@@ -298,7 +304,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <label htmlFor="technical_contact_idir_userid">
           Technical Contact Idir
           <InfoPopover>
-            If not dithered, you can update this field with the appropriate technical contact IDIR
+            If not dithered, you can update this field with the appropriate technical contact Idir
           </InfoPopover>
         </label>
         <input

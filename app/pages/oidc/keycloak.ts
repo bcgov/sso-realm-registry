@@ -23,7 +23,7 @@ export default function OauthCallback({ appToken, session }: Props) {
   store2('app-session', session);
 
   useEffect(() => {
-    window.location.href = '/';
+    window.location.href = '/my-dashboard';
   }, []);
 
   return null;
