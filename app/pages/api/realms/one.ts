@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const { id } = req.query;
 
     const session = await validateRequest(req, res);
-    if (!session) return res.status(401).json({ success: false, error: 'jwt expired' });
+    if (!session?.idir_userid) return res.status(401).json({ success: false, error: 'jwt expired' });
 
     const kcCore = new KeycloakCore('prod');
 
@@ -61,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       const _division = division === 'Other' ? division_other : division;
       const _branch = branch === 'Other' ? branch_other : branch;
 
-      const isPO = session?.idir_userid === product_owner_idir_userid;
+      const isPO = session.idir_userid.toLowerCase() === product_owner_idir_userid?.toLowerCase();
 
       let result: any;
       if (isPO) {

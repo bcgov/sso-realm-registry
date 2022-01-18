@@ -3,6 +3,7 @@ import OIDC from './oidc';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const {
+  sso_configuration_url,
   sso_url,
   sso_client_id,
   sso_client_secret,
@@ -18,6 +19,7 @@ export const createOIDC = () => {
   if (_oidc) return _oidc;
 
   _oidc = new OIDC({
+    configurationUrl: sso_configuration_url,
     url: sso_url,
     clientId: sso_client_id,
     clientSecret: sso_client_secret,
