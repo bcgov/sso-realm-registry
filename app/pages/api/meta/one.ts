@@ -15,14 +15,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const { id } = req.query;
 
     const session = await validateRequest(req, res);
-    if (!session) return res.status(401).json({ success: false, error: 'jwt expired' });
+    if (!session?.idir_userid) return res.status(401).json({ success: false, error: 'jwt expired' });
 
     const kcCore = new KeycloakCore('prod');
 
     if (req.method === 'GET') {
       const result: any = await runQuery(
         'SELECT * from rosters WHERE id=$1 AND (LOWER(technical_contact_idir_userid)=LOWER($2) OR LOWER(product_owner_idir_userid)=LOWER($2))',
-        [id, session?.idir_userid],
+        [id, session.idir_userid],
       );
 
       const realm = result?.rows.length > 0 ? result?.rows[0] : null;
@@ -49,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         technical_contact_idir_userid,
         product_owner_idir_userid,
       } = req.body;
-      const isPO = session?.idir_userid === product_owner_idir_userid;
+      const isPO = session.idir_userid.toLowerCase() === product_owner_idir_userid?.toLowerCase();
 
       let result: any;
       if (isPO) {
@@ -67,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             RETURNING *`,
           [
             id,
-            session?.idir_userid,
+            session.idir_userid,
             product_name,
             openshift_namespace,
             technical_contact_email,
@@ -86,7 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             updated_at=now()
           WHERE id=$1 AND LOWER(technical_contact_idir_userid)=LOWER($2)
           RETURNING *`,
-          [id, session?.idir_userid, product_name, openshift_namespace, technical_contact_email],
+          [id, session.idir_userid, product_name, openshift_namespace, technical_contact_email],
         );
       }
 
