@@ -14,7 +14,7 @@ import Layout from 'layout/Layout';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState(store2('app-session'));
+  const [currentUser, setCurrentUser] = useState(store2.session.get('app-session'));
 
   useEffect(() => {
     const redirect = async () => {
@@ -29,8 +29,8 @@ function MyApp({ Component, pageProps }: AppProps) {
   };
 
   const handleLogout = async () => {
-    store2.remove('app-token');
-    store2.remove('app-session');
+    store2.session.remove('app-token');
+    store2.session.remove('app-session');
     window.location.href = '/api/oidc/keycloak/logout';
   };
 

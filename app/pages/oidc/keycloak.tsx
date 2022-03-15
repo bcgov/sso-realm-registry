@@ -22,17 +22,17 @@ interface Props {
 export default function OauthCallback({ error, appToken, session }: Props) {
   useEffect(() => {
     if (error) {
-      store2.remove('app-token');
-      store2.remove('app-session');
+      store2.session.remove('app-token');
+      store2.session.remove('app-session');
       window.location.href = '/';
     } else {
-      store2('app-token', appToken);
-      store2('app-session', session);
+      store2.session.set('app-token', appToken);
+      store2.session.set('app-session', session);
       window.location.href = '/my-dashboard';
     }
   }, []);
 
-  return <></>;
+  return null;
 }
 
 export async function getServerSideProps({ req, res, query }: GetServerSidePropsContext) {
