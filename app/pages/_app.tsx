@@ -31,7 +31,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const handleLogout = async () => {
     store2.remove('app-token');
     store2.remove('app-session');
-    window.location.href = '/';
+    window.location.href = '/api/oidc/keycloak/logout';
   };
 
   return (

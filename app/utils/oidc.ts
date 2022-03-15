@@ -37,15 +37,24 @@ interface AUTHORIZATION_REQUEST_PARAMETERS {
   nonce?: string;
 }
 
+interface END_SESSION_PARAMETERS {
+  redirect_uri: string;
+}
+
 interface Props {
   configurationUrl?: string;
   url?: string;
   clientId: string;
   clientSecret: string;
   redirectUri: string;
+  logoutRedirectUri?: string;
   authResponseType: string;
   authScope: string;
-  tokenGrantType: string;
+  // see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
+  // see https://datatracker.ietf.org/doc/html/rfc6749#section-4.3.2
+  // see https://datatracker.ietf.org/doc/html/rfc6749#section-4.4.2
+  // see https://datatracker.ietf.org/doc/html/rfc6749#section-6
+  tokenGrantType: string; // 'authorization_code (Standard Flow)' | 'password (Direct Access Grants)' | 'client_credentials (Client Authentication)' | 'refresh_token'
 }
 
 class OIDC {
@@ -55,6 +64,7 @@ class OIDC {
   private _clientId: string;
   private _clientSecret: string;
   private _redirectUri: string;
+  private _logoutRedirectUri: string;
   private _authResponseType: string;
   private _authScope: string;
   private _tokenGrantType: string;
@@ -75,6 +85,7 @@ class OIDC {
     clientId,
     clientSecret,
     redirectUri,
+    logoutRedirectUri,
     authResponseType,
     authScope,
     tokenGrantType,
@@ -84,6 +95,7 @@ class OIDC {
     this._clientId = clientId;
     this._clientSecret = clientSecret;
     this._redirectUri = redirectUri;
+    this._logoutRedirectUri = logoutRedirectUri || redirectUri;
     this._authResponseType = authResponseType;
     this._authScope = authScope;
     this._tokenGrantType = tokenGrantType;
@@ -153,6 +165,17 @@ class OIDC {
 
     const separator = getUrlQuerySeparator(providerConfig?.authorization_endpoint);
     return `${providerConfig?.authorization_endpoint}${separator}${qs.stringify(params, { encode: false })}`;
+  }
+
+  public async getEndSessionUrl(extraParams = {}) {
+    const providerConfig = await this.fetchIssuerConfiguration();
+    const params: END_SESSION_PARAMETERS = {
+      redirect_uri: this._logoutRedirectUri,
+      ...extraParams,
+    };
+
+    const separator = getUrlQuerySeparator(providerConfig?.end_session_endpoint);
+    return `${providerConfig?.end_session_endpoint}${separator}${qs.stringify(params, { encode: false })}`;
   }
 
   // see https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
@@ -247,8 +270,7 @@ class OIDC {
     return jwt.verify(token, pem, {
       audience: this._clientId,
       issuer,
-      maxAge: '2h',
-      ignoreExpiration: true,
+      maxAge: '4h',
     });
   }
 }

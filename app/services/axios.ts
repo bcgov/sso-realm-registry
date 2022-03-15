@@ -23,7 +23,9 @@ instance?.interceptors.response.use(
   },
   function (error) {
     if (error.response.status === 401) {
-      window.location.href = '/api/oidc/keycloak/login';
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
     }
 
     return Promise.reject(error);
