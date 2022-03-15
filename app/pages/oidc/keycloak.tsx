@@ -32,7 +32,7 @@ export default function OauthCallback({ error, appToken, session }: Props) {
     }
   }, []);
 
-  return null;
+  return <></>;
 }
 
 export async function getServerSideProps({ req, res, query }: GetServerSidePropsContext) {
