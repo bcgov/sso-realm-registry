@@ -15,15 +15,21 @@ interface Sesssion {
   client_roles: string;
 }
 interface Props {
-  appToken: string;
-  session: Sesssion;
+  error?: boolean;
+  appToken?: string;
+  session?: Sesssion;
 }
-export default function OauthCallback({ appToken, session }: Props) {
-  store2('app-token', appToken);
-  store2('app-session', session);
-
+export default function OauthCallback({ error, appToken, session }: Props) {
   useEffect(() => {
-    window.location.href = '/my-dashboard';
+    if (error) {
+      store2.remove('app-token');
+      store2.remove('app-session');
+      window.location.href = '/';
+    } else {
+      store2('app-token', appToken);
+      store2('app-session', session);
+      window.location.href = '/my-dashboard';
+    }
   }, []);
 
   return null;
@@ -42,7 +48,14 @@ export async function getServerSideProps({ req, res, query }: GetServerSideProps
       family_name = '',
       email = '',
       client_roles = [],
+      identity_provider,
     } = (await oidc.verifyToken(access_token)) as any;
+
+    if (identity_provider !== 'idir') {
+      return {
+        props: { error: true },
+      };
+    }
 
     const session = {
       preferred_username,

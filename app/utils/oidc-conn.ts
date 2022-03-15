@@ -24,6 +24,7 @@ export const createOIDC = () => {
     clientId: sso_client_id,
     clientSecret: sso_client_secret,
     redirectUri: sso_redirect_uri,
+    logoutRedirectUri: sso_logout_redirect_uri,
     authResponseType: sso_authorization_response_type,
     authScope: sso_authorization_scope,
     tokenGrantType: sso_token_grant_type,
