@@ -336,7 +336,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
             <label htmlFor="next_steps">Next Step</label>
             <textarea
               rows={6}
-              placeholder="Admin Note 2"
+              placeholder="Next Step"
               disabled={!isAdmin && !isPO}
               {...register('next_steps', { required: false, minLength: 2, maxLength: 2000 })}
             />

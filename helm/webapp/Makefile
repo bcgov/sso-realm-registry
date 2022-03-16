@@ -1,5 +1,5 @@
 SHELL := /usr/bin/env bash
-NAMESPACE="b861c7-dev"
+NAMESPACE=
 
 .PHONY: install
 install:
