@@ -16,15 +16,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const { id } = req.query;
 
     const session = await validateRequest(req, res);
-    if (!session?.idir_userid) return res.status(401).json({ success: false, error: 'jwt expired' });
+    const username = session?.idir_username || '';
+    const roles = session?.client_roles || [];
+    const isAdmin = roles.includes('sso-admin');
+
+    if (!username) return res.status(401).json({ success: false, error: 'jwt expired' });
 
     const kcCore = new KeycloakCore('prod');
 
     if (req.method === 'GET') {
-      const result: any = await runQuery(
-        'SELECT * from rosters WHERE id=$1 AND (LOWER(technical_contact_idir_userid)=LOWER($2) OR LOWER(product_owner_idir_userid)=LOWER($2))',
-        [id, session?.idir_userid],
-      );
+      let result: any = null;
+      if (isAdmin) {
+        result = await runQuery('SELECT * from rosters WHERE id=$1', [id]);
+      } else {
+        result = await runQuery(
+          `
+          SELECT
+            id,
+            realm,
+            product_name,
+            openshift_namespace,
+            product_owner_email,
+            product_owner_idir_userid,
+            technical_contact_email,
+            technical_contact_idir_userid,
+            ministry,
+            division,
+            branch,
+            created_at,
+            updated_at
+          FROM rosters WHERE id=$1 AND (LOWER(technical_contact_idir_userid)=LOWER($2) OR LOWER(product_owner_idir_userid)=LOWER($2))
+          `,
+          [id, username],
+        );
+      }
 
       const realm = result?.rows.length > 0 ? result?.rows[0] : null;
       if (realm) {
@@ -55,16 +80,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         product_owner_email,
         technical_contact_idir_userid,
         product_owner_idir_userid,
+        admin_note_1,
+        admin_note_2,
+        next_steps,
+        material_to_send,
       } = req.body;
 
       const _ministry = ministry === 'Other' ? ministry_other : ministry;
       const _division = division === 'Other' ? division_other : division;
       const _branch = branch === 'Other' ? branch_other : branch;
 
-      const isPO = session.idir_userid.toLowerCase() === product_owner_idir_userid?.toLowerCase();
+      const isPO = username.toLowerCase() === product_owner_idir_userid?.toLowerCase();
 
       let result: any;
-      if (isPO) {
+      if (isAdmin) {
+        result = await runQuery(
+          `
+            UPDATE rosters
+            SET
+              product_name=$2,
+              openshift_namespace=$3,
+              technical_contact_email=$4,
+              product_owner_email=$5,
+              technical_contact_idir_userid=$6,
+              ministry=$7,
+              division=$8,
+              branch=$9,
+              admin_note_1=$10,
+              admin_note_2=$11,
+              next_steps=$12,
+              material_to_send=$13,
+              updated_at=now()
+            WHERE id=$1
+            RETURNING *`,
+          [
+            id,
+            product_name,
+            openshift_namespace,
+            technical_contact_email,
+            product_owner_email,
+            technical_contact_idir_userid,
+            _ministry,
+            _division,
+            _branch,
+            admin_note_1,
+            admin_note_2,
+            next_steps,
+            material_to_send,
+          ],
+        );
+      } else if (isPO) {
         result = await runQuery(
           `
             UPDATE rosters
@@ -82,7 +147,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             RETURNING *`,
           [
             id,
-            session?.idir_userid,
+            username,
             product_name,
             openshift_namespace,
             technical_contact_email,
@@ -107,21 +172,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             updated_at=now()
           WHERE id=$1 AND LOWER(technical_contact_idir_userid)=LOWER($2)
           RETURNING *`,
-          [
-            id,
-            session?.idir_userid,
-            product_name,
-            openshift_namespace,
-            technical_contact_email,
-            _ministry,
-            _division,
-            _branch,
-          ],
+          [id, username, product_name, openshift_namespace, technical_contact_email, _ministry, _division, _branch],
         );
       }
 
       const realm = result?.rows.length > 0 ? result?.rows[0] : null;
       sendUpdateEmail(realm, session);
+
+      if (!isAdmin && realm) {
+        delete realm.admin_note_1;
+        delete realm.admin_note_2;
+        delete realm.next_steps;
+        delete realm.material_to_send;
+      }
+
       return res.send(realm);
     }
   } catch (err: any) {

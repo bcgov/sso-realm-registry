@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { validateRequest } from 'utils/jwt';
 import KeycloakCore from 'utils/keycloak-core';
-import { getMyRealms } from 'controllers/realm';
+import { getAllowedRealms } from 'controllers/realm';
 
 interface ErrorData {
   success: boolean;
@@ -17,7 +17,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     const { search, env } = req.query;
     if (search?.length < 3) return res.status(401).json({ success: false, error: 'search key less than 3 characters' });
-    const idirId = session?.preferred_username.split('@')[0];
 
     const runIdirUser = async (kcCore: any) => {
       let users: any[] = (await kcCore.findUser(search as string)) || [];
@@ -31,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
       users = users.filter((user) => user.realm !== 'idir');
 
-      const myRealms = await getMyRealms(idirId);
+      const myRealms = await getAllowedRealms(session);
       const myRealmNames = myRealms.map((v: any) => v.realm);
 
       const affected = [];

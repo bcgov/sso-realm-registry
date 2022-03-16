@@ -14,8 +14,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const session = await validateRequest(req, res);
     if (!session) return res.status(401).json({ success: false, error: 'jwt expired' });
 
+    const username = session?.idir_username || '';
+    const roles = session?.client_roles || [];
+    const isAdmin = roles.includes('sso-admin');
+
     if (req.method === 'GET') {
-      const result: any = await runQuery('SELECT * from surveys_1 WHERE idir_userid=$1', [session?.idir_userid]);
+      const result: any = await runQuery('SELECT * from surveys_1 WHERE idir_userid=$1', [username]);
 
       const survey = result?.rows.length > 0 ? result?.rows[0] : null;
       return res.send(survey);
@@ -27,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           VALUES($1,$2,$3,$4)
           ON CONFLICT (idir_userid)
           DO NOTHING`,
-        [session?.idir_userid, session?.email, willing_to_move, when_to_move],
+        [username, session?.email, willing_to_move, when_to_move],
       );
 
       return res.send(result);

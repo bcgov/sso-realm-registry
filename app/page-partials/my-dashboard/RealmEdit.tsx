@@ -164,7 +164,8 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
     }
   };
 
-  const isPO = currentUser.idir_userid.toLocaleLowerCase() === realm.product_owner_idir_userid.toLocaleLowerCase();
+  const isAdmin = currentUser.client_roles.includes('sso-admin');
+  const isPO = currentUser.idir_username.toLocaleLowerCase() === realm.product_owner_idir_userid.toLocaleLowerCase();
 
   if (!realm) return null;
 
@@ -277,7 +278,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <input
           type="text"
           placeholder="Product Owner Email"
-          disabled={!isPO}
+          disabled={!isAdmin && !isPO}
           {...register('product_owner_email', { required: false, pattern: /^\S+@\S+$/i })}
         />
         <label htmlFor="product_owner_idir_userid">
@@ -287,7 +288,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <input
           type="text"
           placeholder="Product Owner Idir"
-          disabled
+          disabled={!isAdmin}
           {...register('product_owner_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
         />
         <label htmlFor="technical_contact_email">
@@ -310,9 +311,45 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <input
           type="text"
           placeholder="Technical Contact Idir"
-          disabled={!isPO}
+          disabled={!isAdmin && !isPO}
           {...register('technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
         />
+        {isAdmin && (
+          <>
+            {/* ADMIN NOTE 1 */}
+            <label htmlFor="admin_note_1">Admin Note 1</label>
+            <textarea
+              rows={6}
+              placeholder="Admin Note 1"
+              disabled={!isAdmin && !isPO}
+              {...register('admin_note_1', { required: false, minLength: 2, maxLength: 2000 })}
+            />
+            {/* ADMIN NOTE 2 */}
+            <label htmlFor="admin_note_2">Admin Note 2</label>
+            <textarea
+              rows={6}
+              placeholder="Admin Note 2"
+              disabled={!isAdmin && !isPO}
+              {...register('admin_note_2', { required: false, minLength: 2, maxLength: 2000 })}
+            />
+            {/* Next Step */}
+            <label htmlFor="next_steps">Next Step</label>
+            <textarea
+              rows={6}
+              placeholder="Admin Note 2"
+              disabled={!isAdmin && !isPO}
+              {...register('next_steps', { required: false, minLength: 2, maxLength: 2000 })}
+            />
+            {/* Material To Send */}
+            <label htmlFor="material_to_send">Material To Send</label>
+            <textarea
+              rows={6}
+              placeholder="Material To Send"
+              disabled={!isAdmin && !isPO}
+              {...register('material_to_send', { required: false, minLength: 2, maxLength: 2000 })}
+            />
+          </>
+        )}
         {realm && <p>Last Updated: {new Date(realm.updated_at).toLocaleString()}</p>}
         <Button type="submit" variant="primary">
           Save

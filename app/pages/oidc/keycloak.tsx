@@ -9,6 +9,7 @@ const { jwt_secret, jwt_token_expiry } = serverRuntimeConfig;
 
 interface Sesssion {
   preferred_username: string;
+  idir_username: string;
   given_name: string;
   family_name: string;
   email: string;
@@ -63,7 +64,7 @@ export async function getServerSideProps({ req, res, query }: GetServerSideProps
       family_name,
       email,
       client_roles,
-      idir_userid: preferred_username?.split('@idir')[0],
+      idir_username: preferred_username?.split('@idir')[0],
     };
     const appToken = jwt.sign({ access_token, ...session }, jwt_secret, { expiresIn: jwt_token_expiry });
 
