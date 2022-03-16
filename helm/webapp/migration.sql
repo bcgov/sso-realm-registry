@@ -17,8 +17,8 @@ create table if not exists public.rosters (
     primary key(id)
 );
 
-alter table public.rosters add column next_steps text;
-alter table public.rosters add column material_to_send text;
+alter table public.rosters add column if not exists next_steps text;
+alter table public.rosters add column if not exists material_to_send text;
 
 create table if not exists public.surveys_1 (
     idir_userid varchar(1000),
