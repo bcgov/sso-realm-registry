@@ -28,7 +28,8 @@ const Container = styled.div`
     font-size: 0.8rem;
   }
   input,
-  select {
+  select,
+  textarea {
     display: block;
     border: 2px solid #606060;
     padding: 0.5em 0.6em;

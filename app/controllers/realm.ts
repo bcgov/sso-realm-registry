@@ -1,14 +1,36 @@
-import { Realms } from 'keycloak-admin/lib/resources/realms';
-import type { NextApiRequest, NextApiResponse } from 'next';
 import { runQuery } from 'utils/db';
-import { validateRequest } from 'utils/jwt';
 import KeycloakCore from 'utils/keycloak-core';
 
-export async function getMyRealms(idirId: string) {
-  const result: any = await runQuery(
-    'SELECT * from rosters WHERE LOWER(technical_contact_idir_userid)=LOWER($1) OR LOWER(product_owner_idir_userid)=LOWER($1) ORDER BY id asc',
-    [idirId],
-  );
+export async function getAllowedRealms(session: any) {
+  const username = session?.idir_username || '';
+  const roles = session?.client_roles || [];
+  const isAdmin = roles.includes('sso-admin');
+  let result: any = null;
+
+  if (isAdmin) {
+    result = await runQuery('SELECT * FROM rosters ORDER BY id ASC');
+  } else {
+    result = await runQuery(
+      `
+      SELECT
+        id,
+        realm,
+        product_name,
+        openshift_namespace,
+        product_owner_email,
+        product_owner_idir_userid,
+        technical_contact_email,
+        technical_contact_idir_userid,
+        ministry,
+        division,
+        branch,
+        created_at,
+        updated_at
+      FROM rosters WHERE LOWER(technical_contact_idir_userid)=LOWER($1) OR LOWER(product_owner_idir_userid)=LOWER($1) ORDER BY id ASC
+      `,
+      [username],
+    );
+  }
 
   const kcCore = new KeycloakCore('prod');
 
