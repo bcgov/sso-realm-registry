@@ -14,7 +14,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     if (!ministry) return res.send([]);
 
     if (req.method === 'POST') {
-      const result: any = await runQuery('SELECT DISTINCT division from rosters WHERE ministry=$1 ORDER BY division asc', [ministry]);
+      const result: any = await runQuery(
+        'SELECT DISTINCT division from rosters WHERE ministry=$1 ORDER BY division asc',
+        [ministry],
+      );
       return res.send(result?.rows.map((v: { division: string }) => v.division).concat('Other') || ['Other']);
     } else {
       return res.send(['Other']);
