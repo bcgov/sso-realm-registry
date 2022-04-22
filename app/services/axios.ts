@@ -9,7 +9,7 @@ const instance = axios.create({
 
 instance?.interceptors.request.use(
   async function (config) {
-    const appToken = store2('app-token');
+    const appToken = store2.session.get('app-token');
     return { ...config, headers: { ...config.headers, Authorization: `Bearer ${appToken}` } };
   },
   function (error) {
@@ -23,7 +23,9 @@ instance?.interceptors.response.use(
   },
   function (error) {
     if (error.response.status === 401) {
-      window.location.href = '/api/oidc/keycloak/login';
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
     }
 
     return Promise.reject(error);

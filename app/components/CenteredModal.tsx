@@ -8,6 +8,8 @@ const CenteredModal = styled(Modal)`
   & .pg-modal-main {
     margin: auto;
   }
+
+  z-index: 100;
 `;
 
 export default CenteredModal;

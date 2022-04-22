@@ -1,15 +1,15 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/bcgov/realm-registry-app
+  repository: ghcr.io/bcgov/sso-realm-registry
   tag: dev
   pullPolicy: Always
 
 imagePullSecrets:
   - name: gh-registry-config
 
-nameOverride: realm-registryy-app
-fullnameOverride: realm-registryy-app
+nameOverride: realm-registry-app
+fullnameOverride: realm-registry-app
 
 service:
   type: ClusterIP
@@ -31,11 +31,24 @@ sso:
   tokenGrantType: authorization_code
 
 kc:
-  url: https://dev.oidc.gov.bc.ca
-  clientId: 'script-cli'
-  clientSecret:
-    secret: keycloak-cli-service-account
-    key: client-secret
+  dev:
+    url: https://dev.oidc.gov.bc.ca
+    clientId: 'script-cli'
+    clientSecret:
+      secret: keycloak-cli-service-account
+      key: client-secret-dev
+  test:
+    url: https://test.oidc.gov.bc.ca
+    clientId: 'script-cli'
+    clientSecret:
+      secret: keycloak-cli-service-account
+      key: client-secret-test
+  prod:
+    url: https://oidc.gov.bc.ca
+    clientId: 'script-cli'
+    clientSecret:
+      secret: keycloak-cli-service-account
+      key: client-secret-prod
 
 postgres:
   host: realm-registry-patroni

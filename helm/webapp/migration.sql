@@ -7,6 +7,8 @@ create table if not exists public.rosters (
     product_owner_idir_userid varchar(1000),
     technical_contact_email varchar(1000),
     technical_contact_idir_userid varchar(1000),
+    admin_note_1 text,
+    admin_note_2 text,
     ministry varchar(1000),
     division varchar(1000),
     branch varchar(1000),
@@ -14,6 +16,9 @@ create table if not exists public.rosters (
     updated_at timestamp with time zone default current_timestamp,
     primary key(id)
 );
+
+alter table public.rosters add column if not exists next_steps text;
+alter table public.rosters add column if not exists material_to_send text;
 
 create table if not exists public.surveys_1 (
     idir_userid varchar(1000),

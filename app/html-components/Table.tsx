@@ -15,6 +15,7 @@ const Table = styled.table`
   }
 
   & tbody {
+    color: #000;
     font-size: 16px;
 
     tr {

@@ -3,28 +3,34 @@ import { GetStaticProps, GetStaticPaths, GetServerSidePropsContext } from 'next'
 import getConfig from 'next/config';
 import jwt from 'jsonwebtoken';
 import store2 from 'store2';
-import { getAccessToken } from 'utils/oidc';
-import { verifyToken } from 'utils/jwt';
+import { createOIDC } from 'utils/oidc-conn';
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { jwt_secret, jwt_token_expiry } = serverRuntimeConfig;
 
 interface Sesssion {
   preferred_username: string;
+  idir_username: string;
   given_name: string;
   family_name: string;
   email: string;
   client_roles: string;
 }
 interface Props {
-  appToken: string;
-  session: Sesssion;
+  error?: boolean;
+  appToken?: string;
+  session?: Sesssion;
 }
-export default function OauthCallback({ appToken, session }: Props) {
-  store2('app-token', appToken);
-  store2('app-session', session);
-
+export default function OauthCallback({ error, appToken, session }: Props) {
   useEffect(() => {
-    window.location.href = '/';
+    if (error) {
+      store2.session.remove('app-token');
+      store2.session.remove('app-session');
+      window.location.href = '/';
+    } else {
+      store2.session.set('app-token', appToken);
+      store2.session.set('app-session', session);
+      window.location.href = '/my-dashboard';
+    }
   }, []);
 
   return null;
@@ -32,10 +38,10 @@ export default function OauthCallback({ appToken, session }: Props) {
 
 export async function getServerSideProps({ req, res, query }: GetServerSidePropsContext) {
   try {
-    console.log(query);
     const { code } = query;
 
-    const tokens = await getAccessToken({ code: String(code) });
+    const oidc = createOIDC();
+    const tokens = await oidc.getAccessToken({ code: String(code) });
     const { access_token = '' } = tokens;
     const {
       preferred_username = '',
@@ -43,7 +49,14 @@ export async function getServerSideProps({ req, res, query }: GetServerSideProps
       family_name = '',
       email = '',
       client_roles = [],
-    } = (await verifyToken(access_token)) as any;
+      identity_provider,
+    } = (await oidc.verifyToken(access_token)) as any;
+
+    if (identity_provider !== 'idir') {
+      return {
+        props: { error: true },
+      };
+    }
 
     const session = {
       preferred_username,
@@ -51,7 +64,7 @@ export async function getServerSideProps({ req, res, query }: GetServerSideProps
       family_name,
       email,
       client_roles,
-      idir_userid: preferred_username?.split('@idir')[0],
+      idir_username: preferred_username?.split('@idir')[0],
     };
     const appToken = jwt.sign({ access_token, ...session }, jwt_secret, { expiresIn: jwt_token_expiry });
 

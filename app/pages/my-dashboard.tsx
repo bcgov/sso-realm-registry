@@ -10,8 +10,8 @@ import Alert from '@button-inc/bcgov-theme/Alert';
 import StyledLink from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
 import { UserSession } from 'types/user-session';
-import RealmTable from 'page-partials/my-dashboard/RealmTable';
-import RealmEdit from 'page-partials/my-dashboard/RealmEdit';
+import RealmLeftPanel from 'page-partials/my-dashboard/RealmLeftPanel';
+import RealmRightPanel from 'page-partials/my-dashboard/RealmRightPanel';
 import PopupModal from 'page-partials/my-dashboard/PopupModal';
 import TopAlertWrapper from 'components/TopAlertWrapper';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
@@ -73,7 +73,8 @@ function MyDashboard({ currentUser }: Props) {
       setLoading(false);
     }
 
-    fetchSurvey();
+    // disable survey for now
+    // fetchSurvey();
     fetchData();
   }, []);
 
@@ -124,12 +125,13 @@ function MyDashboard({ currentUser }: Props) {
           <Grid cols={10} style={{ overflowX: 'hidden' }}>
             <Grid.Row collapse="800" gutter={[15, 2]}>
               <Grid.Col span={selectedId ? 6 : 10} style={{ overflowX: 'auto' }}>
-                <RealmTable realms={realms} onEditClick={handleEditClick}></RealmTable>
+                <RealmLeftPanel realms={realms} onEditClick={handleEditClick} onCancel={handleCancel}></RealmLeftPanel>
               </Grid.Col>
               {selectedId && (
                 <Grid.Col span={4}>
-                  <RealmEdit
-                    realm={realms.find((v) => v.id === selectedId)}
+                  <RealmRightPanel
+                    key={new Date().getTime()}
+                    realm={realms.find((v) => v.id === selectedId) as RealmProfile}
                     currentUser={currentUser}
                     onUpdate={handleUpdate}
                     onCancel={handleCancel}

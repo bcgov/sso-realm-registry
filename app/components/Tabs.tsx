@@ -21,6 +21,8 @@ const Tabs = styled.nav`
     height: 30px !important;
     font-size: 18px !important;
     font-weight: 600 !important;
+
+    cursor: pointer;
   }
 
   .nav-link.active {
