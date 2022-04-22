@@ -125,7 +125,7 @@ function MyDashboard({ currentUser }: Props) {
           <Grid cols={10} style={{ overflowX: 'hidden' }}>
             <Grid.Row collapse="800" gutter={[15, 2]}>
               <Grid.Col span={selectedId ? 6 : 10} style={{ overflowX: 'auto' }}>
-                <RealmLeftPanel realms={realms} onEditClick={handleEditClick}  onCancel={handleCancel}></RealmLeftPanel>
+                <RealmLeftPanel realms={realms} onEditClick={handleEditClick} onCancel={handleCancel}></RealmLeftPanel>
               </Grid.Col>
               {selectedId && (
                 <Grid.Col span={4}>

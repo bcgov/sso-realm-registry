@@ -226,9 +226,7 @@ function Layout({ children, currentUser, onLoginClick, onLogoutClick }: any) {
         </SubMenu>
       </Navigation>
       <MainContent>
-        <BottomAlertProvider>
-          {children}
-        </BottomAlertProvider>
+        <BottomAlertProvider>{children}</BottomAlertProvider>
       </MainContent>
       <Footer>
         <FooterMenu>

@@ -1,21 +1,22 @@
 SHELL := /usr/bin/env bash
-NAMESPACE=
+
+namespace=
 
 .PHONY: install
 install:
-	helm install realm-registry-app . -n "${NAMESPACE}" -f values.yaml -f "values-${NAMESPACE}.yaml"
+	helm install realm-registry-app . -n "${namespace}" -f values.yaml -f "values-${namespace}.yaml"
 
 .PHONY: upgrade
 upgrade:
-	helm upgrade --install realm-registry-app . -n "${NAMESPACE}" -f values.yaml -f "values-${NAMESPACE}.yaml"
+	helm upgrade --install realm-registry-app . -n "${namespace}" -f values.yaml -f "values-${namespace}.yaml"
 
 .PHONY: lint
 lint:
-	helm upgrade --dry-run --install realm-registry-app -n "${NAMESPACE}" -f values.yaml -f "values-${NAMESPACE}.yaml"
+	helm upgrade --dry-run --install realm-registry-app -n "${namespace}" -f values.yaml -f "values-${namespace}.yaml"
 
 .PHONY: uninstall
 uninstall:
-	helm uninstall realm-registry-app -n ${NAMESPACE}
+	helm uninstall realm-registry-app -n ${namespace}
 
 .PHONY: force-install
 force-install: uninstall
