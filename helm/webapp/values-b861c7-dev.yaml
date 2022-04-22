@@ -1,3 +1,6 @@
+image:
+  tag: dev
+
 route:
   host: realm-registry-dev.apps.silver.devops.gov.bc.ca
 
