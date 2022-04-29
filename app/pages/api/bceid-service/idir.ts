@@ -12,7 +12,6 @@ import get from 'lodash.get';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { bceid_service_id, bceid_service_basic_auth, idir_jwks_uri, idir_issuer } = serverRuntimeConfig;
-console.log(bceid_service_id, bceid_service_basic_auth, idir_jwks_uri, idir_issuer);
 
 const parseStringSync = promisify(parseString);
 
@@ -67,12 +66,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const idirUserGuide = await getIdirUserGuid(token);
 
     const xml = generateXML(field as SearchCriteria, search as string, idirUserGuide);
-    console.log({
-      url: serviceUrl,
-      headers: defaultHeaders,
-      xml,
-      timeout: 10000,
-    });
     const { response }: any = await soapRequest({
       url: serviceUrl,
       headers: defaultHeaders,
