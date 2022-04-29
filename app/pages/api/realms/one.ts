@@ -40,6 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             product_owner_idir_userid,
             technical_contact_email,
             technical_contact_idir_userid,
+            second_technical_contact_email,
+            second_technical_contact_idir_userid,
             ministry,
             division,
             branch,
@@ -84,6 +86,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         admin_note_2,
         next_steps,
         material_to_send,
+        second_technical_contact_email,
+        second_technical_contact_idir_userid,
       } = req.body;
 
       const _ministry = ministry === 'Other' ? ministry_other : ministry;
@@ -111,6 +115,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               admin_note_2=$12,
               next_steps=$13,
               material_to_send=$14,
+              second_technical_contact_email=$15,
+              second_technical_contact_idir_userid=$16,
               updated_at=now()
             WHERE id=$1
             RETURNING *`,
@@ -129,6 +135,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             admin_note_2,
             next_steps,
             material_to_send,
+            second_technical_contact_email,
+            second_technical_contact_idir_userid,
           ],
         );
       } else if (isPO) {
@@ -144,6 +152,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               ministry=$8,
               division=$9,
               branch=$10,
+              second_technical_contact_email=$11,
+              second_technical_contact_idir_userid=$12
               updated_at=now()
             WHERE id=$1 AND LOWER(product_owner_idir_userid)=LOWER($2)
             RETURNING *`,
@@ -158,6 +168,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             _ministry,
             _division,
             _branch,
+            second_technical_contact_email,
+            second_technical_contact_idir_userid,
           ],
         );
       } else {
@@ -171,10 +183,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             ministry=$6,
             division=$7,
             branch=$8,
+            second_technical_contact_email=$9,
+            second_technical_contact_idir_userid=$10,
             updated_at=now()
           WHERE id=$1 AND LOWER(technical_contact_idir_userid)=LOWER($2)
           RETURNING *`,
-          [id, username, product_name, openshift_namespace, technical_contact_email, _ministry, _division, _branch],
+          [
+            id,
+            username,
+            product_name,
+            openshift_namespace,
+            technical_contact_email,
+            _ministry,
+            _division,
+            _branch,
+            second_technical_contact_email,
+            second_technical_contact_idir_userid,
+          ],
         );
       }
 
