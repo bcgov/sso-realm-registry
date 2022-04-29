@@ -6,11 +6,15 @@ jobs:
   pre-commit:
     runs-on: ubuntu-20.04
     steps:
-      - name: Test JQ
-        env:
-          JSON: ${{ toJSON(secrets) }}
-        run: |
-          echo ${{ env.JSON.github_token }}
-          test=$(echo "${{ env.JSON }}" | sed -E 's/([^\]|^)"/\1\\"/g')
-          echo "$test"
-          echo $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "$test")
+      - name: View context attributes
+        uses: actions/github-script@v6
+        with:
+          script: console.log(${{ toJSON(secrets) }})
+      # - name: Test JQ
+      #   env:
+      #     JSON: ${{ toJSON(secrets) }}
+      #   run: |
+      #     echo ${{ env.JSON.github_token }}
+      #     test=$(echo "${{ env.JSON }}" | sed -E 's/([^\]|^)"/\1\\"/g')
+      #     echo "$test"
+      #     echo $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "$test")
