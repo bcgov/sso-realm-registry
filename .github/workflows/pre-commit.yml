@@ -10,4 +10,4 @@ jobs:
         env:
           JSON: ${{ toJSON(secrets) }}
         run: |
-          echo $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< ${{ env.JSON }})
+          echo $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "${{ env.JSON }}")
