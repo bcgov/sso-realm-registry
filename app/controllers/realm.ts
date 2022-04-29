@@ -21,6 +21,8 @@ export async function getAllowedRealms(session: any) {
         product_owner_idir_userid,
         technical_contact_email,
         technical_contact_idir_userid,
+        second_technical_contact_email,
+        second_technical_contact_idir_userid,
         ministry,
         division,
         branch,

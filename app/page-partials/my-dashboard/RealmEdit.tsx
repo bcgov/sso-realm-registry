@@ -314,6 +314,29 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           disabled={!isAdmin && !isPO}
           {...register('technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
         />
+        <label htmlFor="second_technical_contact_email">
+          Second Technical Contact Email(optional)<span className="required">*</span>
+          <InfoPopover>
+            If not dithered, you can update this field with the appropriate optional technical contact email
+          </InfoPopover>
+        </label>
+        <input
+          type="text"
+          placeholder="Second Technical Contact Email"
+          {...register('second_technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
+        />
+        <label htmlFor="second_technical_contact_idir_userid">
+          Second Technical Contact Idir(optional)
+          <InfoPopover>
+            If not dithered, you can update this field with the appropriate optional technical contact Idir
+          </InfoPopover>
+        </label>
+        <input
+          type="text"
+          placeholder="Second Technical Contact Idir"
+          disabled={!isAdmin && !isPO}
+          {...register('second_technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
+        />
         {isAdmin && (
           <>
             {/* ADMIN NOTE 1 */}

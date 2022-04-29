@@ -13,6 +13,9 @@ export interface RealmProfile {
   technical_contact_email: string;
   technical_contact_idir_userid: string;
   technical_contact_name: string;
+  second_technical_contact_email: string;
+  second_technical_contact_idir_userid: string;
+  second_technical_contact_name: string;
   willing_to_move: string;
   when_to_move: string;
   idps: string[];
