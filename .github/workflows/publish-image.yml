@@ -86,5 +86,5 @@ jobs:
           namespace=${{ env.OPENSHIFT_NAMESPACE }}
           helm upgrade --install --atomic realm-registry-app . -n ${namespace} \
           -f values.yaml -f "values-${namespace}.yaml" \
-          $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "${{steps.json-secret.outputs.result}}")
+          $(jq -r 'keys[] as $k | "--set extraEnv.\($k)=\(.[$k])"' <<< "${{steps.json-secret.outputs.result}}")
         working-directory: ./helm/webapp
