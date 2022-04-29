@@ -11,5 +11,4 @@ jobs:
       - name: Test JQ
         run: |
           secret_json=${{ toJSON(secrets) }}
-          secret_str=$(jq -c '.' <<< "$secret_json")
-          echo $secret_str
+          echo $secret_json
