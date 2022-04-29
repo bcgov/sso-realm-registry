@@ -75,7 +75,7 @@ jobs:
         run: |
           secret_json=${{ toJSON(secrets) }}
           namespace=${{ env.OPENSHIFT_NAMESPACE }}
+          echo $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "$secret_json")
           helm upgrade --install --atomic realm-registry-app . -n ${namespace} \
-          -f values.yaml -f "values-${namespace}.yaml" \
-          $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "$secret_json")
+          -f values.yaml -f "values-${namespace}.yaml" $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "$secret_json")
         working-directory: ./helm/webapp
