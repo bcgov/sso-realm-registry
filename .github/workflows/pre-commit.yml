@@ -11,8 +11,10 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            return JSON.stringify(${{ toJSON(secrets) }}).replace(/\"/g, '\\"');
+            const aa = JSON.stringify(${{ toJSON(secrets) }}).replace(/\"/g, '\\"');
+            console.log(aa);
+            return aa;
           result-encoding: string
-      # - name: Test JQ
-      #   run: |
-      #     echo $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "${{steps.set-result.outputs.result}}")
+      - name: Test JQ
+        run: |
+          echo $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "${{steps.set-result.outputs.result}}")
