@@ -76,8 +76,9 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const result = JSON.stringify(${{ toJSON(secrets) }}).replace(/\"/g, '\\"');
-            return result;
+            const secrets = JSON.parse(JSON.stringify(${{ toJSON(secrets) }}));
+            ["github_token", "DEV_OPENSHIFT_TOKEN", "PROD_OPENSHIFT_TOKEN"].forEach(v => delete secrets[v]);
+            return JSON.stringify(secrets).replace(/\"/g, '\\"');
           result-encoding: string
 
       - name: Deploy app with Helm chart
