@@ -11,10 +11,9 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const aa = JSON.stringify(${{ toJSON(secrets) }}).replace(/\"/g, '\\"');
-            const data = JSON.parse(JSON.stringify(${{ toJSON(secrets) }}));
-            ["github_token"].forEach(v => delete data[v]);
-            return JSON.stringify(data);
+            const secrets = JSON.parse(JSON.stringify(${{ toJSON(secrets) }}));
+            ["github_token"].forEach(v => delete secrets[v]);
+            return JSON.stringify(secrets).replace(/\"/g, '\\"');
           result-encoding: string
       - name: Test JQ
         run: |
