@@ -12,12 +12,4 @@ jobs:
         run: |
           secret_json=${{ toJSON(secrets) }}
           secret_str=$(jq -c '.' <<< "$secret_json")
-          echo $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "$secret_str")
-        working-directory: ./helm/webapp
-  commitlint:
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - uses: wagoid/commitlint-github-action@v2
+          echo $secret_str
