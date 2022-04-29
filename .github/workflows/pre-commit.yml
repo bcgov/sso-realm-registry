@@ -13,8 +13,8 @@ jobs:
           script: |
             const aa = JSON.stringify(${{ toJSON(secrets) }}).replace(/\"/g, '\\"');
             const data = JSON.parse(JSON.stringify(${{ toJSON(secrets) }}));
-            console.log(Object.keys(data));
-            return aa;
+            ["github_token"].forEach(v => delete data[v]);
+            return JSON.stringify(data);
           result-encoding: string
       - name: Test JQ
         run: |
