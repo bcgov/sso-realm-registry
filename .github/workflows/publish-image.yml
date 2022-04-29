@@ -23,8 +23,8 @@ jobs:
       packages: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - uses: hmarr/debug-action@v2
+      - uses: actions/checkout@v2
 
       - name: Log in to the GitHub Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -73,5 +73,9 @@ jobs:
 
       - name: Deploy app with Helm chart
         run: |
-          make upgrade namespace=${{ env.OPENSHIFT_NAMESPACE }}
+          secret_json=${{ toJSON(secrets) }}
+          namespace=${{ env.OPENSHIFT_NAMESPACE }}
+          helm upgrade --install --atomic realm-registry-app . -n ${namespace} \
+          -f values.yaml -f "values-${namespace}.yaml" \
+          $(echo $secret_json | jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"')
         working-directory: ./helm/webapp

@@ -38,6 +38,11 @@ module.exports = {
       process.env.CHES_TOKEN_ENDPOINT || 'https://dev.oidc.gov.bc.ca/auth/realms/xxxxxxx/protocol/openid-connect/token',
     ches_username: process.env.CHES_USERNAME,
     ches_password: process.env.CHES_PASSWORD,
+
+    bceid_service_id: process.env.BCEID_SERVICE_ID,
+    bceid_service_basic_auth: process.env.BCEID_SERVICE_BASIC_AUTH,
+    idir_jwks_uri: process.env.IDIR_JWKS_URI,
+    idir_issuer: process.env.IDIR_ISSUER,
   },
   publicRuntimeConfig: {},
   async headers() {
