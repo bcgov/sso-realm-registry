@@ -133,6 +133,10 @@ spec:
               value: {{ .Values.postgres.database }}
             - name: PGSSL
               value: {{ .Values.postgres.ssl | quote }}
+            {{- range $key, $val := .Values.env }}
+            - name: {{  $key | quote | upper }}
+              value: {{ $val | quote }}
+            {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

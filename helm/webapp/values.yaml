@@ -64,6 +64,8 @@ jwt:
   secret:
   tokenExpiry: 1h
 
+env: {}
+
 resources:
   limits:
     cpu: 1
