@@ -11,7 +11,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            return JSON.stringify(${{ toJSON(secrets) }}).replace(/\"/g, '\\"'));
+            return JSON.stringify(${{ toJSON(secrets) }}).replace(/\"/g, '\\"');
           result-encoding: string
       # - name: Test JQ
       #   run: |
