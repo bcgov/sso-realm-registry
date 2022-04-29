@@ -9,4 +9,4 @@ jobs:
       - name: Test JQ
         run: |
           secret_json="${{ toJSON(secrets) }}"
-          echo $secret_json
+          echo $(jq -r 'keys[] as $k | "--set env.\($k)=\(.[$k])"' <<< "$secret_json")
