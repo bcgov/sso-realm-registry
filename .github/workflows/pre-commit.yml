@@ -9,7 +9,9 @@ jobs:
       - name: View context attributes
         uses: actions/github-script@v6
         with:
-          script: console.log(${{ toJSON(secrets) }})
+          script: |
+            const json = JSON.stringify(${{ toJSON(secrets) }});
+            console.log(json);
       # - name: Test JQ
       #   env:
       #     JSON: ${{ toJSON(secrets) }}
