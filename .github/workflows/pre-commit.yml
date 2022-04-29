@@ -6,9 +6,7 @@ jobs:
   pre-commit:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-
       - name: Test JQ
         run: |
-          secret_json=${{ toJSON(secrets) }}
+          secret_json="${{ toJSON(secrets) }}"
           echo $secret_json
