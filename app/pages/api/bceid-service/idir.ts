@@ -96,29 +96,36 @@ function parseAccount(data: any) {
   const guid = get(data, 'guid.0.value.0');
   const userId = get(data, 'userId.0.value.0');
   const displayName = get(data, 'displayName.0.value.0');
+
+  const baseContact = get(data, 'contact.0');
   const contact = {
-    email: get(data, 'contact.0.email.0.value.0'),
-    telephone: get(data, 'contact.0.telephone.0.value.0'),
-    preference: get(data, 'contact.0.preference.0.value.0'),
+    email: get(baseContact, 'email.0.value.0'),
+    telephone: get(baseContact, 'telephone.0.value.0'),
+    preference: get(baseContact, 'preference.0.value.0'),
   };
+
+  const baseIndividualIdentity = get(data, 'individualIdentity.0');
+  const baseName = get(baseIndividualIdentity, 'name.0.value.0');
   const individualIdentity = {
     name: {
-      firstname: get(data, 'individualIdentity.0.name.0.value.0.firstname.0.value.0'),
-      middleName: get(data, 'individualIdentity.0.name.0.value.0.middleName.0.value.0'),
-      otherMiddleName: get(data, 'individualIdentity.0.name.0.value.0.otherMiddleName.0.value.0'),
-      surname: get(data, 'individualIdentity.0.name.0.value.0.surname.0.value.0'),
-      initials: get(data, 'individualIdentity.0.name.0.value.0.initials.0.value.0'),
+      firstname: get(baseName, 'firstname.0.value.0'),
+      middleName: get(baseName, 'middleName.0.value.0'),
+      otherMiddleName: get(baseName, 'otherMiddleName.0.value.0'),
+      surname: get(baseName, 'surname.0.value.0'),
+      initials: get(baseName, 'initials.0.value.0'),
     },
-    dateOfBirth: get(data, 'internalIdentity.0.dateOfBirth.0.value.0'),
+    // dateOfBirth: get(baseIndividualIdentity, 'dateOfBirth.0.value.0'),
   };
+
+  const baseInternalIdentity = get(data, 'internalIdentity.0');
   const internalIdentity = {
-    title: get(data, 'internalIdentity.0.title.0.value.0'),
-    company: get(data, 'internalIdentity.0.company.0.value.0'),
-    organizationCode: get(data, 'internalIdentity.0.organizationCode.0.value.0'),
-    department: get(data, 'internalIdentity.0.department.0.value.0'),
-    office: get(data, 'internalIdentity.0.office.0.value.0'),
-    description: get(data, 'internalIdentity.0.description.0.value.0'),
-    employeeId: get(data, 'internalIdentity.0.employeeId.0.value.0'),
+    title: get(baseInternalIdentity, 'title.0.value.0'),
+    company: get(baseInternalIdentity, 'company.0.value.0'),
+    organizationCode: get(baseInternalIdentity, 'organizationCode.0.value.0'),
+    department: get(baseInternalIdentity, 'department.0.value.0'),
+    office: get(baseInternalIdentity, 'office.0.value.0'),
+    description: get(baseInternalIdentity, 'description.0.value.0'),
+    employeeId: get(baseInternalIdentity, 'employeeId.0.value.0'),
   };
 
   return {
@@ -126,6 +133,7 @@ function parseAccount(data: any) {
     userId,
     displayName,
     contact,
+    individualIdentity,
     internalIdentity,
   };
 }
