@@ -64,7 +64,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     if (!token) throw Error('invalid access');
 
     const idirUserGuide = await getIdirUserGuid(token);
-
     const xml = generateXML(field as SearchCriteria, search as string, idirUserGuide);
     const { response }: any = await soapRequest({
       url: serviceUrl,
@@ -79,6 +78,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     if (!data) throw Error('no data');
 
     const status = get(data, 'code.0');
+    if (status === 'Failed') {
+      const failureCode = get(data, 'failureCode.0');
+      const message = get(data, 'message.0');
+      throw Error(`${failureCode}: ${message}`);
+    }
+
     const message = get(data, 'message.0');
     const count = get(data, 'pagination.0.totalItems.0');
     const pageSize = get(data, 'pagination.0.requestedPageSize.0');
@@ -105,7 +110,8 @@ function parseAccount(data: any) {
   };
 
   const baseIndividualIdentity = get(data, 'individualIdentity.0');
-  const baseName = get(baseIndividualIdentity, 'name.0.value.0');
+  const baseName = get(baseIndividualIdentity, 'name.0');
+
   const individualIdentity = {
     name: {
       firstname: get(baseName, 'firstname.0.value.0'),
