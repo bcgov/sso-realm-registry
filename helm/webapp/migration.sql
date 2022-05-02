@@ -19,6 +19,8 @@ create table if not exists public.rosters (
 
 alter table public.rosters add column if not exists next_steps text;
 alter table public.rosters add column if not exists material_to_send text;
+alter table public.rosters add column if not exists second_technical_contact_email varchar(1000);
+alter table public.rosters add column if not exists second_technical_contact_idir_userid varchar(1000);
 
 create table if not exists public.surveys_1 (
     idir_userid varchar(1000),

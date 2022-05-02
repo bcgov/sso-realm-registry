@@ -26,6 +26,7 @@ function RealmTable({ realms, onEditClick }: Props) {
           <th>Openshift Namespace</th>
           <th>Product Owner</th>
           <th>Technical Owner</th>
+          <th>Second Technical Owner (Optional)</th>
           <th>Keycloak Realm Name</th>
           <th>IDPs Connected To</th>
           <th></th>
@@ -40,6 +41,7 @@ function RealmTable({ realms, onEditClick }: Props) {
                 <td>{realm.openshift_namespace}</td>
                 <td>{realm.product_owner_name}</td>
                 <td>{realm.technical_contact_name}</td>
+                <td>{realm.second_technical_contact_name}</td>
                 <td>{realm.realm}</td>
                 <td>{realm.idps?.join('/')}</td>
                 <td>

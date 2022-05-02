@@ -3,3 +3,4 @@ python 3.8.6
 kubectl 1.18.0
 helm 3.2.4
 terraform 1.1.4
+postgres 11.4
