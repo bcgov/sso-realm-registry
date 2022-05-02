@@ -41,14 +41,16 @@ export async function getAllowedRealms(session: any) {
     if (kcAdminClient) {
       for (let x = 0; x < result?.rows.length; x++) {
         const realm = result?.rows[x];
-        const [realmData, poName, techName] = await Promise.all([
+        const [realmData, poName, techName, secTechName] = await Promise.all([
           kcCore.getRealm(realm.realm),
           kcCore.getIdirUserName(realm.product_owner_idir_userid),
           kcCore.getIdirUserName(realm.technical_contact_idir_userid),
+          kcCore.getIdirUserName(realm.second_technical_contact_idir_userid),
         ]);
 
         realm.product_owner_name = poName;
         realm.technical_contact_name = techName;
+        realm.second_technical_contact_name = secTechName;
         realm.displayName = realmData?.displayName || '';
         realm.idps = realmData?.identityProviders?.map((v) => v.displayName || v.alias) || [];
       }
