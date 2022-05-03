@@ -153,7 +153,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               division=$9,
               branch=$10,
               second_technical_contact_email=$11,
-              second_technical_contact_idir_userid=$12
+              second_technical_contact_idir_userid=$12,
               updated_at=now()
             WHERE id=$1 AND LOWER(product_owner_idir_userid)=LOWER($2)
             RETURNING *`,

@@ -159,7 +159,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         variant: 'success',
         fadeOut: 2500,
         closable: true,
-        content: 'Realm profile hass been updated successfully',
+        content: 'Realm profile has been updated successfully',
       });
     }
   };
@@ -283,7 +283,10 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         />
         <label htmlFor="product_owner_idir_userid">
           Product Owner Idir
-          <InfoPopover>If not dithered, you can update this field with the appropriate product owner Idir</InfoPopover>
+          <InfoPopover>
+            If not dithered, you can update this field with the appropriate product owner Idir. <br />
+            If you want to transfer the product owner of this realm, please contact bcgov.sso@gov.bc.ca
+          </InfoPopover>
         </label>
         <input
           type="text"
