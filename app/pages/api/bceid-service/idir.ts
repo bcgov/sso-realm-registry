@@ -27,8 +27,8 @@ const generateXML = (
   criteria: SearchCriteria,
   key: string,
   idirUserGuide: string,
-  limit: string,
-  page: string,
+  limit: number,
+  page: number,
 ) => `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:V10="http://www.bceid.ca/webservices/Client/V10/">
     <soapenv:Header />
@@ -39,8 +39,8 @@ const generateXML = (
                 <V10:requesterAccountTypeCode>Internal</V10:requesterAccountTypeCode>
                 <V10:requesterUserGuid>${idirUserGuide}</V10:requesterUserGuid>
                 <V10:pagination>
-                    <V10:pageSizeMaximum>${limit || '100'}</V10:pageSizeMaximum>
-                    <V10:pageIndex>${page || '1'}</V10:pageIndex>
+                    <V10:pageSizeMaximum>${String(limit || 100)}</V10:pageSizeMaximum>
+                    <V10:pageIndex>${String(page || 1)}</V10:pageIndex>
                 </V10:pagination>
                 <V10:sort>
                     <V10:direction>Ascending</V10:direction>
@@ -48,7 +48,7 @@ const generateXML = (
                 </V10:sort>
                 <V10:accountMatch>
                     <V10:${criteria}>
-                       <V10:value>${encodeURIComponent(key)}</V10:value>
+                       <V10:value>${key}</V10:value>
                        <V10:matchPropertyUsing>StartsWith</V10:matchPropertyUsing>
                     </V10:${criteria}>
                  </V10:accountMatch>
@@ -59,14 +59,14 @@ const generateXML = (
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
   try {
-    const { query = {}, headers: reqHeaders = {} } = req;
-    const { field, search, limit, page } = query;
+    const { body: payload = {}, headers: reqHeaders = {} } = req;
+    const { field, search, limit, page } = payload;
     const { authorization } = reqHeaders;
     const token = authorization?.split('Bearer ')[1];
     if (!token) throw Error('invalid access');
 
     const idirUserGuide = await getIdirUserGuid(token);
-    const xml = generateXML(field as SearchCriteria, search as string, idirUserGuide, limit as string, page as string);
+    const xml = generateXML(field as SearchCriteria, search, idirUserGuide, limit, page);
     const { response }: any = await soapRequest({
       url: serviceUrl,
       headers: defaultHeaders,
