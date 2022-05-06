@@ -15,6 +15,7 @@ import { getMinistries, getDivisions, getBranches } from 'services/meta';
 import { UserSession } from 'types/user-session';
 import styled from 'styled-components';
 import { RealmProfile } from 'types/realm-profile';
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
 
 const LeftMargin = styled.span`
   margin-left: 2px;
@@ -164,13 +165,18 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
     }
   };
 
+  function clickToPopup(popupInfo: any) {
+    popupInfo = document.getElementById('PopupInfo');
+    popupInfo.classList.toggle('show-info');
+  }
+
   const isAdmin = currentUser.client_roles.includes('sso-admin');
   const isPO = currentUser.idir_username.toLocaleLowerCase() === realm.product_owner_idir_userid.toLocaleLowerCase();
 
   if (!realm) return null;
 
   const values = getValues();
-
+  var popupInfo: any;
   return (
     <>
       <h2>Realm Name: {realm.realm}</h2>
@@ -284,9 +290,19 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <label htmlFor="product_owner_idir_userid">
           Product Owner Idir
           <InfoPopover>
-            If not dithered, you can update this field with the appropriate product owner Idir. <br />
-            If you want to transfer the product owner of this realm, please contact bcgov.sso@gov.bc.ca
+            If not dithered, you can update this field with the appropriate product owner Idir
+            <br />
           </InfoPopover>
+          &nbsp;
+          <div className="popup-info-box" onClick={() => clickToPopup(popupInfo)}>
+            <FontAwesomeIcon icon={faEnvelope} />
+            <span className="popup-text" id="PopupInfo">
+              If you want to transfer the product owner of this realm, please contact{' '}
+              <span className="underline">
+                <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
+              </span>
+            </span>
+          </div>
         </label>
         <input
           type="text"

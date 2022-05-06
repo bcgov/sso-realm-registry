@@ -14,3 +14,35 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.popup-info-box {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.popup-text {
+  visibility: hidden;
+  position: absolute;
+  background-color: white;
+  width: 350px;
+  height: 120px;
+  border: 1px solid gainsboro;
+  border-radius: 5px;
+  padding: 20px;
+  text-align: start;
+  vertical-align: middle;
+  font-weight: 400;
+  font-size: medium;
+  font-family: system-ui;
+  line-height: 1.5;
+  margin-left: 10px;
+}
+
+.show-info {
+  visibility: visible;
+}
+
+.underline {
+  text-decoration: underline;
+}
