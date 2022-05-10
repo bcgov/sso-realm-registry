@@ -172,18 +172,12 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
     }
   };
 
-  function clickToPopup(popupInfo: any) {
-    popupInfo = document.getElementById('PopupInfo');
-    popupInfo.classList.toggle('show-info');
-  }
-
   const isAdmin = currentUser.client_roles.includes('sso-admin');
   const isPO = currentUser.idir_username.toLocaleLowerCase() === realm.product_owner_idir_userid.toLocaleLowerCase();
 
   if (!realm) return null;
 
   const values = getValues();
-  var popupInfo: any;
   return (
     <>
       <h2>Realm Name: {realm.realm}</h2>
