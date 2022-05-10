@@ -21,7 +21,25 @@ const LeftMargin = styled.span`
   margin-left: 2px;
 `;
 
-const InfoPopover = ({ children }: { children: React.ReactNode }) => {
+const InfoPopover = ({ triggerType, children }: { triggerType?: boolean; children: React.ReactNode }) => {
+  if (triggerType) {
+    return (
+      <OverlayTrigger
+        trigger={['click']}
+        placement="right-start"
+        overlay={
+          <Popover id="popover-basic">
+            <Popover.Body>{children}</Popover.Body>
+          </Popover>
+        }
+        delay={{ show: 200, hide: 200 }}
+      >
+        <LeftMargin>
+          <FontAwesomeIcon color="#777777" icon={faEnvelope} />
+        </LeftMargin>
+      </OverlayTrigger>
+    );
+  }
   return (
     <OverlayTrigger
       trigger={['hover', 'focus']}
@@ -294,15 +312,14 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
             <br />
           </InfoPopover>
           &nbsp;
-          <div className="popup-info-box" onClick={() => clickToPopup(popupInfo)}>
-            <FontAwesomeIcon icon={faEnvelope} />
-            <span className="popup-text" id="PopupInfo">
-              If you want to transfer the product owner of this realm, please contact{' '}
-              <span className="underline">
-                <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
-              </span>
-            </span>
-          </div>
+          <InfoPopover triggerType={true}>
+            Please contact{' '}
+            <span className="underline">
+              <a href="mailto:bcgov.sso@gov.bc.ca">Pathfinder SSO Team</a>
+            </span>{' '}
+            if you want to transfer the product owner of this realm
+            <br />
+          </InfoPopover>
         </label>
         <input
           type="text"
