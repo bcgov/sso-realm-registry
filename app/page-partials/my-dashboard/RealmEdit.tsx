@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import OverlayTrigger, { OverlayTriggerType } from 'react-bootstrap/OverlayTrigger';
 import Popover from 'react-bootstrap/Popover';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { IconDefinition, faInfoCircle, faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import Loader from 'react-loader-spinner';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import Button from '@button-inc/bcgov-theme/Button';
@@ -20,10 +20,18 @@ const LeftMargin = styled.span`
   margin-left: 2px;
 `;
 
-const InfoPopover = ({ children }: { children: React.ReactNode }) => {
+const InfoPopover = ({
+  icon = faInfoCircle,
+  trigger = ['hover', 'focus'],
+  children,
+}: {
+  icon?: IconDefinition;
+  trigger?: OverlayTriggerType[];
+  children: React.ReactNode;
+}) => {
   return (
     <OverlayTrigger
-      trigger={['hover', 'focus']}
+      trigger={trigger}
       placement="right-start"
       overlay={
         <Popover id="popover-basic">
@@ -33,7 +41,7 @@ const InfoPopover = ({ children }: { children: React.ReactNode }) => {
       delay={{ show: 200, hide: 200 }}
     >
       <LeftMargin>
-        <FontAwesomeIcon color="#777777" icon={faInfoCircle} />
+        <FontAwesomeIcon color="#777777" icon={icon} />
       </LeftMargin>
     </OverlayTrigger>
   );
@@ -170,7 +178,6 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
   if (!realm) return null;
 
   const values = getValues();
-
   return (
     <>
       <h2>Realm Name: {realm.realm}</h2>
@@ -284,8 +291,17 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <label htmlFor="product_owner_idir_userid">
           Product Owner Idir
           <InfoPopover>
-            If not dithered, you can update this field with the appropriate product owner Idir. <br />
-            If you want to transfer the product owner of this realm, please contact bcgov.sso@gov.bc.ca
+            If not dithered, you can update this field with the appropriate product owner Idir
+            <br />
+          </InfoPopover>
+          &nbsp;
+          <InfoPopover icon={faEnvelope} trigger={['click']}>
+            Please contact{' '}
+            <span className="underline">
+              <a href="mailto:bcgov.sso@gov.bc.ca">Pathfinder SSO Team</a>
+            </span>{' '}
+            if you want to transfer the product owner of this realm
+            <br />
           </InfoPopover>
         </label>
         <input
