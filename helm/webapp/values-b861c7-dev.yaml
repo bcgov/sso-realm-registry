@@ -12,3 +12,24 @@ sso:
 env:
   IDIR_JWKS_URI: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth/protocol/openid-connect/certs
   IDIR_ISSUER: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth
+
+postgres:
+  user: realm_registry
+  password:
+    secret: realm-registry-patroni-appusers
+    key: password-appuser1
+  database: realm_registry
+  ssl: true
+
+patroni:
+  replicaCount: 2
+
+  additionalCredentials:
+    realm_registry:
+
+  resources: {}
+  persistentVolume:
+    size: 10Gi
+
+  podDisruptionBudget:
+    enabled: true
