@@ -85,7 +85,7 @@ jobs:
       - name: Deploy app with Helm chart
         run: |
           namespace=${{ env.OPENSHIFT_NAMESPACE }}
-          helm upgrade --install --atomic realm-registry-app . -n ${namespace} \
+          helm upgrade --install --atomic realm-registry . -n ${namespace} \
           -f values.yaml -f "values-${namespace}.yaml" \
           $(jq -r 'keys[] as $k | "--set extraEnv.\($k)=\(.[$k])"' <<< "${{steps.json-secret.outputs.result}}")
         working-directory: ./helm/webapp
