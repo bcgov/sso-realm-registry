@@ -9,6 +9,7 @@ on:
     #   - "*"
     paths:
       - 'app/**'
+      - 'helm/**'
       - '.github/workflows/publish-image.yml'
 
 env:
