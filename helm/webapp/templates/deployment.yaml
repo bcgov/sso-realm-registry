@@ -108,7 +108,7 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ .Values.envSecret }}
-          {{- else }}
+          {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
