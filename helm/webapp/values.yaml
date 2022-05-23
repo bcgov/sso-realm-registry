@@ -20,52 +20,30 @@ route:
 
 sso:
   url: http://localhost:8080
-  clientId: realm-profile-app-760
-  clientSecret:
-    secret: realm-profile-sso-service-account
-    key: client-secret
   redirectUri: http://localhost:3000
   logoutRedirectUri: http://localhost:3000
   authorizationResponseType: code
   authorizationScope: openid
   tokenGrantType: authorization_code
 
-kc:
-  dev:
-    url: https://dev.oidc.gov.bc.ca
-    clientId: 'script-cli'
-    clientSecret:
-      secret: keycloak-cli-service-account
-      key: client-secret-dev
-  test:
-    url: https://test.oidc.gov.bc.ca
-    clientId: 'script-cli'
-    clientSecret:
-      secret: keycloak-cli-service-account
-      key: client-secret-test
-  prod:
-    url: https://oidc.gov.bc.ca
-    clientId: 'script-cli'
-    clientSecret:
-      secret: keycloak-cli-service-account
-      key: client-secret-prod
-
 postgres:
   host: realm-registry-patroni
   port: 5432
-  user: postgres
+  username:
+    secret: realm-registry-patroni-appusers
+    key: username-appuser1
   password:
-    secret: realm-registry-patroni
-    key: password-superuser
+    secret: realm-registry-patroni-appusers
+    key: password-appuser1
   database: realm_registry
   ssl: true
 
 jwt:
-  secret:
   tokenExpiry: 1h
 
 env: {}
 extraEnv: {}
+envSecret: realm-registry
 
 resources:
   limits:

@@ -5,8 +5,6 @@ on:
     branches:
       - main
       - dev
-    # tags:
-    #   - "*"
     paths:
       - 'app/**'
       - 'helm/**'
@@ -72,21 +70,10 @@ jobs:
           namespace: ${{ env.OPENSHIFT_NAMESPACE }}
           insecure_skip_tls_verify: true
 
-      - name: JSON stringify Secret object
-        id: json-secret
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const secrets = JSON.parse(JSON.stringify(${{ toJSON(secrets) }}));
-            ["github_token", "DEV_OPENSHIFT_TOKEN", "PROD_OPENSHIFT_TOKEN"].forEach(v => delete secrets[v]);
-            return JSON.stringify(secrets).replace(/\"/g, '\\"');
-          result-encoding: string
-
       - name: Deploy app with Helm chart
         run: |
           namespace=${{ env.OPENSHIFT_NAMESPACE }}
           helm dep up
           helm upgrade --install --atomic realm-registry . -n ${namespace} \
-          -f values.yaml -f "values-${namespace}.yaml" \
-          $(jq -r 'keys[] as $k | "--set extraEnv.\($k)=\(.[$k])"' <<< "${{steps.json-secret.outputs.result}}")
+          -f values.yaml -f "values-${namespace}.yaml"
         working-directory: ./helm/webapp
