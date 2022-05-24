@@ -1,3 +1,6 @@
+image:
+  tag: dev
+
 route:
   host: realm-registry-dev.apps.silver.devops.gov.bc.ca
 
@@ -5,3 +8,20 @@ sso:
   url: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth
   redirectUri: http://realm-registry-dev.apps.silver.devops.gov.bc.ca/oidc/keycloak
   logoutRedirectUri: http://realm-registry-dev.apps.silver.devops.gov.bc.ca
+
+env:
+  IDIR_JWKS_URI: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth/protocol/openid-connect/certs
+  IDIR_ISSUER: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth
+
+patroni:
+  replicaCount: 2
+
+  additionalCredentials:
+    realm_registry:
+
+  resources: {}
+  persistentVolume:
+    size: 10Gi
+
+  podDisruptionBudget:
+    enabled: true

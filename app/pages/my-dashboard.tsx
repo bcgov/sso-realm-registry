@@ -80,6 +80,7 @@ function MyDashboard({ currentUser }: Props) {
 
   const handleEditClick = (id: string) => {
     // router.push(`/realm/${id}`);
+    window.scrollTo(0, 0);
     setSelectedId(id);
   };
 

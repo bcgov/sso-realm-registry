@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import OverlayTrigger, { OverlayTriggerType } from 'react-bootstrap/OverlayTrigger';
 import Popover from 'react-bootstrap/Popover';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { IconDefinition, faInfoCircle, faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import Loader from 'react-loader-spinner';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import Button from '@button-inc/bcgov-theme/Button';
@@ -20,10 +20,18 @@ const LeftMargin = styled.span`
   margin-left: 2px;
 `;
 
-const InfoPopover = ({ children }: { children: React.ReactNode }) => {
+const InfoPopover = ({
+  icon = faInfoCircle,
+  trigger = ['hover', 'focus'],
+  children,
+}: {
+  icon?: IconDefinition;
+  trigger?: OverlayTriggerType[];
+  children: React.ReactNode;
+}) => {
   return (
     <OverlayTrigger
-      trigger={['hover', 'focus']}
+      trigger={trigger}
       placement="right-start"
       overlay={
         <Popover id="popover-basic">
@@ -33,7 +41,7 @@ const InfoPopover = ({ children }: { children: React.ReactNode }) => {
       delay={{ show: 200, hide: 200 }}
     >
       <LeftMargin>
-        <FontAwesomeIcon color="#777777" icon={faInfoCircle} />
+        <FontAwesomeIcon color="#777777" icon={icon} />
       </LeftMargin>
     </OverlayTrigger>
   );
@@ -159,7 +167,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         variant: 'success',
         fadeOut: 2500,
         closable: true,
-        content: 'Realm profile hass been updated successfully',
+        content: 'Realm profile has been updated successfully',
       });
     }
   };
@@ -170,7 +178,6 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
   if (!realm) return null;
 
   const values = getValues();
-
   return (
     <>
       <h2>Realm Name: {realm.realm}</h2>
@@ -283,7 +290,19 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         />
         <label htmlFor="product_owner_idir_userid">
           Product Owner Idir
-          <InfoPopover>If not dithered, you can update this field with the appropriate product owner Idir</InfoPopover>
+          <InfoPopover>
+            If not dithered, you can update this field with the appropriate product owner Idir
+            <br />
+          </InfoPopover>
+          &nbsp;
+          <InfoPopover icon={faEnvelope} trigger={['click']}>
+            Please contact{' '}
+            <span className="underline">
+              <a href="mailto:bcgov.sso@gov.bc.ca">Pathfinder SSO Team</a>
+            </span>{' '}
+            if you want to transfer the product owner of this realm
+            <br />
+          </InfoPopover>
         </label>
         <input
           type="text"
@@ -313,6 +332,29 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           placeholder="Technical Contact Idir"
           disabled={!isAdmin && !isPO}
           {...register('technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
+        />
+        <label htmlFor="second_technical_contact_email">
+          Second Technical Contact Email(optional)<span className="required">*</span>
+          <InfoPopover>
+            If not dithered, you can update this field with the appropriate optional technical contact email
+          </InfoPopover>
+        </label>
+        <input
+          type="text"
+          placeholder="Second Technical Contact Email"
+          {...register('second_technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
+        />
+        <label htmlFor="second_technical_contact_idir_userid">
+          Second Technical Contact Idir(optional)
+          <InfoPopover>
+            If not dithered, you can update this field with the appropriate optional technical contact Idir
+          </InfoPopover>
+        </label>
+        <input
+          type="text"
+          placeholder="Second Technical Contact Idir"
+          disabled={!isAdmin && !isPO}
+          {...register('second_technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
         />
         {isAdmin && (
           <>

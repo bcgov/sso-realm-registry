@@ -5,10 +5,9 @@ on:
     branches:
       - main
       - dev
-    # tags:
-    #   - "*"
     paths:
       - 'app/**'
+      - 'helm/**'
       - '.github/workflows/publish-image.yml'
 
 env:
@@ -23,8 +22,8 @@ jobs:
       packages: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - uses: hmarr/debug-action@v2
+      - uses: actions/checkout@v2
 
       - name: Log in to the GitHub Container registry
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -73,5 +72,8 @@ jobs:
 
       - name: Deploy app with Helm chart
         run: |
-          make upgrade namespace=${{ env.OPENSHIFT_NAMESPACE }}
+          namespace=${{ env.OPENSHIFT_NAMESPACE }}
+          helm dep up
+          helm upgrade --install --atomic realm-registry . -n ${namespace} \
+          -f values.yaml -f "values-${namespace}.yaml"
         working-directory: ./helm/webapp

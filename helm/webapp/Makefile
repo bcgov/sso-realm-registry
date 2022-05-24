@@ -4,19 +4,19 @@ namespace=
 
 .PHONY: install
 install:
-	helm install realm-registry-app . -n "${namespace}" -f values.yaml -f "values-${namespace}.yaml"
+	helm install realm-registry . -n "${namespace}" -f values.yaml -f "values-${namespace}.yaml"
 
 .PHONY: upgrade
 upgrade:
-	helm upgrade --install realm-registry-app . -n "${namespace}" -f values.yaml -f "values-${namespace}.yaml"
+	helm upgrade --install realm-registry . -n "${namespace}" -f values.yaml -f "values-${namespace}.yaml"
 
 .PHONY: lint
 lint:
-	helm upgrade --dry-run --install realm-registry-app -n "${namespace}" -f values.yaml -f "values-${namespace}.yaml"
+	helm upgrade --dry-run --install realm-registry -n "${namespace}" -f values.yaml -f "values-${namespace}.yaml"
 
 .PHONY: uninstall
 uninstall:
-	helm uninstall realm-registry-app -n ${namespace}
+	helm uninstall realm-registry -n ${namespace}
 
 .PHONY: force-install
 force-install: uninstall
