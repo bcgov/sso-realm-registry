@@ -120,7 +120,7 @@ function MyDashboard({ currentUser }: Props) {
       <ResponsiveContainer rules={mediaRules}>
         {loading ? (
           <AlignCenter>
-            <SpinnerGrid color="#000" height={45} width={45} visible={loading} />
+            <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />
           </AlignCenter>
         ) : (
           <Grid cols={10} style={{ overflowX: 'hidden' }}>
