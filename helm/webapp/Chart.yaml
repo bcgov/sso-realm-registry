@@ -7,3 +7,6 @@ dependencies:
   - name: patroni
     version: 1.1.2
     repository: https://bcgov.github.io/sso-helm-charts
+  - name: backup-storage
+    repository: https://bcgov.github.io/helm-charts
+    alias: backupDB

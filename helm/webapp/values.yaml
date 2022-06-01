@@ -58,3 +58,21 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+backupDB:
+  nameOverride: backup-storage
+  fullnameOverride: backup-storage
+
+  backupConfig: |
+    postgres=realm-registry-patroni:5432/realm_registry
+    0 1 * * * default ./backup.sh -s
+    0 4 * * * default ./backup.sh -s all
+
+  db:
+    secretName: realm-registry-patroni-appusers
+    usernameKey: username-appuser1
+    passwordKey: password-appuser1
+
+  persistence:
+    backup:
+      size: 1Gi
