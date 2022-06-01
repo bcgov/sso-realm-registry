@@ -1,10 +1,7 @@
-import 'react-loader-spinner/dist/loader/css/react-spinner-loader.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/globals.css';
 import React, { useState, useEffect } from 'react';
-import { GetStaticProps, GetStaticPaths, GetServerSidePropsContext } from 'next';
 import { useRouter } from 'next/router';
-import getConfig from 'next/config';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import store2 from 'store2';
@@ -14,7 +11,9 @@ import Layout from 'layout/Layout';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState(store2.session.get('app-session'));
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => setCurrentUser(store2.session.get('app-session')), []);
 
   useEffect(() => {
     const redirect = async () => {

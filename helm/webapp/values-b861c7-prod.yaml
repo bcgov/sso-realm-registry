@@ -10,6 +10,7 @@ sso:
   logoutRedirectUri: http://realm-registry.apps.silver.devops.gov.bc.ca
 
 env:
+  SECURE_HEADERS: 'true'
   IDIR_JWKS_URI: https://oidc.gov.bc.ca/auth/realms/onestopauth/protocol/openid-connect/certs
   IDIR_ISSUER: https://oidc.gov.bc.ca/auth/realms/onestopauth
 

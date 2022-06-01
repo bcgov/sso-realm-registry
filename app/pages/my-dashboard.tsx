@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import Loader from 'react-loader-spinner';
+import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import styled from 'styled-components';
 import Button from '@button-inc/bcgov-theme/Button';
 import Modal from '@button-inc/bcgov-theme/Modal';
@@ -120,7 +120,7 @@ function MyDashboard({ currentUser }: Props) {
       <ResponsiveContainer rules={mediaRules}>
         {loading ? (
           <AlignCenter>
-            <Loader type="Grid" color="#000" height={45} width={45} visible={loading} />
+            <SpinnerGrid color="#000" height={45} width={45} visible={loading} />
           </AlignCenter>
         ) : (
           <Grid cols={10} style={{ overflowX: 'hidden' }}>
