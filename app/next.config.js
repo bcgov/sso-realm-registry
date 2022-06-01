@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
   reactStrictMode: true,
+  compiler: {
+    styledComponents: true,
+  },
   serverRuntimeConfig: {
     app_env: process.env.APP_ENV || 'development',
     sso_configuration_url: process.env.SSO_CONFIGURATION_URL,
@@ -46,6 +49,8 @@ module.exports = {
   },
   publicRuntimeConfig: {},
   async headers() {
+    if (process.env.SECURE_HEADERS === 'false') return [];
+
     return [
       {
         source: '/(.*)',
