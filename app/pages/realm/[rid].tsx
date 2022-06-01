@@ -84,8 +84,8 @@ function EditRealm({ alert, currentUser }: Props) {
     }
   };
 
-  const onSubmit = async (formData: RealmProfile) => {
-    const [data, err] = await updateRealmProfile(rid as string, formData);
+  const onSubmit = async (formData: any) => {
+    const [data, err] = await updateRealmProfile(rid as string, formData as RealmProfile);
     if (!err) {
       updateRealm(data as RealmProfile);
 
