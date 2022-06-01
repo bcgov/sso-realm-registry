@@ -8,5 +8,6 @@ dependencies:
     version: 1.1.2
     repository: https://bcgov.github.io/sso-helm-charts
   - name: backup-storage
+    version: 0.1.10
     repository: https://bcgov.github.io/helm-charts
     alias: backupDB
