@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
 import OverlayTrigger, { OverlayTriggerType } from 'react-bootstrap/OverlayTrigger';
 import Popover from 'react-bootstrap/Popover';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition, faInfoCircle, faEnvelope } from '@fortawesome/free-solid-svg-icons';
-import Loader from 'react-loader-spinner';
-import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
+import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import Button from '@button-inc/bcgov-theme/Button';
-import Checkbox from '@button-inc/bcgov-theme/Checkbox';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { getRealmProfile, updateRealmProfile } from 'services/realm';
 import { getMinistries, getDivisions, getBranches } from 'services/meta';
@@ -158,8 +155,8 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
     fn();
   }, [realm]);
 
-  const onSubmit = async (formData: RealmProfile) => {
-    const [data, err] = await updateRealmProfile(realm.id, formData);
+  const onSubmit = async (formData: any) => {
+    const [data, err] = await updateRealmProfile(realm.id, formData as RealmProfile);
     if (!err) {
       onUpdate(data as RealmProfile);
 
@@ -215,7 +212,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         />
         {loading ? (
           <AlignCenter>
-            <Loader type="Grid" color="#000" height={45} width={45} visible={loading} />
+            <SpinnerGrid color="#000" height={45} width={45} visible={loading} />
           </AlignCenter>
         ) : (
           <>
