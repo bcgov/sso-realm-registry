@@ -16,10 +16,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     if (!session) return res.status(401).json({ success: false, error: 'jwt expired' });
 
     const { search, env } = req.query;
-    if (search?.length < 3) return res.status(401).json({ success: false, error: 'search key less than 3 characters' });
+    const searchParam = String(search);
+
+    if (searchParam?.length < 3)
+      return res.status(401).json({ success: false, error: 'search key less than 3 characters' });
 
     const runIdirUser = async (kcCore: any) => {
-      let users: any[] = (await kcCore.findUser(search as string)) || [];
+      let users: any[] = (await kcCore.findUser(searchParam)) || [];
       if (users.length === 0) {
         return { result: 'notfound' };
       }

@@ -49,7 +49,7 @@ const TableContent = ({
         <>
           <Button type="button" size="small" onClick={handleDeleteClick}>
             {deletingEnvs.includes(env) ? (
-              <SpinnerGrid color="#fff" height={15} width={15} visible={true} />
+              <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" visible={true} />
             ) : (
               <span>Delete</span>
             )}
@@ -174,7 +174,11 @@ function DuplicateIDIR({}: Props) {
           </Grid.Col>
           <Grid.Col span={3}>
             <Button variant="primary" size="medium" onClick={handleSearchSubmit} disabled={searchKey.length < 3}>
-              {loading ? <SpinnerGrid color="#fff" height={15} width={15} visible={loading} /> : <span>Search</span>}
+              {loading ? (
+                <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" visible={loading} />
+              ) : (
+                <span>Search</span>
+              )}
             </Button>
           </Grid.Col>
         </Grid.Row>

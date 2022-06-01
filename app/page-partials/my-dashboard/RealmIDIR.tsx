@@ -132,7 +132,11 @@ function RealmIDIR({ realm }: Props) {
           >
             <Italic>{result.username}</Italic>
             <Button type="button" size="small" onClick={handleDeleteClick}>
-              {deleting ? <SpinnerGrid color="#fff" height={15} width={15} visible={deleting} /> : <span>Delete</span>}
+              {deleting ? (
+                <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" visible={deleting} />
+              ) : (
+                <span>Delete</span>
+              )}
             </Button>
           </NumberedContents>
           <DeleteUserConfirmationModal open={openDelete} onChange={handleDeleteChange} />
@@ -200,7 +204,11 @@ function RealmIDIR({ realm }: Props) {
           onChange={handleSearchChange}
         />
         <Button type="button" size="small" onClick={handleSearchSubmit}>
-          {loading ? <SpinnerGrid color="#fff" height={15} width={15} visible={loading} /> : <span>Search</span>}
+          {loading ? (
+            <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" visible={loading} />
+          ) : (
+            <span>Search</span>
+          )}
         </Button>
       </NumberedContents>
       {bottomSection}
