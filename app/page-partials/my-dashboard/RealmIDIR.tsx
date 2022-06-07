@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import Loader from 'react-loader-spinner';
+import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import Link from '@button-inc/bcgov-theme/Link';
 import Input from '@button-inc/bcgov-theme/Input';
 import Button from '@button-inc/bcgov-theme/Button';
@@ -133,7 +133,7 @@ function RealmIDIR({ realm }: Props) {
             <Italic>{result.username}</Italic>
             <Button type="button" size="small" onClick={handleDeleteClick}>
               {deleting ? (
-                <Loader type="Grid" color="#fff" height={15} width={15} visible={deleting} />
+                <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" visible={deleting} />
               ) : (
                 <span>Delete</span>
               )}
@@ -204,7 +204,11 @@ function RealmIDIR({ realm }: Props) {
           onChange={handleSearchChange}
         />
         <Button type="button" size="small" onClick={handleSearchSubmit}>
-          {loading ? <Loader type="Grid" color="#fff" height={15} width={15} visible={loading} /> : <span>Search</span>}
+          {loading ? (
+            <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" visible={loading} />
+          ) : (
+            <span>Search</span>
+          )}
         </Button>
       </NumberedContents>
       {bottomSection}

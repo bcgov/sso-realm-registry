@@ -58,3 +58,24 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+patroni:
+  replicaCount: 2
+
+  additionalCredentials:
+    - username: realm_registry
+      password:
+
+  walG:
+    enabled: true
+    scheduleCronJob: 00 01 * * *
+    retainBackups: 2
+    pvc:
+      size: 1Gi
+
+  resources: {}
+  persistentVolume:
+    size: 10Gi
+
+  podDisruptionBudget:
+    enabled: true

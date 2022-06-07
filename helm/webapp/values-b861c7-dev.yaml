@@ -10,18 +10,19 @@ sso:
   logoutRedirectUri: http://realm-registry-dev.apps.silver.devops.gov.bc.ca
 
 env:
+  SECURE_HEADERS: 'true'
   IDIR_JWKS_URI: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth/protocol/openid-connect/certs
   IDIR_ISSUER: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth
 
 patroni:
-  replicaCount: 2
+  image:
+    repository: ghcr.io/junminahn/spilo
+    pullPolicy: Always
+    tag: 2.1-p5
 
-  additionalCredentials:
-    realm_registry:
-
-  resources: {}
-  persistentVolume:
-    size: 10Gi
-
-  podDisruptionBudget:
+  walG:
     enabled: true
+    scheduleCronJob: 00 01 * * *
+    retainBackups: 2
+    pvc:
+      size: 1Gi
