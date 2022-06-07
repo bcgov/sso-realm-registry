@@ -59,20 +59,23 @@ tolerations: []
 
 affinity: {}
 
-backupDB:
-  nameOverride: backup-storage
-  fullnameOverride: backup-storage
+patroni:
+  replicaCount: 2
 
-  backupConfig: |
-    postgres=realm-registry-patroni:5432/realm_registry
-    0 1 * * * default ./backup.sh -s
-    0 4 * * * default ./backup.sh -s all
+  additionalCredentials:
+    - username: realm_registry
+      password:
 
-  db:
-    secretName: realm-registry-patroni-appusers
-    usernameKey: username-appuser1
-    passwordKey: password-appuser1
-
-  persistence:
-    backup:
+  walG:
+    enabled: true
+    scheduleCronJob: 00 01 * * *
+    retainBackups: 2
+    pvc:
       size: 1Gi
+
+  resources: {}
+  persistentVolume:
+    size: 10Gi
+
+  podDisruptionBudget:
+    enabled: true
