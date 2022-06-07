@@ -5,6 +5,27 @@ repository for SSO realm registry and helm chart
 ## Tech Stack
 
 - [NextJS (ReactJS)](https://nextjs.org/): a React framework that gives you building blocks to create web applications.
+- [Spilo](https://github.com/zalando/spilo): a Docker image that provides [PostgreSQL](https://www.postgresql.org/) and [Patroni](https://github.com/zalando/patroni) bundled together.
+
+  - Postgres 14 and Patroni 2.1.3 are currently installed in OCP namespaces.
+  - We check PostgreSQL security vulnerabilities in supported versions and release history to mitigate the known issues and potential version deprecation:
+    - see https://www.postgresql.org/support/versioning/
+    - see https://www.postgresql.org/support/security/
+  - We check spilo release history to upgrade patroni version as needed:
+    - see https://github.com/zalando/spilo/releases
+  - We runs daily database backups invoked by [WAL-G](https://github.com/wal-g/wal-g)'s PostgreSQL [continuous archiving](https://www.postgresql.org/docs/9.6/continuous-archiving.html) setup, which enables point-in-time recovery.
+
+    ```yaml
+    patroni:
+      walG:
+        enabled: true
+        scheduleCronJob: 00 01 * * *
+        retainBackups: 2
+        pvc:
+        size: 1Gi
+    ```
+
+using Patroni's built in https://github.com/wal-g/wal-g/blob/master/docs/STORAGES.md#file-system
 
 ## Code security & Vulnerability Disclosure
 
