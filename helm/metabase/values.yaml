@@ -1,0 +1,18 @@
+replicaCount: 1
+
+nameOverride: sso-metabase
+fullnameOverride: sso-metabase
+
+patroni:
+  replicaCount: 2
+
+timeZone: America/Vancouver
+
+# see https://www.metabase.com/docs/latest/troubleshooting-guide/running.html#warning-sunreflectreflectiongetcallerclass-is-not-supported
+resources:
+  limits:
+    cpu: 1
+    memory: 2Gi
+  requests:
+    cpu: 250m
+    memory: 1Gi
