@@ -1,5 +1,10 @@
 replicaCount: 1
 
+image:
+  repository: metabase/metabase
+  pullPolicy: Always
+  tag: latest
+
 nameOverride: sso-metabase
 fullnameOverride: sso-metabase
 
