@@ -1,0 +1,35 @@
+name: Public Metabase
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "helm/metabase/**"
+      - ".github/workflows/publish-metabase.yml"
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-20.04
+    permissions:
+      contents: read
+
+    steps:
+      - uses: hmarr/debug-action@v2
+      - uses: actions/checkout@v2
+
+      - name: Authenticate and set context
+        uses: redhat-actions/oc-login@v1
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.PROD_OPENSHIFT_TOKEN  }}
+          namespace: ${{ secrets.PROD_OPENSHIFT_NAMESPACE }}
+          insecure_skip_tls_verify: true
+
+      - name: Deploy metabase with Helm chart
+        run: |
+          namespace=${{ secrets.PROD_OPENSHIFT_NAMESPACE }}
+          helm dep up
+          helm upgrade --install --atomic realm-registry . -n ${namespace} \
+          -f values.yaml -f "values-${namespace}.yaml"
+        working-directory: ./helm/metabase
