@@ -1,9 +1,6 @@
 image:
   tag: main
 
-route:
-  host: realm-registry.apps.silver.devops.gov.bc.ca
-
 sso:
   url: https://oidc.gov.bc.ca/auth/realms/onestopauth
   redirectUri: http://realm-registry.apps.silver.devops.gov.bc.ca/oidc/keycloak
