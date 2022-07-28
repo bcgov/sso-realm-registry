@@ -117,7 +117,7 @@ function DuplicateIDIR({}: Props) {
   const [deletingEnvs, setDeletingEvns] = useState<string[]>([]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchKey(event.target.value);
+    setSearchKey(event.target.value.toLowerCase());
   };
 
   const handleDeleteClick = async () => {
@@ -142,7 +142,7 @@ function DuplicateIDIR({}: Props) {
     setResult(null);
     setDeletedEnvs([]);
     setDeletingEvns([]);
-    const [result] = await findIdirUser(searchKey.toLowerCase());
+    const [result] = await findIdirUser(searchKey);
     setResult(result);
     setLoading(false);
   };
@@ -169,7 +169,7 @@ function DuplicateIDIR({}: Props) {
               minLength="3"
               maxLength="50"
               placeholder="Enter IDIR ID or Email"
-              value={searchKey.toLowerCase()}
+              value={searchKey}
               disabled={loading}
               onKeyUp={handleKeyUp}
               onChange={handleSearchChange}
