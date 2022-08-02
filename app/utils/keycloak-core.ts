@@ -97,7 +97,13 @@ class KeycloakCore {
       let users = await Promise.all(
         realmNames.map(async (realm) => {
           const getProms = (query: any) =>
-            kcAdminClient.users.find(query).then((users) => users.map((user) => ({ ...user, realm })));
+            kcAdminClient.users
+              .find(query)
+              .then((users) => users.map((user) => ({ ...user, realm })))
+              .catch((err) => {
+                console.error(err);
+                return null;
+              });
 
           if (validator.isEmail(username)) return getProms({ realm, email: username });
           else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username });
@@ -106,6 +112,8 @@ class KeycloakCore {
 
       users = flatten(users) as any[];
       return users.filter((user: any) => {
+        if (!user) return false;
+
         const searchKey = user.realm !== 'idir' ? `${username}@idir` : username;
         return user.username === searchKey || user.email === username;
       });
