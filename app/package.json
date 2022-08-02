@@ -49,6 +49,7 @@
     "@types/pg": "^8.6.5",
     "@types/pg-format": "^1.0.2",
     "@types/react": "^18.0.10",
+    "@types/validator": "^13.7.4",
     "@types/xml2js": "^0.4.11",
     "eslint": "^8.16.0",
     "eslint-config-next": "12.1.6",
