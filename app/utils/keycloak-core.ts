@@ -106,7 +106,6 @@ class KeycloakCore {
 
       users = flatten(users) as any[];
       return users.filter((user: any) => {
-        console.log(user);
         const searchKey = user.realm !== 'idir' ? `${username}@idir` : username;
         return user.username === searchKey || user.email === username;
       });
