@@ -47,7 +47,7 @@ class KeycloakCore {
       realmName: 'master',
       requestConfig: {
         /* Axios request config options https://github.com/axios/axios#request-config */
-        timeout: 60000,
+        timeout: 0,
       },
     });
 
