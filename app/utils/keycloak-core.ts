@@ -2,6 +2,7 @@ import getConfig from 'next/config';
 import KcAdminClient from 'keycloak-admin';
 import UserRepresentation from 'keycloak-admin/lib/defs/userRepresentation';
 import flatten from 'lodash/flatten';
+import validator from 'validator';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const {
@@ -98,12 +99,8 @@ class KeycloakCore {
           const getProms = (query: any) =>
             kcAdminClient.users.find(query).then((users) => users.map((user) => ({ ...user, realm })));
 
-          const searchKey = realm !== 'idir' ? `${username}@idir` : username;
-          const results = await Promise.all([
-            getProms({ realm, username: searchKey }),
-            getProms({ realm, email: username }),
-          ]);
-          return flatten(results) as any[];
+          if (validator.isEmail(username)) return getProms({ realm, email: username });
+          else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username });
         }),
       );
 
