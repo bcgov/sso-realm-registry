@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "helm/metabase/**"
-      - ".github/workflows/publish-metabase.yml"
+      - 'helm/metabase/**'
+      - '.github/workflows/publish-metabase.yml'
 
 jobs:
   build-and-push-image:
