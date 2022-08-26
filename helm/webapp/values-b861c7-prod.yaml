@@ -12,7 +12,7 @@ env:
   IDIR_ISSUER: https://oidc.gov.bc.ca/auth/realms/onestopauth
 
 vault:
-  vaultSecretEngine:  b861c7-prod
+  vaultSecretEngine: b861c7-prod
   secretName: prod-realm-registry-patroni-appusers
   realmRegistrySecret: prod-realm-registry
 
