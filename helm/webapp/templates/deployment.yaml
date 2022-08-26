@@ -18,6 +18,36 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "..name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/agent-inject-token: 'true'
+        vault.hashicorp.com/auth-path: auth/k8s-silver
+        vault.hashicorp.com/namespace: platform-services
+        vault.hashicorp.com/role: {{ .Values.vault.vaultSecretEngine }}
+        vault.hashicorp.com/agent-inject-secret-postgres: {{ .Values.vault.vaultSecretEngine }}/{{ .Values.vault.postgresSecret }}
+        vault.hashicorp.com/agent-inject-template-postgres: |
+          {{`{{ with secret "`}}{{ .Values.vault.vaultSecretEngine }}/{{ .Values.vault.postgresSecret }}{{`" -}}
+            export PGPASSWORD="{{ .Data.data.appuser_password }}"
+            export PGUSER="{{ .Data.data.appuser_username }}"
+          {{- end }}`}}
+        vault.hashicorp.com/agent-inject-secret-realmregistry: {{ .Values.vault.vaultSecretEngine }}/{{ .Values.vault.realmRegistrySecret }}
+        vault.hashicorp.com/agent-inject-template-realmregistry: |
+          {{`{{ with secret "`}}{{ .Values.vault.vaultSecretEngine }}/{{ .Values.vault.realmRegistrySecret }}{{`" -}}
+            export BCEID_SERVICE_BASIC_AUTH="{{ .Data.data.BCEID_SERVICE_BASIC_AUTH }}"
+            export BCEID_SERVICE_ID="{{ .Data.data.BCEID_SERVICE_ID}}"
+            export DEV_KC_CLIENT_ID="{{ .Data.data.DEV_KC_CLIENT_ID}}"
+            export DEV_KC_CLIENT_SECRET="{{ .Data.data.DEV_KC_CLIENT_SECRET}}"
+            export DEV_KC_URL="{{ .Data.data.DEV_KC_URL}}"
+            export JWT_SECRET="{{ .Data.data.JWT_SECRET}}"
+            export PROD_KC_CLIENT_ID="{{ .Data.data.PROD_KC_CLIENT_ID}}"
+            export PROD_KC_CLIENT_SECRET="{{ .Data.data.PROD_KC_CLIENT_SECRET}}"
+            export PROD_KC_URL="{{ .Data.data.PROD_KC_URL}}"
+            export SSO_CLIENT_ID="{{ .Data.data.SSO_CLIENT_ID}}"
+            export SSO_CLIENT_SECRET="{{ .Data.data.SSO_CLIENT_SECRET}}"
+            export TEST_KC_CLIENT_ID="{{ .Data.data.TEST_KC_CLIENT_ID}}"
+            export TEST_KC_CLIENT_SECRET="{{ .Data.data.TEST_KC_CLIENT_SECRET}}"
+            export TEST_KC_URL="{{ .Data.data.TEST_KC_URL}}"
+          {{- end }}`}}
     spec:
       initContainers:
         - name: initdb
@@ -50,12 +80,15 @@ spec:
                   key: {{ .Values.postgres.password.key }}
             - name: PGDATABASE_NAME
               value: {{ .Values.postgres.database }}
+      serviceAccountName:  {{ .Values.vault.serviceAccountName }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          command: ["/bin/sh"]
+          args: ['-c', '. /vault/secrets/postgres && . /vault/secrets/realmregistry && yarn start']
           ports:
             - containerPort: 3000
               name: http
@@ -77,21 +110,10 @@ spec:
               value: {{ .Values.sso.tokenGrantType }}
             - name: JWT_TOKEN_EXPIRY
               value: {{ .Values.jwt.tokenExpiry }}
-
             - name: PGHOST
               value: {{ .Values.postgres.host }}
             - name: PGPORT
               value: {{ .Values.postgres.port | quote }}
-            - name: PGUSER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.postgres.username.secret }}
-                  key: {{ .Values.postgres.username.key }}
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.postgres.password.secret }}
-                  key: {{ .Values.postgres.password.key }}
             - name: PGDATABASE
               value: {{ .Values.postgres.database }}
             - name: PGSSL
@@ -104,11 +126,6 @@ spec:
             - name: {{  $key | quote | upper }}
               value: {{ $val | quote }}
             {{- end }}
-          {{- if .Values.envSecret }}
-          envFrom:
-            - secretRef:
-                name: {{ .Values.envSecret }}
-          {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

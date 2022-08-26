@@ -14,6 +14,13 @@ env:
   IDIR_JWKS_URI: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth/protocol/openid-connect/certs
   IDIR_ISSUER: https://dev.oidc.gov.bc.ca/auth/realms/onestopauth
 
+envSecret: realm-registry
+
+vault:
+  vaultSecretEngine: b861c7-nonprod
+  postgresSecret: dev-realm-registry-patroni-appusers
+  realmRegistrySecret: dev-realm-registry
+
 patroni:
   image:
     repository: ghcr.io/junminahn/spilo
