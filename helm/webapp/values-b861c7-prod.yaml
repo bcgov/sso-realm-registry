@@ -13,7 +13,7 @@ env:
 
 vault:
   vaultSecretEngine: b861c7-prod
-  secretName: prod-realm-registry-patroni-appusers
+  postgresSecret: prod-realm-registry-patroni-appusers
   realmRegistrySecret: prod-realm-registry
 
 patroni:
