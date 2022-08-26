@@ -88,7 +88,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           command: ["/bin/sh"]
-          args: ['-c', '. /vault/secrets/postgres && . /vault/secrets/realmregistry && printenv && yarn start']
+          args: ['-c', '. /vault/secrets/postgres && . /vault/secrets/realmregistry && yarn start']
           ports:
             - containerPort: 3000
               name: http
