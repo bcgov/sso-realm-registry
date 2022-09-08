@@ -159,3 +159,16 @@ Automatically detect security vulnerabilities and coding errors in new or modifi
 
 - [GitHub Actions (CodeQL)](.github/workflows/codeql-analysis.yml)
 - [Code scanning alerts](https://github.com/bcgov/sso-realm-registry/security/code-scanning)
+
+### IDIM Web Service proxy API endpoint
+
+The backend API exposes a proxy endpoint that being used by Common Hosted Single Sign-on (CSS) lambda API endpoints to meet the security requirement of IDIM web service and hosted in the same network with it. The IDIM web service backend logic is stored in [IDIM Web Service](./app/pages/api/bceid-service).
+
+- IDIM web service makes use of two of the environment variables:
+  1. `BCEID_SERVICE_ID`: OSID # to the BCeID Client Web Services.
+  2. `BCEID_SERVICE_BASIC_AUTH`: `Basic Auth` authorization token.
+- To generate the authorization token with IDIR account credentials:
+
+  ```sh
+  echo -n "<idir_username>:<idir_password>" | base64
+  ```
