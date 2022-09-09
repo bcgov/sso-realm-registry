@@ -57,9 +57,7 @@ spec:
           command: ["bash", "-c"]
           args:
             - |
-              echo set vault environment variables
               source /vault/secrets/postgres;
-              echo starting;
               set -euo pipefail;
               psql -d $PGDATABASE_NAME -qtA --set ON_ERROR_STOP=1 << 'EOF'
               {{ .Files.Get "migration.sql" | nindent 20 -}}
