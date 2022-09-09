@@ -21,6 +21,8 @@ spec:
       annotations:
         vault.hashicorp.com/agent-inject: 'true'
         vault.hashicorp.com/agent-inject-token: 'true'
+        vault.hashicorp.com/agent-init-first: 'true'
+        vault.hashicorp.com/agent-pre-populate: 'true'
         vault.hashicorp.com/auth-path: auth/k8s-silver
         vault.hashicorp.com/namespace: platform-services
         vault.hashicorp.com/role: {{ .Values.vault.vaultSecretEngine }}
@@ -55,7 +57,7 @@ spec:
           command: ["bash", "-c"]
           args:
             - |
-              echo starting;
+              source /vault/secrets/postgres;
               set -euo pipefail;
               psql -d $PGDATABASE_NAME -qtA --set ON_ERROR_STOP=1 << 'EOF'
               {{ .Files.Get "migration.sql" | nindent 20 -}}
@@ -68,16 +70,6 @@ spec:
               value: {{ .Values.postgres.host }}
             - name: PGPORT
               value: {{ .Values.postgres.port | quote }}
-            - name: PGUSER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.postgres.username.secret }}
-                  key: {{ .Values.postgres.username.key }}
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.postgres.password.secret }}
-                  key: {{ .Values.postgres.password.key }}
             - name: PGDATABASE_NAME
               value: {{ .Values.postgres.database }}
       serviceAccountName:  {{ .Values.vault.serviceAccountName }}
