@@ -42,7 +42,7 @@ export const getIdirUserGuid = async (token: string) => {
     ignoreExpiration: true,
   });
 
-  if (identity_provider !== 'idir') return null;
+  if (!['idir', 'azureidir'].includes(identity_provider)) return null;
 
   return idir_userid;
 };
