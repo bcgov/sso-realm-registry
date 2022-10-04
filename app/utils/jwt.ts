@@ -6,7 +6,7 @@ import axios from 'axios';
 import getConfig from 'next/config';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
-const { jwt_secret, idir_jwks_uri, idir_issuer } = serverRuntimeConfig;
+const { jwt_secret, idir_jwks_uri, idir_issuer, idir_audience } = serverRuntimeConfig;
 
 type Data = {
   success: boolean;
@@ -36,7 +36,7 @@ export const getIdirUserGuid = async (token: string) => {
   const pem = jwkToPem(key);
 
   const { identity_provider, idir_userid }: any = jwt.verify(token, pem, {
-    audience: 'sso-requests',
+    audience: idir_audience,
     issuer: idir_issuer,
     maxAge: '8h',
     ignoreExpiration: true,
