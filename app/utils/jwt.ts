@@ -35,7 +35,7 @@ export const getIdirUserGuid = async (token: string) => {
 
   const pem = jwkToPem(key);
 
-  const { identity_provider, idir_userid }: any = jwt.verify(token, pem, {
+  const { identity_provider, idir_username }: any = jwt.verify(token, pem, {
     audience: idir_audience,
     issuer: idir_issuer,
     maxAge: '8h',
@@ -44,5 +44,5 @@ export const getIdirUserGuid = async (token: string) => {
 
   if (!['idir', 'azureidir'].includes(identity_provider)) return null;
 
-  return idir_userid;
+  return idir_username;
 };
