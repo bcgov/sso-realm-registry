@@ -46,6 +46,7 @@ module.exports = {
     bceid_service_basic_auth: process.env.BCEID_SERVICE_BASIC_AUTH,
     idir_jwks_uri: process.env.IDIR_JWKS_URI,
     idir_issuer: process.env.IDIR_ISSUER,
+    idir_audience: process.env.IDIR_AUDIENCE,
   },
   publicRuntimeConfig: {},
   async headers() {
