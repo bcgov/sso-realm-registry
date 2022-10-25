@@ -43,7 +43,9 @@ jwt:
 
 env: {}
 extraEnv: {}
-envSecret: realm-registry
+
+vault:
+  serviceAccountName: b861c7-vault
 
 resources:
   limits:

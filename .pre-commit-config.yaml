@@ -9,7 +9,7 @@ repos:
       - id: check-json
       - id: check-vcs-permalinks
       - id: check-yaml
-        exclude: ^helm/*
+        exclude: ^helm/
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-merge-conflict
@@ -17,7 +17,7 @@ repos:
     rev: v2.6.2
     hooks:
       - id: prettier
-        exclude: ^helm/*
+        exclude: ^helm/
   - repo: https://github.com/jorisroovers/gitlint
     rev: v0.17.0
     hooks:

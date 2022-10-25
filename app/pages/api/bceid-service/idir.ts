@@ -12,7 +12,7 @@ const { bceid_service_id, bceid_service_basic_auth } = serverRuntimeConfig;
 
 const parseStringSync = promisify(parseString);
 
-const serviceUrl = 'https://gws2.development.bceid.ca/webservices/client/V10/BCeIDService.asmx?WSDL';
+const serviceUrl = 'https://gws2.test.bceid.ca/webservices/client/V10/BCeIDService.asmx?WSDL';
 const defaultHeaders = {
   'Content-Type': 'text/xml;charset=UTF-8',
   authorization: `Basic ${bceid_service_basic_auth}`,

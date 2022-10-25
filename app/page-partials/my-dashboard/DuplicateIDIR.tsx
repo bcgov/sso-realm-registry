@@ -83,7 +83,10 @@ const TableContent = ({
   } else if (info.result === 'found' && info.affected) {
     return (
       <>
-        <p>Navigate to your realm(s) below to delete this user, then search for the user again in this app.</p>
+        <p>
+          Navigate to your custom realm(s) below to delete this user, then come back here, search for the user again and
+          delete them.
+        </p>
         <ul>
           {info.affected.map((realm: string) => (
             <li key={realm}>
@@ -114,7 +117,7 @@ function DuplicateIDIR({}: Props) {
   const [deletingEnvs, setDeletingEvns] = useState<string[]>([]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchKey(event.target.value);
+    setSearchKey(event.target.value.toLowerCase());
   };
 
   const handleDeleteClick = async () => {
@@ -153,9 +156,9 @@ function DuplicateIDIR({}: Props) {
   return (
     <Container>
       <h3>Are your IDIR users having trouble authenticating?</h3>
-      <p>If they are, your user might be duplicated in your realm, and the duplicate entry needs to be deleted.</p>
+      <p>If they are, then your user might be duplicated in your realm and the duplicate needs to be deleted.</p>
       <p>
-        To start, <strong>search for the user</strong> that is having trouble authenticating.
+        To start, please <strong>search for the user</strong> with their IDIR or email address.
       </p>
       <Grid cols={10} gutter={[5, 2]} style={{ overflowX: 'hidden', width: '600px', maxWidth: '100%' }}>
         <Grid.Row collapse="800">

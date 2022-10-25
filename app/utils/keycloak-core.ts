@@ -2,6 +2,7 @@ import getConfig from 'next/config';
 import KcAdminClient from 'keycloak-admin';
 import UserRepresentation from 'keycloak-admin/lib/defs/userRepresentation';
 import flatten from 'lodash/flatten';
+import validator from 'validator';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const {
@@ -47,7 +48,7 @@ class KeycloakCore {
       realmName: 'master',
       requestConfig: {
         /* Axios request config options https://github.com/axios/axios#request-config */
-        timeout: 60000,
+        timeout: 0,
       },
     });
 
@@ -96,19 +97,23 @@ class KeycloakCore {
       let users = await Promise.all(
         realmNames.map(async (realm) => {
           const getProms = (query: any) =>
-            kcAdminClient.users.find(query).then((users) => users.map((user) => ({ ...user, realm })));
+            kcAdminClient.users
+              .find(query)
+              .then((users) => users.map((user) => ({ ...user, realm })))
+              .catch((err) => {
+                console.error(err);
+                return null;
+              });
 
-          const searchKey = realm !== 'idir' ? `${username}@idir` : username;
-          const results = await Promise.all([
-            getProms({ realm, username: searchKey }),
-            getProms({ realm, email: username }),
-          ]);
-          return flatten(results) as any[];
+          if (validator.isEmail(username)) return getProms({ realm, email: username });
+          else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username });
         }),
       );
 
       users = flatten(users) as any[];
       return users.filter((user: any) => {
+        if (!user) return false;
+
         const searchKey = user.realm !== 'idir' ? `${username}@idir` : username;
         return user.username === searchKey || user.email === username;
       });

@@ -8,8 +8,14 @@ sso:
 
 env:
   SECURE_HEADERS: 'true'
-  IDIR_JWKS_URI: https://oidc.gov.bc.ca/auth/realms/onestopauth/protocol/openid-connect/certs
-  IDIR_ISSUER: https://oidc.gov.bc.ca/auth/realms/onestopauth
+  IDIR_JWKS_URI: https://loginproxy.gov.bc.ca/auth/realms/standard/protocol/openid-connect/certs
+  IDIR_ISSUER: https://loginproxy.gov.bc.ca/auth/realms/standard
+  IDIR_AUDIENCE: css-app-in-gold-4128
+
+vault:
+  vaultSecretEngine: b861c7-prod
+  postgresSecret: prod-realm-registry-patroni-appusers
+  realmRegistrySecret: prod-realm-registry
 
 patroni:
   image:
