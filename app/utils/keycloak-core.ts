@@ -2,7 +2,9 @@ import getConfig from 'next/config';
 import KcAdminClient from 'keycloak-admin';
 import UserRepresentation from 'keycloak-admin/lib/defs/userRepresentation';
 import flatten from 'lodash/flatten';
+import compact from 'lodash/compact';
 import validator from 'validator';
+import { asyncFilter } from 'utils/array';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const {
@@ -25,6 +27,7 @@ class KeycloakCore {
   private _cachedRealmNames: any[] = [];
   private _cachedNames: any = {};
   private _cachedIDPNames: any = {};
+  private _adminClient!: KcAdminClient;
 
   constructor(env: string) {
     if (env === 'dev') {
@@ -43,12 +46,14 @@ class KeycloakCore {
   }
 
   public async getAdminClient() {
+    if (this._adminClient) return this._adminClient;
+
     const kcAdminClient = new KcAdminClient({
       baseUrl: `${this._url}/auth`,
       realmName: 'master',
       requestConfig: {
         /* Axios request config options https://github.com/axios/axios#request-config */
-        timeout: 0,
+        timeout: 10000,
       },
     });
 
@@ -58,26 +63,27 @@ class KeycloakCore {
       clientSecret: this._clientSecret,
     });
 
+    this._adminClient = kcAdminClient;
     return kcAdminClient as KcAdminClient;
   }
 
   public async getRealmNames() {
     if (this._cachedRealmNames.length > 0) return this._cachedRealmNames;
 
-    const kcAdminClient = await this.getAdminClient();
-    if (!kcAdminClient) return null;
+    const adminClient = await this.getAdminClient();
+    if (!adminClient) return [];
 
-    const realms = await kcAdminClient.realms.find({});
+    const realms = await adminClient.realms.find({});
 
     this._cachedRealmNames = realms.map((realm) => realm.realm);
     return this._cachedRealmNames;
   }
 
   public async findIdirUser(idirUsername: string) {
-    const kcAdminClient = await this.getAdminClient();
-    if (!kcAdminClient) return null;
+    const adminClient = await this.getAdminClient();
+    if (!adminClient) return null;
 
-    const users = await kcAdminClient.users.find({
+    const users = await adminClient.users.find({
       realm: 'idir',
       username: idirUsername,
     });
@@ -89,15 +95,16 @@ class KeycloakCore {
   }
 
   public async findUser(username: string) {
-    try {
-      const kcAdminClient = await this.getAdminClient();
-      if (!kcAdminClient) return null;
+    const adminClient = await this.getAdminClient();
+    if (!adminClient) return [];
 
+    try {
       const realmNames = (await this.getRealmNames()) || [];
+
       let users = await Promise.all(
         realmNames.map(async (realm) => {
           const getProms = (query: any) =>
-            kcAdminClient.users
+            adminClient.users
               .find(query)
               .then((users) => users.map((user) => ({ ...user, realm })))
               .catch((err) => {
@@ -105,21 +112,15 @@ class KeycloakCore {
                 return null;
               });
 
-          if (validator.isEmail(username)) return getProms({ realm, email: username });
-          else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username });
+          if (validator.isEmail(username)) return getProms({ realm, email: username, exact: true });
+          else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username, exact: true });
         }),
       );
 
-      users = flatten(users) as any[];
-      return users.filter((user: any) => {
-        if (!user) return false;
-
-        const searchKey = user.realm !== 'idir' ? `${username}@idir` : username;
-        return user.username === searchKey || user.email === username;
-      });
+      return compact(flatten(users));
     } catch (err) {
       console.error(err);
-      return null;
+      return [];
     }
   }
 
@@ -139,11 +140,11 @@ class KeycloakCore {
   }
 
   public async getIDPs(realm: string) {
-    try {
-      const kcAdminClient = await this.getAdminClient();
-      if (!kcAdminClient) return null;
+    const adminClient = await this.getAdminClient();
+    if (!adminClient) return null;
 
-      const idps = await kcAdminClient.identityProviders.find({ realm } as any);
+    try {
+      const idps = await adminClient.identityProviders.find({ realm } as any);
 
       return idps;
     } catch (err) {
@@ -168,11 +169,11 @@ class KeycloakCore {
   }
 
   public async getRealm(realm: string) {
-    try {
-      const kcAdminClient = await this.getAdminClient();
-      if (!kcAdminClient) return null;
+    const adminClient = await this.getAdminClient();
+    if (!adminClient) return null;
 
-      const realmData = await kcAdminClient.realms.findOne({ realm } as any);
+    try {
+      const realmData = await adminClient.realms.findOne({ realm } as any);
 
       return realmData;
     } catch (err) {
@@ -182,11 +183,11 @@ class KeycloakCore {
   }
 
   public async deleteUser(realm: string, userid: string) {
-    try {
-      const kcAdminClient = await this.getAdminClient();
-      if (!kcAdminClient) return null;
+    const adminClient = await this.getAdminClient();
+    if (!adminClient) return null;
 
-      return kcAdminClient.users.del({ id: userid, realm });
+    try {
+      return adminClient.users.del({ id: userid, realm });
     } catch (err) {
       console.error(err);
       return null;
