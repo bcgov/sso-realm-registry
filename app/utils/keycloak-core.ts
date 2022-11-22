@@ -50,7 +50,7 @@ class KeycloakCore {
       realmName: 'master',
       requestConfig: {
         /* Axios request config options https://github.com/axios/axios#request-config */
-        timeout: 0,
+        timeout: 500,
       },
     });
 
@@ -96,24 +96,27 @@ class KeycloakCore {
       if (!kcAdminClient) return null;
 
       const realmNames = (await this.getRealmNames()) || [];
-      let users = await asyncFilter(realmNames, async (realm: string) => {
-        const getProms = (query: any) =>
-          kcAdminClient.users
-            .find(query)
-            .then((users) => users.map((user) => ({ ...user, realm })))
-            .catch((err) => {
-              console.error(err);
-              return null;
-            });
 
-        if (validator.isEmail(username)) return getProms({ realm, email: username, exact: true });
-        else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username, exact: true });
-      });
+      let users = await Promise.all(
+        realmNames.map(async (realm) => {
+          const getProms = (query: any) =>
+            kcAdminClient.users
+              .find(query)
+              .then((users) => users.map((user) => ({ ...user, realm })))
+              .catch((err) => {
+                console.error(err);
+                return null;
+              });
+
+          if (validator.isEmail(username)) return getProms({ realm, email: username, exact: true });
+          else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username, exact: true });
+        }),
+      );
 
       return compact(flatten(users));
     } catch (err) {
       console.error(err);
-      return null;
+      return [];
     }
   }
 
