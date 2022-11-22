@@ -2,7 +2,9 @@ import getConfig from 'next/config';
 import KcAdminClient from 'keycloak-admin';
 import UserRepresentation from 'keycloak-admin/lib/defs/userRepresentation';
 import flatten from 'lodash/flatten';
+import compact from 'lodash/compact';
 import validator from 'validator';
+import { asyncFilter } from 'utils/array';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const {
@@ -94,29 +96,21 @@ class KeycloakCore {
       if (!kcAdminClient) return null;
 
       const realmNames = (await this.getRealmNames()) || [];
-      let users = await Promise.all(
-        realmNames.map(async (realm) => {
-          const getProms = (query: any) =>
-            kcAdminClient.users
-              .find(query)
-              .then((users) => users.map((user) => ({ ...user, realm })))
-              .catch((err) => {
-                console.error(err);
-                return null;
-              });
+      let users = await asyncFilter(realmNames, async (realm: string) => {
+        const getProms = (query: any) =>
+          kcAdminClient.users
+            .find(query)
+            .then((users) => users.map((user) => ({ ...user, realm })))
+            .catch((err) => {
+              console.error(err);
+              return null;
+            });
 
-          if (validator.isEmail(username)) return getProms({ realm, email: username });
-          else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username });
-        }),
-      );
-
-      users = flatten(users) as any[];
-      return users.filter((user: any) => {
-        if (!user) return false;
-
-        const searchKey = user.realm !== 'idir' ? `${username}@idir` : username;
-        return user.username === searchKey || user.email === username;
+        if (validator.isEmail(username)) return getProms({ realm, email: username, exact: true });
+        else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username, exact: true });
       });
+
+      return compact(flatten(users));
     } catch (err) {
       console.error(err);
       return null;
