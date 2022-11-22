@@ -10,7 +10,7 @@ metadata:
   annotations:
     haproxy.router.openshift.io/balance: roundrobin
     haproxy.router.openshift.io/disable_cookies: 'true'
-    haproxy.router.openshift.io/timeout: 90s
+    haproxy.router.openshift.io/timeout: 120s
 spec:
   {{- if .Values.route.host }}
   host: {{ .Values.route.host }}
