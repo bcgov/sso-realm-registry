@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { validateRequest } from 'utils/jwt';
 import KeycloakCore from 'utils/keycloak-core';
-import { getAllowedRealms } from 'controllers/realm';
+import { getAllowedRealms, getAllowedRealmNames } from 'controllers/realm';
 
 interface ErrorData {
   success: boolean;
@@ -32,9 +32,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
 
       users = users.filter((user) => user.realm !== 'idir');
+      if (users.length === 0) {
+        return { result: 'notfound' };
+      }
 
-      const myRealms = await getAllowedRealms(session);
-      const myRealmNames = myRealms.map((v: any) => v.realm);
+      const myRealmNames = await getAllowedRealmNames(session);
 
       const affected = [];
       let includeOthers = false;
