@@ -1,10 +1,8 @@
 import getConfig from 'next/config';
 import KcAdminClient from 'keycloak-admin';
-import UserRepresentation from 'keycloak-admin/lib/defs/userRepresentation';
 import flatten from 'lodash/flatten';
 import compact from 'lodash/compact';
 import validator from 'validator';
-import { asyncFilter } from 'utils/array';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const {
@@ -53,7 +51,7 @@ class KeycloakCore {
       realmName: 'master',
       requestConfig: {
         /* Axios request config options https://github.com/axios/axios#request-config */
-        timeout: 10000,
+        timeout: 1000,
       },
     });
 
@@ -108,7 +106,7 @@ class KeycloakCore {
               .find(query)
               .then((users) => users.map((user) => ({ ...user, realm })))
               .catch((err) => {
-                console.error(err);
+                handleError(err);
                 return null;
               });
 
@@ -119,7 +117,7 @@ class KeycloakCore {
 
       return compact(flatten(users));
     } catch (err) {
-      console.error(err);
+      handleError(err);
       return [];
     }
   }
@@ -134,7 +132,7 @@ class KeycloakCore {
       this._cachedNames[idirUsername] = name;
       return name;
     } catch (err) {
-      console.error(err);
+      handleError(err);
       return null;
     }
   }
@@ -148,7 +146,7 @@ class KeycloakCore {
 
       return idps;
     } catch (err) {
-      console.error(err);
+      handleError(err);
       return null;
     }
   }
@@ -163,7 +161,7 @@ class KeycloakCore {
       this._cachedIDPNames[realm] = names;
       return names;
     } catch (err) {
-      console.error(err);
+      handleError(err);
       return null;
     }
   }
@@ -177,7 +175,7 @@ class KeycloakCore {
 
       return realmData;
     } catch (err) {
-      console.error(err);
+      handleError(err);
       return null;
     }
   }
@@ -189,10 +187,18 @@ class KeycloakCore {
     try {
       return adminClient.users.del({ id: userid, realm });
     } catch (err) {
-      console.error(err);
+      handleError(err);
       return null;
     }
   }
 }
 
 export default KeycloakCore;
+
+function handleError(error: any) {
+  if (error.isAxiosError) {
+    console.error((error.response && error.response.data) || error);
+  } else {
+    console.error(error);
+  }
+}
