@@ -32,6 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
 
       users = users.filter((user) => user.realm !== 'idir');
+      if (users.length === 0) {
+        return { result: 'notfound' };
+      }
 
       const myRealms = await getAllowedRealms(session);
       const myRealmNames = myRealms.map((v: any) => v.realm);

@@ -51,7 +51,7 @@ class KeycloakCore {
       realmName: 'master',
       requestConfig: {
         /* Axios request config options https://github.com/axios/axios#request-config */
-        timeout: 1000,
+        timeout: 2000,
       },
     });
 
@@ -100,7 +100,7 @@ class KeycloakCore {
       const realmNames = (await this.getRealmNames()) || [];
 
       let users = await Promise.all(
-        realmNames.map(async (realm) => {
+        realmNames.map((realm) => {
           const getProms = (query: any) =>
             adminClient.users
               .find(query)
@@ -196,8 +196,8 @@ class KeycloakCore {
 export default KeycloakCore;
 
 function handleError(error: any) {
-  if (error.isAxiosError) {
-    console.error((error.response && error.response.data) || error);
+  if (error?.isAxiosError) {
+    console.error(error.response?.data || error);
   } else {
     console.error(error);
   }
