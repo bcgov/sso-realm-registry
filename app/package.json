@@ -56,6 +56,9 @@
     "typescript": "^4.7.2"
   },
   "resolutions": {
-    "@button-inc/bcgov-theme/**/prismjs": "1.27.0"
+    "@button-inc/bcgov-theme/**/prismjs": "1.27.0",
+    "json5": ">=1.0.2",
+    "qs": ">=6.10.3",
+    "minimatch": ">=3.1.2"
   }
 }
