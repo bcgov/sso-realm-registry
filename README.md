@@ -174,3 +174,5 @@ The backend API exposes a proxy endpoint that being used by Common Hosted Single
   ```sh
   echo -n "<idir_username>:<idir_password>" | base64
   ```
+
+This secret will be stored with the other Realm Registry secrets in the Platform Services [Vault](https://vault.developer.gov.bc.ca/) service.
