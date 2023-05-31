@@ -1,5 +1,5 @@
 image:
-  tag: dev
+  tag: realmtesttag
 
 route:
   host: realm-registry-dev.apps.silver.devops.gov.bc.ca

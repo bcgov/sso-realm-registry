@@ -2,7 +2,7 @@ image:
   tag: main
 
 sso:
-  url: https://oidc.gov.bc.ca/auth/realms/onestopauth
+  url: https://loginproxy.gov.bc.ca/auth/realms/standard
   redirectUri: http://realm-registry.apps.silver.devops.gov.bc.ca/oidc/keycloak
   logoutRedirectUri: http://realm-registry.apps.silver.devops.gov.bc.ca
 

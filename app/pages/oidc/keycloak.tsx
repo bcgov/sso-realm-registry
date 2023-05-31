@@ -50,6 +50,7 @@ export async function getServerSideProps({ req, res, query }: GetServerSideProps
       email = '',
       client_roles = [],
       identity_provider,
+      idir_username,
     } = (await oidc.verifyToken(access_token)) as any;
 
     if (identity_provider !== 'idir') {
@@ -64,10 +65,9 @@ export async function getServerSideProps({ req, res, query }: GetServerSideProps
       family_name,
       email,
       client_roles,
-      idir_username: preferred_username?.split('@idir')[0],
+      idir_username,
     };
     const appToken = jwt.sign({ access_token, ...session }, jwt_secret, { expiresIn: jwt_token_expiry });
-
     return {
       props: { appToken, session },
     };
