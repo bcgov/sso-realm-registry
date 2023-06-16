@@ -36,7 +36,7 @@ module.exports = {
     prod_kc_client_id: process.env.PROD_KC_CLIENT_ID || 'script-cli',
     prod_kc_client_secret: process.env.PROD_KC_CLIENT_SECRET,
 
-    ches_api_endpoint: process.env.CHES_API_ENDPOINT || 'https://ches-dev.apps.silver.devops.gov.bc.ca/api/v1/email',
+    ches_api_endpoint: process.env.CHES_API_ENDPOINT || 'https://ches.api.gov.bc.ca/api/v1/email',
     ches_token_endpoint:
       process.env.CHES_TOKEN_ENDPOINT || 'https://dev.oidc.gov.bc.ca/auth/realms/xxxxxxx/protocol/openid-connect/token',
     ches_username: process.env.CHES_USERNAME,
