@@ -2,8 +2,8 @@ import axios from 'axios';
 import { NextApiRequest, NextApiResponse } from 'next';
 import getConfig from 'next/config';
 
-const { publicRuntimeConfig = {} } = getConfig() || {};
-const { ches_api_endpoint } = publicRuntimeConfig;
+const { serverRuntimeConfig = {} } = getConfig() || {};
+const { ches_api_endpoint } = serverRuntimeConfig;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
   if (req.method === 'POST') {
@@ -17,12 +17,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       Authorization: Authorization || authorization,
     };
     try {
-      await axios.post(ches_api_endpoint, payload, { headers });
-      res.send(200);
+      const result = await axios.post(ches_api_endpoint, payload, { headers });
+      return res.status(200).json({ success: true, data: result?.data });
     } catch (err: any) {
-      res.status(err?.response?.status || 422).json({ success: false, error: err?.message || err });
+      return res.status(err?.response?.status || 422).json({ success: false, error: err?.message || err });
     }
   } else {
-    res.status(400).json({ success: false, error: 'invalid request' });
+    return res.status(400).json({ success: false, error: 'invalid request' });
   }
 }
