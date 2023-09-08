@@ -35,7 +35,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             id,
             realm,
             product_name,
-            openshift_namespace,
             product_owner_email,
             product_owner_idir_userid,
             technical_contact_email,
@@ -46,8 +45,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             division,
             branch,
             created_at,
-            updated_at
-          FROM rosters WHERE id=$1 AND (LOWER(technical_contact_idir_userid)=LOWER($2) OR LOWER(product_owner_idir_userid)=LOWER($2))
+            updated_at,
+            rc_channel,
+            rc_channel_owned_by
+          FROM rosters WHERE id=$1 AND (LOWER(technical_contact_idir_userid)=LOWER($2) OR LOWER(second_technical_contact_idir_userid)=LOWER($2) OR LOWER(product_owner_idir_userid)=LOWER($2))
           `,
           [id, username],
         );
@@ -55,16 +56,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
       const realm = result?.rows.length > 0 ? result?.rows[0] : null;
       if (realm) {
-        const [realmData, poName, techName] = await Promise.all([
-          kcCore.getRealm(realm.realm),
-          kcCore.getIdirUserName(realm.product_owner_idir_userid),
-          kcCore.getIdirUserName(realm.technical_contact_idir_userid),
-        ]);
-
-        realm.product_owner_name = poName;
-        realm.technical_contact_name = techName;
-        realm.displayName = realmData?.displayName || '';
+        const [realmData] = await Promise.all([kcCore.getRealm(realm.realm)]);
         realm.idps = realmData?.identityProviders?.map((v) => v.displayName || v.alias) || [];
+        const distinctProviders = new Set(realmData?.identityProviders?.map((v) => v.providerId) || []);
+        realm.protocol = Array.from(distinctProviders);
       }
 
       return res.send(realm);
@@ -77,14 +72,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         branch,
         branch_other,
         product_name,
-        openshift_namespace,
         technical_contact_email,
         product_owner_email,
         technical_contact_idir_userid,
         product_owner_idir_userid,
-        admin_note_1,
-        admin_note_2,
-        next_steps,
+        rc_channel,
+        rc_channel_owned_by,
         material_to_send,
         second_technical_contact_email,
         second_technical_contact_idir_userid,
@@ -103,27 +96,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             UPDATE rosters
             SET
               product_name=$2,
-              openshift_namespace=$3,
-              technical_contact_email=$4,
-              product_owner_email=$5,
-              technical_contact_idir_userid=$6,
-              product_owner_idir_userid=$7,
-              ministry=$8,
-              division=$9,
-              branch=$10,
-              admin_note_1=$11,
-              admin_note_2=$12,
-              next_steps=$13,
-              material_to_send=$14,
-              second_technical_contact_email=$15,
-              second_technical_contact_idir_userid=$16,
+              technical_contact_email=$3,
+              product_owner_email=$4,
+              technical_contact_idir_userid=$5,
+              product_owner_idir_userid=$6,
+              ministry=$7,
+              division=$8,
+              branch=$9,
+              rc_channel=$10,
+              rc_channel_owned_by=$11,
+              material_to_send=$12,
+              second_technical_contact_email=$13,
+              second_technical_contact_idir_userid=$14,
               updated_at=now()
             WHERE id=$1
             RETURNING *`,
           [
             id,
             product_name,
-            openshift_namespace,
             technical_contact_email,
             product_owner_email,
             technical_contact_idir_userid,
@@ -131,9 +121,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             _ministry,
             _division,
             _branch,
-            admin_note_1,
-            admin_note_2,
-            next_steps,
+            rc_channel,
+            rc_channel_owned_by,
             material_to_send,
             second_technical_contact_email,
             second_technical_contact_idir_userid,
@@ -145,15 +134,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             UPDATE rosters
             SET
               product_name=$3,
-              openshift_namespace=$4,
-              technical_contact_email=$5,
-              product_owner_email=$6,
-              technical_contact_idir_userid=$7,
-              ministry=$8,
-              division=$9,
-              branch=$10,
-              second_technical_contact_email=$11,
-              second_technical_contact_idir_userid=$12,
+              technical_contact_email=$4,
+              product_owner_email=$5,
+              technical_contact_idir_userid=$6,
+              ministry=$7,
+              division=$8,
+              branch=$9,
+              second_technical_contact_email=$10,
+              second_technical_contact_idir_userid=$11,
               updated_at=now()
             WHERE id=$1 AND LOWER(product_owner_idir_userid)=LOWER($2)
             RETURNING *`,
@@ -161,7 +149,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             id,
             username,
             product_name,
-            openshift_namespace,
             technical_contact_email,
             product_owner_email,
             technical_contact_idir_userid,
@@ -178,13 +165,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           UPDATE rosters
           SET
             product_name=$3,
-            openshift_namespace=$4,
-            technical_contact_email=$5,
-            ministry=$6,
-            division=$7,
-            branch=$8,
-            second_technical_contact_email=$9,
-            second_technical_contact_idir_userid=$10,
+            technical_contact_email=$4,
+            ministry=$5,
+            division=$6,
+            branch=$7,
+            second_technical_contact_email=$8,
+            second_technical_contact_idir_userid=$9,
             updated_at=now()
           WHERE id=$1 AND LOWER(technical_contact_idir_userid)=LOWER($2)
           RETURNING *`,
@@ -192,7 +178,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             id,
             username,
             product_name,
-            openshift_namespace,
             technical_contact_email,
             _ministry,
             _division,
@@ -207,9 +192,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       sendUpdateEmail(realm, session);
 
       if (!isAdmin && realm) {
-        delete realm.admin_note_1;
-        delete realm.admin_note_2;
-        delete realm.next_steps;
+        delete realm.protocol;
+        delete realm.rc_channel;
+        delete realm.rc_channel_owned_by;
         delete realm.material_to_send;
       }
 

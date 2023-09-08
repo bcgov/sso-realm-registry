@@ -11,12 +11,12 @@ interface Props {
 }
 
 function RealmLeftPanel({ realms, onEditClick, onCancel }: Props) {
-  const [tab, setTab] = useState('dashbaord');
+  const [tab, setTab] = useState('dashboard');
 
   return (
     <>
       <Tabs>
-        <a className={`nav-link ${tab === 'dashbaord' ? 'active' : ''}`} onClick={() => setTab('dashbaord')}>
+        <a className={`nav-link ${tab === 'dashboard' ? 'active' : ''}`} onClick={() => setTab('dashboard')}>
           My Dashboard
         </a>
         <a
@@ -29,7 +29,7 @@ function RealmLeftPanel({ realms, onEditClick, onCancel }: Props) {
           Duplicate Users
         </a>
       </Tabs>
-      {tab === 'dashbaord' ? <RealmTable realms={realms} onEditClick={onEditClick} /> : <DuplicateIDIR />}
+      {tab === 'dashboard' ? <RealmTable realms={realms} onEditClick={onEditClick} /> : <DuplicateIDIR />}
     </>
   );
 }

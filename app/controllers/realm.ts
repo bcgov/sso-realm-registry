@@ -16,7 +16,6 @@ export async function getAllowedRealms(session: any) {
         id,
         realm,
         product_name,
-        openshift_namespace,
         product_owner_email,
         product_owner_idir_userid,
         technical_contact_email,
@@ -27,8 +26,10 @@ export async function getAllowedRealms(session: any) {
         division,
         branch,
         created_at,
-        updated_at
-      FROM rosters WHERE LOWER(technical_contact_idir_userid)=LOWER($1) OR LOWER(product_owner_idir_userid)=LOWER($1) ORDER BY id ASC
+        updated_at,
+        rc_channel,
+        rc_channel_owned_by
+      FROM rosters WHERE LOWER(technical_contact_idir_userid)=LOWER($1) OR LOWER(second_technical_contact_idir_userid)=LOWER($1) OR LOWER(product_owner_idir_userid)=LOWER($1) ORDER BY id ASC
       `,
       [username],
     );
@@ -41,18 +42,10 @@ export async function getAllowedRealms(session: any) {
     if (kcAdminClient) {
       for (let x = 0; x < result?.rows.length; x++) {
         const realm = result?.rows[x];
-        const [realmData, poName, techName, secTechName] = await Promise.all([
-          kcCore.getRealm(realm.realm),
-          kcCore.getIdirUserName(realm.product_owner_idir_userid),
-          kcCore.getIdirUserName(realm.technical_contact_idir_userid),
-          kcCore.getIdirUserName(realm.second_technical_contact_idir_userid),
-        ]);
-
-        realm.product_owner_name = poName;
-        realm.technical_contact_name = techName;
-        realm.second_technical_contact_name = secTechName;
-        realm.displayName = realmData?.displayName || '';
+        const [realmData] = await Promise.all([kcCore.getRealm(realm.realm)]);
         realm.idps = realmData?.identityProviders?.map((v) => v.displayName || v.alias) || [];
+        const distinctProviders = new Set(realmData?.identityProviders?.map((v) => v.providerId) || []);
+        realm.protocol = Array.from(distinctProviders);
       }
     }
   }
