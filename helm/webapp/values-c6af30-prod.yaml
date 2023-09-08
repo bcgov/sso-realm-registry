@@ -1,5 +1,5 @@
 image:
-  tag: dev
+  tag: main
 
 route:
   host: realm-registry.apps.gold.devops.gov.bc.ca
@@ -25,7 +25,7 @@ vault:
 
 patroni:
   image:
-    repository: ghcr.io/junminahn/spilo
+    repository: registry.opensource.zalan.do/acid/spilo-14
     pullPolicy: Always
     tag: 2.1-p5
 
