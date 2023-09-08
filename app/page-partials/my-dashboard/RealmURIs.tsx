@@ -19,23 +19,23 @@ function RealmURIs({ realm }: Props) {
     <>
       <Title>Development</Title>
       <Link
-        href={`https://dev.oidc.gov.bc.ca/auth/admin/${realm.realm}/console`}
+        href={`https://dev.loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}
         external
-      >{`https://dev.oidc.gov.bc.ca/auth/admin/${realm.realm}/console`}</Link>
+      >{`https://dev.loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}</Link>
       <br />
       <br />
       <Title>Test</Title>
       <Link
-        href={`https://test.oidc.gov.bc.ca/auth/admin/${realm.realm}/console`}
+        href={`https://test.loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}
         external
-      >{`https://test.oidc.gov.bc.ca/auth/admin/${realm.realm}/console`}</Link>
+      >{`https://test.loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}</Link>
       <br />
       <br />
       <Title>Production</Title>
       <Link
-        href={`https://oidc.gov.bc.ca/auth/admin/${realm.realm}/console`}
+        href={`https://loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}
         external
-      >{`https://oidc.gov.bc.ca/auth/admin/${realm.realm}/console`}</Link>
+      >{`https://loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}</Link>
     </>
   );
 }

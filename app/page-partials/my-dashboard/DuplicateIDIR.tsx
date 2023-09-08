@@ -91,7 +91,7 @@ const TableContent = ({
           {info.affected.map((realm: string) => (
             <li key={realm}>
               <Link
-                href={`https://${env === 'prod' ? '' : env + '.'}oidc.gov.bc.ca/auth/admin/${realm}/console`}
+                href={`https://${env === 'prod' ? '' : env + '.'}loginproxy.gov.bc.ca/auth/admin/${realm}/console`}
                 external
               >
                 {realm}

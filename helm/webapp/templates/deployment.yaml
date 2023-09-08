@@ -23,7 +23,7 @@ spec:
         vault.hashicorp.com/agent-inject-token: 'true'
         vault.hashicorp.com/agent-init-first: 'true'
         vault.hashicorp.com/agent-pre-populate: 'true'
-        vault.hashicorp.com/auth-path: auth/k8s-silver
+        vault.hashicorp.com/auth-path: auth/k8s-gold
         vault.hashicorp.com/namespace: platform-services
         vault.hashicorp.com/role: {{ .Values.vault.vaultSecretEngine }}
         vault.hashicorp.com/agent-inject-secret-postgres: {{ .Values.vault.vaultSecretEngine }}/{{ .Values.vault.postgresSecret }}
@@ -49,6 +49,10 @@ spec:
             export TEST_KC_CLIENT_ID="{{ .Data.data.TEST_KC_CLIENT_ID}}"
             export TEST_KC_CLIENT_SECRET="{{ .Data.data.TEST_KC_CLIENT_SECRET}}"
             export TEST_KC_URL="{{ .Data.data.TEST_KC_URL}}"
+            export CHES_API_ENDPOINT="{{ .Data.data.CHES_API_ENDPOINT }}"
+            export CHES_PASSWORD="{{ .Data.data.CHES_PASSWORD }}"
+            export CHES_TOKEN_ENDPOINT="{{ .Data.data.CHES_TOKEN_ENDPOINT }}"
+            export CHES_USERNAME="{{ .Data.data.CHES_USERNAME }}"
           {{- end }}`}}
     spec:
       initContainers:
