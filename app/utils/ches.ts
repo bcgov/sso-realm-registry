@@ -1,6 +1,7 @@
 import axios from 'axios';
 import url from 'url';
 import getConfig from 'next/config';
+import https from 'https';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { ches_api_endpoint, ches_token_endpoint, ches_username, ches_password } = serverRuntimeConfig;
@@ -19,10 +20,18 @@ interface EmailOptions {
   tag?: string;
 }
 
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false,
+});
+
 const fetchChesToken = async () => {
   const params = new url.URLSearchParams({ grant_type: 'client_credentials' });
   try {
     const { data } = await axios.post(ches_token_endpoint, params.toString(), {
+      headers: {
+        'Accept-Encoding': 'application/json',
+      },
+      httpsAgent,
       auth: {
         username: ches_username,
         password: ches_password,

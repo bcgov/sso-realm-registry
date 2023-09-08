@@ -168,7 +168,7 @@ function RealmIDIR({ realm }: Props) {
             {result.affected.map((realmName) => (
               <li>
                 <Link
-                  href={`https://dev.oidc.gov.bc.ca/auth/admin/${realmName}/console`}
+                  href={`https://dev.loginproxy.gov.bc.ca/auth/admin/${realmName}/console`}
                   external
                 >{`Realm Link: ${realmName}`}</Link>
               </li>
