@@ -180,14 +180,14 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
       <h2>Realm Name: {realm.realm}</h2>
       <form onSubmit={handleSubmit(onSubmit)}>
         <label htmlFor="displayName">
-          Realm Descriptive Name
-          <InfoPopover>This name is the name you've configured in custom realm setting</InfoPopover>
+          Realm
+          <InfoPopover>Name of the realm you've configured in custom realm setting</InfoPopover>
         </label>
         <input
           type="text"
-          placeholder="Realm Descriptive Name"
+          placeholder="Realm Name"
           disabled
-          {...register('displayName', { required: false, minLength: 2, maxLength: 1000 })}
+          {...register('realm', { required: false, minLength: 2, maxLength: 1000 })}
         />
         <label htmlFor="product_name">
           Product Name<span className="required">*</span>
@@ -196,19 +196,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <input
           type="text"
           placeholder="Product Name"
-          {...register('product_name', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-        <label htmlFor="openshift_namespace">
-          Openshift Namespace<span className="required">*</span>
-          <InfoPopover>
-            If this realm is tied to OS, provide the license plate, if this realm is shared with multiple products type{' '}
-            <strong>Various</strong>. If OS is not applicable, please help type <strong>NA</strong>
-          </InfoPopover>
-        </label>
-        <input
-          type="text"
-          placeholder="Openshift Namespace"
-          {...register('openshift_namespace', { required: false, minLength: 2, maxLength: 1000 })}
+          {...register('product_name', { required: true, minLength: 2, maxLength: 1000 })}
         />
         {loading ? (
           <AlignCenter>
@@ -283,7 +271,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           type="text"
           placeholder="Product Owner Email"
           disabled={!isAdmin && !isPO}
-          {...register('product_owner_email', { required: false, pattern: /^\S+@\S+$/i })}
+          {...register('product_owner_email', { required: true, pattern: /^\S+@\S+$/i })}
         />
         <label htmlFor="product_owner_idir_userid">
           Product Owner Idir
@@ -316,7 +304,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <input
           type="text"
           placeholder="Technical Contact Email"
-          {...register('technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
+          {...register('technical_contact_email', { required: true, pattern: /^\S+@\S+$/i })}
         />
         <label htmlFor="technical_contact_idir_userid">
           Technical Contact Idir
@@ -339,7 +327,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <input
           type="text"
           placeholder="Second Technical Contact Email"
-          {...register('second_technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
+          {...register('second_technical_contact_email', { required: true, pattern: /^\S+@\S+$/i })}
         />
         <label htmlFor="second_technical_contact_idir_userid">
           Second Technical Contact Idir(optional)
@@ -355,29 +343,21 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         />
         {isAdmin && (
           <>
-            {/* ADMIN NOTE 1 */}
-            <label htmlFor="admin_note_1">Admin Note 1</label>
-            <textarea
-              rows={6}
-              placeholder="Admin Note 1"
+            {/* Rocket.Chat Channel */}
+            <label htmlFor="rc_channel">Rocket.Chat Channel</label>
+            <input
+              type="text"
+              placeholder="Rocket.Chat Channel"
               disabled={!isAdmin && !isPO}
-              {...register('admin_note_1', { required: false, minLength: 2, maxLength: 2000 })}
+              {...register('rc_channel', { required: false, minLength: 2, maxLength: 2000 })}
             />
-            {/* ADMIN NOTE 2 */}
-            <label htmlFor="admin_note_2">Admin Note 2</label>
-            <textarea
-              rows={6}
-              placeholder="Admin Note 2"
+            {/* Rocket.Chat Channel Owner */}
+            <label htmlFor="rc_channel_owned_by">Rocket.Chat Channel Owner</label>
+            <input
+              type="text"
+              placeholder="Rocket.Chat Channel Owner"
               disabled={!isAdmin && !isPO}
-              {...register('admin_note_2', { required: false, minLength: 2, maxLength: 2000 })}
-            />
-            {/* Next Step */}
-            <label htmlFor="next_steps">Next Step</label>
-            <textarea
-              rows={6}
-              placeholder="Next Step"
-              disabled={!isAdmin && !isPO}
-              {...register('next_steps', { required: false, minLength: 2, maxLength: 2000 })}
+              {...register('rc_channel_owned_by', { required: false, minLength: 2, maxLength: 2000 })}
             />
             {/* Material To Send */}
             <label htmlFor="material_to_send">Material To Send</label>
