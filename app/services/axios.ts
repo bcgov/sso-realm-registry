@@ -9,8 +9,7 @@ const instance = axios.create({
 
 instance?.interceptors.request.use(
   async function (config) {
-    const appToken = store2.session.get('app-token');
-    return { ...config, headers: { ...config.headers, Authorization: `Bearer ${appToken}` } };
+    return { ...config, headers: { ...config.headers } };
   },
   function (error) {
     return Promise.reject(error);

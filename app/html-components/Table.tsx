@@ -7,7 +7,8 @@ const Table = styled.table`
   box-shadow: none;
   text-align: left;
   border-collapse: separate;
-  border-spacing: 0 5px;
+  border-spacing: 0;
+  table-layout: fixed;
 
   & thead {
     font-size: 12px;
@@ -38,6 +39,7 @@ const Table = styled.table`
   & th,
   & td {
     border: none;
+    word-wrap: break-word;
   }
 `;
 

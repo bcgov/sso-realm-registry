@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { validateRequest } from 'utils/jwt';
 import KeycloakCore from 'utils/keycloak-core';
-import { getAllowedRealms, getAllowedRealmNames } from 'controllers/realm';
+import { getAllowedRealmNames } from 'controllers/realm';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 
 interface ErrorData {
   success: boolean;
@@ -12,8 +13,9 @@ type Data = ErrorData | string | any;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   try {
-    const session = await validateRequest(req, res);
-    if (!session) return res.status(401).json({ success: false, error: 'jwt expired' });
+    const session: any = await getServerSession(req, res, authOptions);
+
+    if (!session) return res.status(401).json({ success: false, error: 'unauthorized' });
 
     const { search, env } = req.query;
     const searchParam = String(search);

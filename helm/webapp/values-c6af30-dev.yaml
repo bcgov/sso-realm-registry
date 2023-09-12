@@ -1,0 +1,34 @@
+image:
+  tag: dev
+
+route:
+  host: realm-registry-sandbox.apps.gold.devops.gov.bc.ca
+
+sso:
+  url: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+  redirectUri: http://realm-registry-sandbox.apps.gold.devops.gov.bc.ca/oidc/keycloak
+  logoutRedirectUri: http://realm-registry-sandbox.apps.gold.devops.gov.bc.ca
+
+env:
+  APP_ENV: 'development'
+  SECURE_HEADERS: 'true'
+  IDIR_JWKS_URI: https://dev.loginproxy.gov.bc.ca/auth/realms/standard/protocol/openid-connect/certs
+  IDIR_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
+  IDIR_AUDIENCE: css-app-in-gold-4128
+  CHES_API_ENDPOINT: https://ches.api.gov.bc.ca/api/v1/email
+  NEXTAUTH_URL: http://realm-registry-sandbox.apps.gold.devops.gov.bc.ca
+
+vault:
+  vaultSecretEngine: c6af30-nonprod
+  postgresSecret: sandbox-realm-registry-patroni-appusers
+  realmRegistrySecret: sandbox-realm-registry
+  serviceAccountName: c6af30-vault
+
+patroni:
+  image:
+    repository: registry.opensource.zalan.do/acid/spilo-14
+    pullPolicy: Always
+    tag: 2.1-p5
+
+  walG:
+    enabled: false

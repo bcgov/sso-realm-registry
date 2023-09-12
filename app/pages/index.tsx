@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/router';
-import Image from 'next/image';
 import Head from 'next/head';
 import styled from 'styled-components';
 import Grid from '@button-inc/bcgov-theme/Grid';
 import Button from '@button-inc/bcgov-theme/Button';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
-import { UserSession } from 'types/user-session';
-import hero from 'public/home-right.png';
+import IntroRealms from 'svg/IntroRealms';
+import { signIn, useSession } from 'next-auth/react';
 
 const JumbotronH1 = styled.h1`
   font-size: 2.5rem;
@@ -35,15 +34,15 @@ const mediaRules: MediaRule[] = [
   },
 ];
 
-interface Props {
-  currentUser: UserSession;
-}
-
-const Home = ({ currentUser }: Props) => {
+const Home = () => {
   const router = useRouter();
+  const session = useSession();
 
   const handleLogin = async () => {
-    window.location.href = '/api/oidc/keycloak/login';
+    signIn('keycloak', {
+      callbackUrl: '/my-dashboard',
+      redirect: true,
+    });
   };
 
   const handleDashboard = async () => {
@@ -69,7 +68,7 @@ const Home = ({ currentUser }: Props) => {
                 <br />
                 Custom realm.
               </JumbotronP>
-              {currentUser ? (
+              {session ? (
                 <Button size="medium" onClick={handleDashboard}>
                   My Dashboard
                 </Button>
@@ -79,9 +78,7 @@ const Home = ({ currentUser }: Props) => {
                 </Button>
               )}
             </Grid.Col>
-            <Grid.Col span={7}>
-              <Image src={hero} alt="Hero image" />
-            </Grid.Col>
+            <Grid.Col span={7}>{IntroRealms}</Grid.Col>
           </Grid.Row>
         </Grid>
       </ResponsiveContainer>

@@ -2,25 +2,22 @@ create table if not exists public.rosters (
     id serial not null,
     realm varchar(1000),
     product_name varchar(1000),
-    openshift_namespace varchar(1000),
     product_owner_email varchar(1000),
     product_owner_idir_userid varchar(1000),
     technical_contact_email varchar(1000),
     technical_contact_idir_userid varchar(1000),
-    admin_note_1 text,
-    admin_note_2 text,
+    second_technical_contact_email varchar(1000),
+    second_technical_contact_idir_userid varchar(1000),
+    rc_channel text,
     ministry varchar(1000),
     division varchar(1000),
     branch varchar(1000),
     created_at timestamp with time zone default current_timestamp,
     updated_at timestamp with time zone default current_timestamp,
+    material_to_send text,
+    rc_channel_owned_by varchar(1000),
     primary key(id)
 );
-
-alter table public.rosters add column if not exists next_steps text;
-alter table public.rosters add column if not exists material_to_send text;
-alter table public.rosters add column if not exists second_technical_contact_email varchar(1000);
-alter table public.rosters add column if not exists second_technical_contact_idir_userid varchar(1000);
 
 create table if not exists public.surveys_1 (
     idir_userid varchar(1000),

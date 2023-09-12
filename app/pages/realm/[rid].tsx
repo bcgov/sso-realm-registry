@@ -60,10 +60,9 @@ const mediaRules: MediaRule[] = [
 
 interface Props {
   alert: BottomAlert;
-  currentUser: UserSession;
 }
 
-function EditRealm({ alert, currentUser }: Props) {
+function EditRealm({ alert }: Props) {
   const router = useRouter();
   const { rid } = router.query;
 
@@ -114,24 +113,6 @@ function EditRealm({ alert, currentUser }: Props) {
   return (
     <Container rules={mediaRules}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <label htmlFor="realm">Realm Name</label>
-        <input
-          id="realm"
-          type="text"
-          placeholder="Realm Name"
-          disabled
-          {...register('realm', { required: true, maxLength: 1000 })}
-        />
-
-        <label htmlFor="displayName">
-          Realm Descriptive Name<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Realm Descriptive Name"
-          {...register('displayName', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
         <label htmlFor="product_name">
           Product Name<span className="required">*</span>
         </label>
@@ -139,15 +120,6 @@ function EditRealm({ alert, currentUser }: Props) {
           type="text"
           placeholder="Product Name"
           {...register('product_name', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
-        <label htmlFor="openshift_namespace">
-          Openshift Namespace<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Openshift Namespace"
-          {...register('openshift_namespace', { required: false, minLength: 2, maxLength: 1000 })}
         />
 
         <label htmlFor="product_owner_email">
@@ -183,6 +155,42 @@ function EditRealm({ alert, currentUser }: Props) {
           disabled
           {...register('technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
         />
+
+        <label htmlFor="second_technical_contact_email">
+          Second Technical Contact Email<span className="required">*</span>
+        </label>
+        <input
+          type="text"
+          placeholder="Second Technical Contact Email"
+          {...register('second_technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
+        />
+
+        <label htmlFor="second_technical_contact_idir_userid">Second Technical Contact Idir</label>
+        <input
+          type="text"
+          placeholder="Second Technical Contact Idir"
+          disabled
+          {...register('second_technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
+        />
+
+        <label htmlFor="rc_channel">
+          Rocket.Chat Channel<span className="required">*</span>
+        </label>
+        <input
+          type="text"
+          placeholder="Rocket.Chat Channel"
+          {...register('rc_channel', { required: false, pattern: /^\S+@\S+$/i })}
+        />
+
+        <label htmlFor="rc_channel_owned_by">
+          Rocket.Chat Channel Owner<span className="required">*</span>
+        </label>
+        <input
+          type="text"
+          placeholder="Rocket.Chat Channel Owner"
+          {...register('rc_channel_owned_by', { required: false, pattern: /^\S+@\S+$/i })}
+        />
+
         {realm && <p>Last Updated: {new Date(realm.updated_at).toLocaleString()}</p>}
 
         <Button type="submit" variant="primary">
