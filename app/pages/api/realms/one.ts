@@ -3,6 +3,8 @@ import { runQuery } from 'utils/db';
 import { validateRequest } from 'utils/jwt';
 import KeycloakCore from 'utils/keycloak-core';
 import { sendUpdateEmail } from 'utils/mailer';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 
 interface ErrorData {
   success: boolean;
@@ -15,12 +17,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   try {
     const { id } = req.query;
 
-    const session = await validateRequest(req, res);
-    const username = session?.idir_username || '';
-    const roles = session?.client_roles || [];
-    const isAdmin = roles.includes('sso-admin');
+    const session: any = await getServerSession(req, res, authOptions);
 
-    if (!username) return res.status(401).json({ success: false, error: 'jwt expired' });
+    if (!session) return res.status(401).json({ success: false, error: 'unauthorized' });
+
+    const username = session?.user?.idir_username || '';
+    const roles = session?.user?.client_roles || [];
+    const isAdmin = roles.includes('sso-admin');
 
     const kcCore = new KeycloakCore('prod');
 

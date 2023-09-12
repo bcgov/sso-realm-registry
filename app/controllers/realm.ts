@@ -2,8 +2,8 @@ import { runQuery } from 'utils/db';
 import KeycloakCore from 'utils/keycloak-core';
 
 export async function getAllowedRealms(session: any) {
-  const username = session?.idir_username || '';
-  const roles = session?.client_roles || [];
+  const username = session?.user?.idir_username || '';
+  const roles = session?.user?.client_roles || [];
   const isAdmin = roles.includes('sso-admin');
   let result: any = null;
 

@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import styled from 'styled-components';
-import Button from '@button-inc/bcgov-theme/Button';
-import Modal from '@button-inc/bcgov-theme/Modal';
 import Grid from '@button-inc/bcgov-theme/Grid';
 import Alert from '@button-inc/bcgov-theme/Alert';
 import StyledLink from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
-import { UserSession } from 'types/user-session';
 import RealmLeftPanel from 'page-partials/my-dashboard/RealmLeftPanel';
 import RealmRightPanel from 'page-partials/my-dashboard/RealmRightPanel';
 import PopupModal from 'page-partials/my-dashboard/PopupModal';
 import TopAlertWrapper from 'components/TopAlertWrapper';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import { getRealmProfiles } from 'services/realm';
-import { getSurvey, answerSurvey } from 'services/survey';
+import { getSurvey } from 'services/survey';
+import { useSession } from 'next-auth/react';
 
 const AlignCenter = styled.div`
   text-align: center;
@@ -40,12 +37,9 @@ const mediaRules: MediaRule[] = [
   },
 ];
 
-interface Props {
-  currentUser: UserSession;
-}
-
-function MyDashboard({ currentUser }: Props) {
-  const router = useRouter();
+function MyDashboard() {
+  const { data } = useSession();
+  const currentUser: any = data?.user;
   const [loading, setLoading] = useState<boolean>(false);
   const [answered, setAnswered] = useState<boolean>(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
