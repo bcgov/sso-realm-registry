@@ -66,7 +66,7 @@ export async function getAllowedRealmNames(session: any) {
       `
       SELECT
         realm,
-      FROM rosters WHERE LOWER(technical_contact_idir_userid)=LOWER($1) OR LOWER(product_owner_idir_userid)=LOWER($1) ORDER BY id ASC
+      FROM rosters WHERE LOWER(technical_contact_idir_userid)=LOWER($1) OR LOWER(second_technical_contact_idir_userid)=LOWER($1) OR LOWER(product_owner_idir_userid)=LOWER($1) ORDER BY id ASC
       `,
       [username],
     );

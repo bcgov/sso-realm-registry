@@ -175,7 +175,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             second_technical_contact_email=$8,
             second_technical_contact_idir_userid=$9,
             updated_at=now()
-          WHERE id=$1 AND LOWER(technical_contact_idir_userid)=LOWER($2)
+          WHERE id=$1 AND (LOWER(technical_contact_idir_userid)=LOWER($2) OR LOWER(second_technical_contact_idir_userid)=LOWER($2))
           RETURNING *`,
           [
             id,

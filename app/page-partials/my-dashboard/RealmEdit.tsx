@@ -169,7 +169,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
     }
   };
 
-  const isAdmin = currentUser.client_roles.includes('sso-admin');
+  const isAdmin = currentUser?.client_roles?.includes('sso-admin');
   const isPO = currentUser.idir_username.toLocaleLowerCase() === realm.product_owner_idir_userid.toLocaleLowerCase();
 
   if (!realm) return null;
@@ -307,7 +307,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           {...register('technical_contact_email', { required: true, pattern: /^\S+@\S+$/i })}
         />
         <label htmlFor="technical_contact_idir_userid">
-          Technical Contact Idir
+          Technical Contact Idir<span className="required">*</span>
           <InfoPopover>
             If not dithered, you can update this field with the appropriate technical contact Idir
           </InfoPopover>
@@ -316,10 +316,10 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           type="text"
           placeholder="Technical Contact Idir"
           disabled={!isAdmin && !isPO}
-          {...register('technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
+          {...register('technical_contact_idir_userid', { required: true, minLength: 2, maxLength: 1000 })}
         />
         <label htmlFor="second_technical_contact_email">
-          Second Technical Contact Email(optional)<span className="required">*</span>
+          Second Technical Contact Email(optional)
           <InfoPopover>
             If not dithered, you can update this field with the appropriate optional technical contact email
           </InfoPopover>
@@ -327,7 +327,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <input
           type="text"
           placeholder="Second Technical Contact Email"
-          {...register('second_technical_contact_email', { required: true, pattern: /^\S+@\S+$/i })}
+          {...register('second_technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
         />
         <label htmlFor="second_technical_contact_idir_userid">
           Second Technical Contact Idir(optional)
