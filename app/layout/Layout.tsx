@@ -12,6 +12,7 @@ import Navigation from './Navigation';
 import BottomAlertProvider from './BottomAlert';
 import { useSession } from 'next-auth/react';
 import { useEffect } from 'react';
+import { User } from 'next-auth';
 
 const headerPlusFooterHeight = '152px';
 
@@ -108,11 +109,11 @@ const routes: Route[] = [
   { path: '/realm', label: 'Realm Profile', roles: ['user'], hide: true },
 ];
 
-const LeftMenuItems = ({ currentUser, currentPath }: { currentUser: any; currentPath: string }) => {
-  let roles = ['guest'];
+const LeftMenuItems = ({ currentUser, currentPath }: { currentUser: Partial<User>; currentPath: string }) => {
+  let roles: string[] = ['guest'];
 
   if (currentUser) {
-    roles = currentUser?.client_roles?.length > 0 ? currentUser.client_roles : ['user'];
+    roles = currentUser?.client_roles?.length! > 0 ? currentUser.client_roles! : ['user'];
   }
 
   const isCurrent = (path: string) => currentPath === path || currentPath.startsWith(`${path}/`);
@@ -158,7 +159,7 @@ const RightMenuItems = () => (
 function Layout({ children, onLoginClick, onLogoutClick }: any) {
   const router = useRouter();
   const { data } = useSession();
-  const currentUser: any = data?.user;
+  const currentUser: Partial<User> = data?.user!;
   const pathname = router.pathname;
 
   const rightSide = currentUser ? (

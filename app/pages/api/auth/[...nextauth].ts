@@ -46,6 +46,7 @@ export const authOptions: NextAuthOptions = {
       issuer: process.env.SSO_URL,
       profile(profile) {
         return {
+          ...profile,
           id: profile.sub,
           name: profile.name,
           email: profile.email,
@@ -85,12 +86,6 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.accessToken = token.accessToken;
         session.user = token.user;
-        session.user.client_roles = token.client_roles || []; // Adding roles to session.user here
-        session.user.given_name = token.given_name;
-        session.user.family_name = token.family_name;
-        session.user.preferred_username = token.preferred_username;
-        session.user.email = token.email;
-        session.user.idir_username = token.idir_username;
       }
 
       return session;

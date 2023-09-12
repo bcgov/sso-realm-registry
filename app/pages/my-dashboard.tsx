@@ -14,6 +14,7 @@ import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import { getRealmProfiles } from 'services/realm';
 import { getSurvey } from 'services/survey';
 import { useSession } from 'next-auth/react';
+import { User } from 'next-auth';
 
 const AlignCenter = styled.div`
   text-align: center;
@@ -39,7 +40,7 @@ const mediaRules: MediaRule[] = [
 
 function MyDashboard() {
   const { data } = useSession();
-  const currentUser: any = data?.user;
+  const currentUser: Partial<User> = data?.user!;
   const [loading, setLoading] = useState<boolean>(false);
   const [answered, setAnswered] = useState<boolean>(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
