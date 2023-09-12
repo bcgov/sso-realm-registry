@@ -14,8 +14,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const session = await validateRequest(req, res);
     if (!session) return res.status(401).json({ success: false, error: 'jwt expired' });
 
-    const username = session?.idir_username || '';
-    const roles = session?.client_roles || [];
+    const username = session?.user?.idir_username || '';
+    const roles = session?.user?.client_roles || [];
     const isAdmin = roles.includes('sso-admin');
 
     if (req.method === 'GET') {

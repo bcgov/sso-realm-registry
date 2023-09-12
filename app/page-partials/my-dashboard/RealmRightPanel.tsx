@@ -1,18 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
-import { useForm } from 'react-hook-form';
-import Loader from 'react-loader-spinner';
-import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
-import Button from '@button-inc/bcgov-theme/Button';
-import Checkbox from '@button-inc/bcgov-theme/Checkbox';
+import React, { useState } from 'react';
 import Tabs from 'components/Tabs';
-import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
-import { UserSession } from 'types/user-session';
 import styled from 'styled-components';
 import { RealmProfile } from 'types/realm-profile';
 import RealmEdit from './RealmEdit';
 import RealmURIs from './RealmURIs';
-import RealmIDIR from './RealmIDIR';
+import { User } from 'next-auth';
 
 const Container = styled.div`
   font-size: 1rem;
@@ -50,7 +42,7 @@ const Container = styled.div`
 
 interface Props {
   realm: RealmProfile;
-  currentUser: UserSession;
+  currentUser: Partial<User>;
   onUpdate: (realm: RealmProfile) => void;
   onCancel: () => void;
 }

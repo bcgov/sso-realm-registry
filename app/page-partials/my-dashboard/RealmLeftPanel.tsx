@@ -19,7 +19,8 @@ function RealmLeftPanel({ realms, onEditClick, onCancel }: Props) {
         <a className={`nav-link ${tab === 'dashboard' ? 'active' : ''}`} onClick={() => setTab('dashboard')}>
           My Dashboard
         </a>
-        <a
+        {/* Disabling this feature as part of migration to gold */}
+        {/* <a
           className={`nav-link ${tab === 'duplicate' ? 'active' : ''}`}
           onClick={() => {
             setTab('duplicate');
@@ -27,7 +28,7 @@ function RealmLeftPanel({ realms, onEditClick, onCancel }: Props) {
           }}
         >
           Duplicate Users
-        </a>
+        </a> */}
       </Tabs>
       {tab === 'dashboard' ? <RealmTable realms={realms} onEditClick={onEditClick} /> : <DuplicateIDIR />}
     </>

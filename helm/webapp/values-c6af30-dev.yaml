@@ -16,6 +16,7 @@ env:
   IDIR_ISSUER: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
   IDIR_AUDIENCE: css-app-in-gold-4128
   CHES_API_ENDPOINT: https://ches.api.gov.bc.ca/api/v1/email
+  NEXTAUTH_URL: http://realm-registry-sandbox.apps.gold.devops.gov.bc.ca
 
 vault:
   vaultSecretEngine: c6af30-nonprod

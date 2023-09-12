@@ -10,6 +10,9 @@ import { startCase } from 'lodash';
 import BCSans from './BCSans';
 import Navigation from './Navigation';
 import BottomAlertProvider from './BottomAlert';
+import { useSession } from 'next-auth/react';
+import { useEffect } from 'react';
+import { User } from 'next-auth';
 
 const headerPlusFooterHeight = '152px';
 
@@ -106,11 +109,11 @@ const routes: Route[] = [
   { path: '/realm', label: 'Realm Profile', roles: ['user'], hide: true },
 ];
 
-const LeftMenuItems = ({ currentUser, currentPath }: { currentUser: any; currentPath: string }) => {
-  let roles = ['guest'];
+const LeftMenuItems = ({ currentUser, currentPath }: { currentUser: Partial<User>; currentPath: string }) => {
+  let roles: string[] = ['guest'];
 
   if (currentUser) {
-    roles = currentUser?.client_roles?.length > 0 ? currentUser.client_roles : ['user'];
+    roles = currentUser?.client_roles?.length! > 0 ? currentUser.client_roles! : ['user'];
   }
 
   const isCurrent = (path: string) => currentPath === path || currentPath.startsWith(`${path}/`);
@@ -136,7 +139,7 @@ const RightMenuItems = () => (
   <>
     <li>Need help?</li>
     <HoverItem>
-      <a href="https://chat.developer.gov.bc.ca/channel/sso" target="_blank" title="Rocket Chat">
+      <a href="https://chat.developer.gov.bc.ca/channel/sso" target="_blank" title="Rocket Chat" rel="noreferrer">
         <FontAwesomeIcon size="2x" icon={faCommentDots} />
       </a>
     </HoverItem>
@@ -146,20 +149,22 @@ const RightMenuItems = () => (
       </a>
     </HoverItem>
     <HoverItem>
-      <a href="https://github.com/bcgov/ocp-sso/wiki" target="_blank" title="Documentation">
+      <a href="https://github.com/bcgov/ocp-sso/wiki" target="_blank" title="Documentation" rel="noreferrer">
         <FontAwesomeIcon size="2x" icon={faFileAlt} />
       </a>
     </HoverItem>
   </>
 );
 // identity_provider, idir_userid, client_roles, family_name, given_name
-function Layout({ children, currentUser, onLoginClick, onLogoutClick }: any) {
+function Layout({ children, onLoginClick, onLogoutClick }: any) {
   const router = useRouter();
+  const { data } = useSession();
+  const currentUser: Partial<User> = data?.user!;
   const pathname = router.pathname;
 
   const rightSide = currentUser ? (
     <LoggedUser>
-      <div className="welcome">Welcome {`${currentUser.given_name} ${currentUser.family_name}`}</div>
+      <div className="welcome">Welcome {`${currentUser?.given_name} ${currentUser?.family_name}`}</div>
       &nbsp;&nbsp;
       <Button variant="secondary-inverse" size="medium" onClick={onLogoutClick}>
         Log out
@@ -177,7 +182,7 @@ function Layout({ children, currentUser, onLoginClick, onLogoutClick }: any) {
 
       <li>
         Need help?&nbsp;&nbsp;
-        <a href="https://chat.developer.gov.bc.ca/" target="_blank" title="Rocket Chat">
+        <a href="https://chat.developer.gov.bc.ca/" target="_blank" title="Rocket Chat" rel="noreferrer">
           <FontAwesomeIcon size="2x" icon={faCommentDots} />
         </a>
         &nbsp;&nbsp;
@@ -185,7 +190,7 @@ function Layout({ children, currentUser, onLoginClick, onLogoutClick }: any) {
           <FontAwesomeIcon size="2x" icon={faEnvelope} />
         </a>
         &nbsp;&nbsp;
-        <a href="https://github.com/bcgov/ocp-sso/wiki" target="_blank" title="Wiki">
+        <a href="https://github.com/bcgov/ocp-sso/wiki" target="_blank" title="Wiki" rel="noreferrer">
           <FontAwesomeIcon size="2x" icon={faFileAlt} />
         </a>
       </li>

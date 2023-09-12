@@ -60,10 +60,9 @@ const mediaRules: MediaRule[] = [
 
 interface Props {
   alert: BottomAlert;
-  currentUser: UserSession;
 }
 
-function EditRealm({ alert, currentUser }: Props) {
+function EditRealm({ alert }: Props) {
   const router = useRouter();
   const { rid } = router.query;
 
