@@ -21,6 +21,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     return res.send(realms);
   } catch (err: any) {
     console.error(err);
-    res.status(200).json({ success: false, error: err.message || err });
+    res.status(500).json({ success: false, error: err.message || err });
   }
 }
