@@ -97,7 +97,13 @@ function MyDashboard() {
     setSelectedId(null);
   };
 
-  if (hasError) return null;
+  if (hasError) return (
+    <TopAlertWrapper>
+    <Alert variant="warning" closable={true}>
+      There was en error while loading your realm information. Please try refreshing the page.
+    </Alert>
+  </TopAlertWrapper>
+  );
 
   return (
     <>
