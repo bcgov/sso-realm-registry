@@ -92,7 +92,11 @@ function RealmTable({ realms, onEditClick }: Props) {
           },
           {
             header: 'Rocket Chat Channel',
-            cell: (row) =>  <Link href={row.renderValue() as string} external>Rocketchat</Link>,            
+            cell: (row) => (
+              <Link href={row.renderValue() as string} external>
+                Rocketchat
+              </Link>
+            ),
             accessorKey: 'rcChannel',
           },
           {
