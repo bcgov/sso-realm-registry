@@ -2,6 +2,7 @@ import React from 'react';
 import Button from '@button-inc/bcgov-theme/Button';
 import { RealmProfile } from 'types/realm-profile';
 import Table from 'components/Table';
+import Link from '@button-inc/bcgov-theme/Link';
 
 interface Props {
   realms: RealmProfile[];
@@ -91,7 +92,11 @@ function RealmTable({ realms, onEditClick }: Props) {
           },
           {
             header: 'Rocket Chat Channel',
-            cell: (row) => row.renderValue(),
+            cell: (row) => (
+              <Link href={row.renderValue() as string} external>
+                Rocketchat
+              </Link>
+            ),
             accessorKey: 'rcChannel',
           },
           {

@@ -46,7 +46,11 @@ const Home = () => {
   };
 
   const handleDashboard = async () => {
-    router.push(`/my-dashboard`);
+    if (session?.status === 'authenticated') {
+      router.push(`/my-dashboard`);
+    } else {
+      handleLogin();
+    }
   };
 
   return (
