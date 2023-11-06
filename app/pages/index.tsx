@@ -4,9 +4,11 @@ import Head from 'next/head';
 import styled from 'styled-components';
 import Grid from '@button-inc/bcgov-theme/Grid';
 import Button from '@button-inc/bcgov-theme/Button';
+import Link from '@button-inc/bcgov-theme/Link';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import IntroRealms from 'svg/IntroRealms';
 import { signIn, useSession } from 'next-auth/react';
+import NextLink from 'next/link';
 
 const JumbotronH1 = styled.h1`
   font-size: 2.5rem;
@@ -15,6 +17,19 @@ const JumbotronH1 = styled.h1`
 const JumbotronP = styled.p`
   font-size: 1.5rem;
 `;
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+
+  .custom-realm-info {
+    a {
+      color: #0d6efd;
+    }
+  }
+`
 
 const mediaRules: MediaRule[] = [
   {
@@ -62,25 +77,35 @@ const Home = () => {
         <Grid cols={10} gutter={[5, 2]} style={{ overflowX: 'hidden' }}>
           <Grid.Row collapse="800">
             <Grid.Col span={3}>
-              <JumbotronH1>Keycloak Realm Registry</JumbotronH1>
-              <JumbotronP>
-                Use this self-service tool to
-                <br />
-                view, and edit some,
-                <br />
-                information about your
-                <br />
-                Custom realm.
-              </JumbotronP>
-              {session ? (
-                <Button size="medium" onClick={handleDashboard}>
-                  My Dashboard
-                </Button>
-              ) : (
-                <Button size="medium" onClick={handleLogin}>
-                  Login
-                </Button>
-              )}
+              <Container>
+                <div>
+                  <JumbotronH1>Keycloak Realm Registry</JumbotronH1>
+                  <JumbotronP>
+                    Use this self-service tool to
+                    <br />
+                    view, and edit some,
+                    <br />
+                    information about your
+                    <br />
+                    Custom realm.
+                  </JumbotronP>
+                  {session ? (
+                    <Button size="medium" onClick={handleDashboard}>
+                      My Dashboard
+                    </Button>
+                  ) : (
+                    <Button size="medium" onClick={handleLogin}>
+                      Login
+                    </Button>
+                  )}
+                </div>
+                <div className="custom-realm-info">
+                  <p className="large-font">Do you want to request a new Custom Realm?</p>
+                  <p>Over 90% of our clients benefit from our Standard Service, please visit our <Link href="https://github.com/bcgov/sso-keycloak/wiki#placeholder-on-custom-realms">information</Link> to ensure this is not a fit for you. To maintain our <Link href="https://github.com/bcgov/sso-keycloak/wiki/Alerts-and-Us#service-levels">service levels</Link>, we need to evaluate every single custom realm request coming to us. Please fill out the form to start the conversation with us.</p>
+                  <strong className='custom-realm-link'><NextLink href='/custom-realm-form'>Request a Custom Realm</NextLink></strong>
+                </div>
+
+              </Container>
             </Grid.Col>
             <Grid.Col span={7}>{IntroRealms}</Grid.Col>
           </Grid.Row>
