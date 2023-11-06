@@ -28,3 +28,30 @@ export interface ModalData {
   willing_to_move?: string;
   when_to_move?: string;
 }
+
+export interface CustomRealmFormData {
+  id?: number;
+  realmName : string;
+  realmPurpose: string;
+  primaryUsers: {
+      livingInBC: boolean;
+      businessInBC: boolean;
+      govEmployees: boolean;
+      other: boolean;
+      otherDetails: string;
+  }
+  environments: {
+      dev: boolean;
+      test: boolean;
+      prod: boolean;
+  },
+  loginIdp: string;
+  productOwnerEmail: string;
+  productOwnerIdir: string;
+  technicalContactEmail: string;
+  technicalContactIdir: string;
+  secondaryTechnicalContactIdir: string;
+  secondaryTechnicalContactEmail: string;
+  status?: 'pending' | 'approved' | 'declined' | 'created';
+  [key: string]: any;
+}
