@@ -38,7 +38,7 @@ const Container = styled.div`
       font-size: 1.2em;
     }
   }
-`
+`;
 
 const mediaRules: MediaRule[] = [
   {
@@ -110,10 +110,20 @@ const Home = () => {
                 </div>
                 <div className="custom-realm-info">
                   <p className="large-font">Do you want to request a new Custom Realm?</p>
-                  <p>Over 90% of our clients benefit from our Standard Service, please visit our <Link href="https://github.com/bcgov/sso-keycloak/wiki">information</Link> to ensure this is not a fit for you. To maintain our <Link href="https://github.com/bcgov/sso-keycloak/wiki/Alerts-and-Us#service-levels">service levels</Link>, we need to evaluate every single custom realm request coming to us. Please fill out the form to start the conversation with us.</p>
-                  <strong className='custom-realm-link'><NextLink href='/custom-realm-form'>Request a Custom Realm</NextLink></strong>
+                  <p>
+                    Over 90% of our clients benefit from our Standard Service, please visit our{' '}
+                    <Link href="https://github.com/bcgov/sso-keycloak/wiki">information</Link> to ensure this is not a
+                    fit for you. To maintain our{' '}
+                    <Link href="https://github.com/bcgov/sso-keycloak/wiki/Alerts-and-Us#service-levels">
+                      service levels
+                    </Link>
+                    , we need to evaluate every single custom realm request coming to us. Please fill out the form to
+                    start the conversation with us.
+                  </p>
+                  <strong className="custom-realm-link">
+                    <NextLink href="/custom-realm-form">Request a Custom Realm</NextLink>
+                  </strong>
                 </div>
-
               </Container>
             </Grid.Col>
             <Grid.Col span={7}>{IntroRealms}</Grid.Col>

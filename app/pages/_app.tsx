@@ -1,14 +1,14 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/globals.css';
-import React, {useState, createContext} from 'react';
+import React, { useState, createContext } from 'react';
 import { useRouter } from 'next/router';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import Layout from 'layout/Layout';
 import { SessionProvider, signOut, signIn } from 'next-auth/react';
 import Modal from 'components/Modal';
-import {ModalContext, ModalConfig} from 'context/modal';
-  
+import { ModalContext, ModalConfig } from 'context/modal';
+
 function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();
   const [modalConfig, setModalConfig] = useState<ModalConfig>({
@@ -34,7 +34,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
     <ModalContext.Provider value={{ modalConfig, setModalConfig }}>
       <SessionProvider session={session}>
-      {modalConfig.show && <Modal modalConfig={modalConfig} setModalConfig={setModalConfig} /> }
+        {modalConfig.show && <Modal modalConfig={modalConfig} setModalConfig={setModalConfig} />}
         <Layout onLoginClick={handleLogin} onLogoutClick={handleLogout}>
           <Head>
             <html lang="en" />

@@ -5,17 +5,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     if (req.method === 'PUT') {
       const { id } = req.query;
-      const {status} = req.body
-      console.log(`Updating request id ${id} to status ${status}`)
-      res.status(200).json({success: true})
+      const { status } = req.body;
+      console.log(`Updating request id ${id} to status ${status}`);
+      res.status(200).json({ success: true });
     }
     if (req.method === 'DELETE') {
       const { id } = req.query;
-      console.log(`Deleting request id ${id}`)
-      res.status(200).json({success: true})
+      console.log(`Deleting request id ${id}`);
+      res.status(200).json({ success: true });
     }
-  }
-  catch (err) {
+  } catch (err) {
     console.error(err);
     res.status(500).json({ success: false });
   }

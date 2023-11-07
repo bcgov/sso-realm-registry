@@ -31,20 +31,20 @@ export interface ModalData {
 
 export interface CustomRealmFormData {
   id?: number;
-  realmName : string;
+  realmName: string;
   realmPurpose: string;
   primaryUsers: {
-      livingInBC: boolean;
-      businessInBC: boolean;
-      govEmployees: boolean;
-      other: boolean;
-      otherDetails: string;
-  }
+    livingInBC: boolean;
+    businessInBC: boolean;
+    govEmployees: boolean;
+    other: boolean;
+    otherDetails: string;
+  };
   environments: {
-      dev: boolean;
-      test: boolean;
-      prod: boolean;
-  },
+    dev: boolean;
+    test: boolean;
+    prod: boolean;
+  };
   loginIdp: string;
   productOwnerEmail: string;
   productOwnerIdir: string;

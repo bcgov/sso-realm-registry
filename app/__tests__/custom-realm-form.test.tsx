@@ -1,19 +1,19 @@
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import CustomRealmForm from 'pages/custom-realm-form';
-import { submitRealmRequest } from 'services/realm'
-import { CustomRealmFormData } from "types/realm-profile";
-import { act } from "react-dom/test-utils";
+import { submitRealmRequest } from 'services/realm';
+import { CustomRealmFormData } from 'types/realm-profile';
+import { act } from 'react-dom/test-utils';
 
 jest.mock('services/realm', () => {
   return {
-    submitRealmRequest: jest.fn((realmInfo: CustomRealmFormData) => Promise.resolve([true, null]))
-  }
-})
+    submitRealmRequest: jest.fn((realmInfo: CustomRealmFormData) => Promise.resolve([true, null])),
+  };
+});
 
 jest.mock('next/router', () => ({
   useRouter() {
-    return ({
+    return {
       route: '/',
       pathname: '',
       query: '',
@@ -21,26 +21,26 @@ jest.mock('next/router', () => ({
       push: jest.fn(() => Promise.resolve(true)),
       events: {
         on: jest.fn(),
-        off: jest.fn()
+        off: jest.fn(),
       },
       beforePopState: jest.fn(() => null),
-      prefetch: jest.fn(() => null)
-    });
+      prefetch: jest.fn(() => null),
+    };
   },
 }));
 
 // Mock authentication
-jest.mock("next-auth/react", () => {
+jest.mock('next-auth/react', () => {
   const originalModule = jest.requireActual('next-auth/react');
   const mockSession = {
     expires: new Date(Date.now() + 2 * 86400).toISOString(),
-    user: { username: "admin" }
+    user: { username: 'admin' },
   };
   return {
     __esModule: true,
     ...originalModule,
     useSession: jest.fn(() => {
-      return { data: mockSession, status: 'authenticated' }  // return type is [] in v3 but changed to {} in v4
+      return { data: mockSession, status: 'authenticated' }; // return type is [] in v3 but changed to {} in v4
     }),
   };
 });
@@ -49,24 +49,24 @@ describe('Form Validation', () => {
   const requiredFieldCount = 11;
 
   const submitForm = () => {
-    const submitButon = screen.getByText("Submit", { selector: 'button' });
-    fireEvent.click(submitButon)
-  }
+    const submitButon = screen.getByText('Submit', { selector: 'button' });
+    fireEvent.click(submitButon);
+  };
 
   const getErrorCount = (container: HTMLElement) => {
     const errorText = container.querySelectorAll('.error-message');
-    return Array.from(errorText).length
-  }
+    return Array.from(errorText).length;
+  };
 
   const fillTextInput = (label: string, value = 'a') => {
-    const field = screen.getByLabelText(label, {exact: false});
-    fireEvent.change(field, { target: { value } })
-  }
+    const field = screen.getByLabelText(label, { exact: false });
+    fireEvent.change(field, { target: { value } });
+  };
 
   const clickInput = (label: string) => {
     const field = screen.getByLabelText(label);
-    fireEvent.click(field)
-  }
+    fireEvent.click(field);
+  };
 
   it('Shows validation messages for incomplete fields and does not make api request', () => {
     const { container } = render(<CustomRealmForm />);
@@ -81,83 +81,83 @@ describe('Form Validation', () => {
     // Trigger all errors
     const { container } = render(<CustomRealmForm />);
     submitForm();
-    fillTextInput('1. Custom Realm name')
+    fillTextInput('1. Custom Realm name');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 1);
 
-    fillTextInput('2. Purpose of Realm')
+    fillTextInput('2. Purpose of Realm');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 2);
 
     // Primary users section
-    clickInput('People living in BC')
+    clickInput('People living in BC');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 3);
 
     // Environments section
-    clickInput('Development')
+    clickInput('Development');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 4);
 
-    clickInput('IDIR')
+    clickInput('IDIR');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 5);
 
-    fillTextInput('6. Product owner\'s email')
+    fillTextInput("6. Product owner's email");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 6);
 
-    fillTextInput('7. Product owner\'s IDIR')
+    fillTextInput("7. Product owner's IDIR");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 7);
 
-    fillTextInput('8. Technical contact\'s email')
+    fillTextInput("8. Technical contact's email");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 8);
 
-    fillTextInput('9. Technical contact\'s IDIR')
+    fillTextInput("9. Technical contact's IDIR");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 9);
 
-    fillTextInput('10. Secondary technical contact\'s email')
+    fillTextInput("10. Secondary technical contact's email");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 10);
 
-    fillTextInput('11. Secondary technical contact\'s IDIR')
+    fillTextInput("11. Secondary technical contact's IDIR");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 11);
-  })
+  });
 
   it('Sends off the expected form data when a proper submission is made', async () => {
     render(<CustomRealmForm />);
-    fillTextInput('1. Custom Realm name', 'name')
-    fillTextInput('2. Purpose of Realm', 'purpose')
-    clickInput('People living in BC')
-    clickInput('Development')
-    clickInput('IDIR')
-    fillTextInput('6. Product owner\'s email', 'po@gmail.com')
-    fillTextInput('7. Product owner\'s IDIR', 'poidir')
-    fillTextInput('8. Technical contact\'s email', 'tc@gmail.com')
-    fillTextInput('9. Technical contact\'s IDIR', 'tcidir')
-    fillTextInput('10. Secondary technical contact\'s email', 'stc@gmail.com')
-    fillTextInput('11. Secondary technical contact\'s IDIR', 'stcidir')
+    fillTextInput('1. Custom Realm name', 'name');
+    fillTextInput('2. Purpose of Realm', 'purpose');
+    clickInput('People living in BC');
+    clickInput('Development');
+    clickInput('IDIR');
+    fillTextInput("6. Product owner's email", 'po@gmail.com');
+    fillTextInput("7. Product owner's IDIR", 'poidir');
+    fillTextInput("8. Technical contact's email", 'tc@gmail.com');
+    fillTextInput("9. Technical contact's IDIR", 'tcidir');
+    fillTextInput("10. Secondary technical contact's email", 'stc@gmail.com');
+    fillTextInput("11. Secondary technical contact's IDIR", 'stcidir');
 
     await act(async () => {
-      submitForm()
-    })
+      submitForm();
+    });
 
     expect(submitRealmRequest).toHaveBeenCalledWith({
-      "environments": {
-        "dev": true,
-        "prod": false,
-        "test": false,
+      environments: {
+        dev: true,
+        prod: false,
+        test: false,
       },
-      "loginIdp": "idir",
-      "primaryUsers": {
-        "businessInBC": false,
-        "govEmployees": false,
-        "livingInBC": true,
-        "other": false,
-        "otherDetails": "",
+      loginIdp: 'idir',
+      primaryUsers: {
+        businessInBC: false,
+        govEmployees: false,
+        livingInBC: true,
+        other: false,
+        otherDetails: '',
       },
-      "productOwnerEmail": "po@gmail.com",
-      "productOwnerIdir": "poidir",
-      "realmName": "name",
-      "realmPurpose": "purpose",
-      "secondaryTechnicalContactEmail": "stc@gmail.com",
-      "secondaryTechnicalContactIdir": "stcidir",
-      "status": "pending",
-      "technicalContactEmail": "tc@gmail.com",
-      "technicalContactIdir": "tcidir",
-    })
-  })
-})  
+      productOwnerEmail: 'po@gmail.com',
+      productOwnerIdir: 'poidir',
+      realmName: 'name',
+      realmPurpose: 'purpose',
+      secondaryTechnicalContactEmail: 'stc@gmail.com',
+      secondaryTechnicalContactIdir: 'stcidir',
+      status: 'pending',
+      technicalContactEmail: 'tc@gmail.com',
+      technicalContactIdir: 'tcidir',
+    });
+  });
+});
