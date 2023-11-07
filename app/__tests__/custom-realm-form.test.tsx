@@ -160,29 +160,4 @@ describe('Form Validation', () => {
       "technicalContactIdir": "tcidir",
     })
   })
-
-  // it('Shows the user an error message if network request fails', async () => {
-  //   const { container } = render(<CustomRealmForm />);
-  //   (submitRealmRequest as jest.MockedFunction<any>).mockImplementationOnce(
-  //     () => Promise.resolve([null, {message: 'failure'}])
-  //   )
-  //   fillTextInput('1. Custom Realm name', 'name')
-  //   fillTextInput('2. Purpose of Realm', 'purpose')
-  //   clickInput('People living in BC')
-  //   clickInput('Development')
-  //   clickInput('IDIR')
-  //   fillTextInput('6. Product owner\'s email', 'po@gmail.com')
-  //   fillTextInput('7. Product owner\'s IDIR', 'poidir')
-  //   fillTextInput('8. Technical contact\'s email', 'tc@gmail.com')
-  //   fillTextInput('9. Technical contact\'s IDIR', 'tcidir')
-  //   fillTextInput('10. Secondary technical contact\'s email', 'stc@gmail.com')
-  //   fillTextInput('11. Secondary technical contact\'s IDIR', 'stcidir')
-
-  //   await act(async () => {
-  //     submitForm()
-  //   })
-
-  //   const thingy = document.querySelector('.pg-notification')
-  //   console.log(thingy)
-  // })
 })  
