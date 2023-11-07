@@ -85,7 +85,7 @@ const Home = () => {
       <ResponsiveContainer rules={mediaRules}>
         <Grid cols={10} gutter={[5, 2]} style={{ overflowX: 'hidden' }}>
           <Grid.Row collapse="800">
-            <Grid.Col span={3}>
+            <Grid.Col span={4}>
               <Container>
                 <div>
                   <JumbotronH1>Keycloak Realm Registry</JumbotronH1>
@@ -126,7 +126,7 @@ const Home = () => {
                 </div>
               </Container>
             </Grid.Col>
-            <Grid.Col span={7}>{IntroRealms}</Grid.Col>
+            <Grid.Col span={6}>{IntroRealms}</Grid.Col>
           </Grid.Row>
         </Grid>
       </ResponsiveContainer>
