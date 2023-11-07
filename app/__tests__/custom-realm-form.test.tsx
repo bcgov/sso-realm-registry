@@ -1,9 +1,6 @@
 import React from "react";
-import { render, screen, fireEvent, findByText } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import CustomRealmForm from 'pages/custom-realm-form';
-import { prettyDOM } from '@testing-library/dom';
-import { useSession } from "next-auth/react";
-import userEvent from '@testing-library/user-event';
 import { submitRealmRequest } from 'services/realm'
 import { CustomRealmFormData } from "types/realm-profile";
 import { act } from "react-dom/test-utils";
@@ -62,7 +59,7 @@ describe('Form Validation', () => {
   }
 
   const fillTextInput = (label: string, value = 'a') => {
-    const field = screen.getByLabelText(label);
+    const field = screen.getByLabelText(label, {exact: false});
     fireEvent.change(field, { target: { value } })
   }
 

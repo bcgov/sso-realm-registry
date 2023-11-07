@@ -9,6 +9,8 @@ import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { ModalContext } from 'context/modal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 
 const SForm = styled.form`
     display: grid;
@@ -39,6 +41,10 @@ const SForm = styled.form`
     label, legend {
         &.required:after {
             content: ' *';
+        }
+
+        &.with-info svg {
+            margin: 0 0.3em;
         }
     }
     fieldset {
@@ -185,11 +191,12 @@ function RealmForm({ alert }: Props) {
         setSubmittingForm(true);
         const [response, err] = await submitRealmRequest(formData)
         if (err) {
+            const content = err?.response?.data?.message || 'Network request failure. Please try again.'
             alert.show({
                 variant: 'danger',
                 fadeOut: 10000,
                 closable: true,
-                content: 'Network request failure. Please try again.',
+                content,
             })
         } else {
             router.push('/').then(() => {
@@ -198,7 +205,7 @@ function RealmForm({ alert }: Props) {
                     body: `We have received your request for a Custom Realm (ID ${response.id}). Please be assured that someone from our team will look into your request and will reach out soon.`,
                     show: true,
                 })
-            })            
+            })
         }
         setSubmittingForm(false);
     }
@@ -233,7 +240,9 @@ function RealmForm({ alert }: Props) {
                 <h1>Request a Custom Realm</h1>
 
                 <div className="input-wrapper first-col">
-                    <label htmlFor="realm-name-input" className='required'>1. Custom Realm name</label>
+                    <label htmlFor="realm-name-input" className='required with-info'>1. Custom Realm name 
+                            <FontAwesomeIcon icon={faInfoCircle} title="Select a unique realm name." color="#777777" />
+                    </label>
                     <input
                         required
                         id='realm-name-input'
@@ -245,7 +254,9 @@ function RealmForm({ alert }: Props) {
                 </div>
 
                 <div className="input-wrapper second-col">
-                    <label htmlFor="realm-purpose-input" className='required'>2. Purpose of Realm</label>
+                    <label htmlFor="realm-purpose-input" className='required with-info'>2. Purpose of Realm
+                    <FontAwesomeIcon icon={faInfoCircle} title="What is this relams purpose?" color="#777777" />      
+                    </label>
                     <input
                         required
                         id='realm-purpose-input'
@@ -304,7 +315,7 @@ function RealmForm({ alert }: Props) {
                             <label htmlFor="other-users-checkbox">Other</label>
                             <div className="textarea-container">
                                 <textarea
-                                    rows={2}
+                                    rows={3}
                                     placeholder='Enter details'
                                     name="otherDetails"
                                     onChange={handleOtherDetailsChange}
