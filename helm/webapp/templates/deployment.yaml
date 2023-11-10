@@ -53,6 +53,8 @@ spec:
             export CHES_PASSWORD="{{ .Data.data.CHES_PASSWORD }}"
             export CHES_TOKEN_ENDPOINT="{{ .Data.data.CHES_TOKEN_ENDPOINT }}"
             export CHES_USERNAME="{{ .Data.data.CHES_USERNAME }}"
+            export GH_ACCESS_TOKEN="{{ .Data.data.GH_ACCESS_TOKEN }}"
+            export GH_API_TOKEN="{{ .Data.data.GH_API_TOKEN }}"
           {{- end }}`}}
     spec:
       initContainers:

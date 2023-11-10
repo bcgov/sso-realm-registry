@@ -20,8 +20,6 @@ env:
   TF_GH_ORG: bcgov
   TF_GH_REPO: sso-terraform
   TF_MODULE_GH_REF: main
-  GH_ACCESS_TOKEN:
-  GH_API_TOKEN:
 
 vault:
   vaultSecretEngine: c6af30-prod
