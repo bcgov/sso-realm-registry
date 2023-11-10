@@ -48,6 +48,11 @@ module.exports = {
     idir_jwks_uri: process.env.IDIR_JWKS_URI,
     idir_issuer: process.env.IDIR_ISSUER,
     idir_audience: process.env.IDIR_AUDIENCE,
+    tf_gh_org: process.env.TF_GH_ORG,
+    tf_gh_repo: process.env.TF_GH_REPO,
+    tf_module_gh_ref: process.env.TF_MODULE_GH_REF,
+    gh_access_token: process.env.GH_ACCESS_TOKEN,
+    gh_api_token: process.env.GH_API_TOKEN || '',
   },
   publicRuntimeConfig: {},
   async headers() {

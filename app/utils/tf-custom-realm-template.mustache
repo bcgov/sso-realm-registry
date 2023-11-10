@@ -1,0 +1,5 @@
+module "{{customRealmName}}" {
+  source     = "github.com/bcgov/sso-terraform-modules?ref={{tfModuleRef}}/modules/custom-realm"
+  realm_name = "{{customRealmName}}"
+  enabled    = true
+}
