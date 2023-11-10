@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         approved: true,
       },
     });
-    return res.status(200).json(pending.map((r) => r.id));
+    return res.status(200).json(pending.map((r: any) => r.id));
   } else if (req.method === 'PUT') {
     let { ids, action, success } = req.body;
     let updatedRealm;
