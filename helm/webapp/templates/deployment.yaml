@@ -114,6 +114,8 @@ spec:
               value: {{ .Values.postgres.database }}
             - name: PGSSL
               value: {{ .Values.postgres.ssl | quote }}
+            - name: DATABASE_URL
+              value: postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)?schema=public
             {{- range $key, $val := .Values.env }}
             - name: {{  $key | quote | upper }}
               value: {{ $val | quote }}
