@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Roster {
+  id                               Int       @id @default(autoincrement())
+  realm                            String?   @unique(map: "realm_unique_index") @db.VarChar(1000)
+  productName                      String?   @map("product_name") @db.VarChar(1000)
+  productOwnerEmail                String?   @map("product_owner_email") @db.VarChar(1000)
+  productOwnerIdirUserId           String?   @map("product_owner_idir_userid") @db.VarChar(1000)
+  technicalContactEmail            String?   @map("technical_contact_email") @db.VarChar(1000)
+  technicalContactIdirUserId       String?   @map("technical_contact_idir_userid") @db.VarChar(1000)
+  secondTechnicalContactEmail      String?   @map("second_technical_contact_email") @db.VarChar(1000)
+  secondTechnicalContactIdirUserId String?   @map("second_technical_contact_idir_userid") @db.VarChar(1000)
+  rcChannel                        String?   @map("rc_channel")
+  ministry                         String?   @db.VarChar(1000)
+  division                         String?   @db.VarChar(1000)
+  branch                           String?   @db.VarChar(1000)
+  createdAt                        DateTime? @default(now()) @map("created_at")
+  updatedAt                        DateTime? @updatedAt @map("updated_at")
+  materialToSend                   String?   @map("material_to_send")
+  rcChannelOwnedBy                 String?   @map("rc_channel_owned_by") @db.VarChar(1000)
+  environments                     String[]  @map("environments")
+  purpose                          String?   @map("purpose")
+  primaryEndUsers                  String[]  @map("primary_end_users")
+  preferredAdminLoginMethod        String?   @map("preferred_admin_login_method") @db.VarChar(25)
+  status                           String?   @map("status") @db.VarChar(50)
+  lastUpdatedBy                    String?   @map("last_updated_by") @db.VarChar(50)
+  prNumber                         Int?      @map("pr_number")
+  approved                         Boolean?  @map("approved")
+  requestor                        String?   @map("requestor") @db.VarChar(100)
+  events                           Event[]
+
+  @@map("rosters")
+}
+
+model surveys_1 {
+  idir_userid     String    @id @db.VarChar(1000)
+  contact_email   String?   @db.VarChar(1000)
+  willing_to_move String?   @db.VarChar(1000)
+  when_to_move    String?   @db.VarChar(1000)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model Event {
+  id         Int       @id @default(autoincrement())
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  realmId    Int?      @map("realm_id")
+  eventCode  String?   @map("event_code") @db.VarChar(100)
+  idirUserId String?   @map("idir_user_id") @db.VarChar(100)
+  details    Json?
+  rosters    Roster?   @relation(fields: [realmId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_realm_id")
+
+  @@map("events")
+}

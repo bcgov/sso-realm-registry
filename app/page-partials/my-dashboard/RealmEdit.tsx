@@ -12,6 +12,7 @@ import { getMinistries, getDivisions, getBranches } from 'services/meta';
 import { UserSession } from 'types/user-session';
 import styled from 'styled-components';
 import { RealmProfile } from 'types/realm-profile';
+import { getListOfMinistries } from 'utils/helpers';
 
 const LeftMargin = styled.span`
   margin-left: 2px;
@@ -62,7 +63,7 @@ setInterval(() => {
 }, 1000);
 
 function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
-  const [ministries, setMinistries] = useState<string[]>([]);
+  const [ministries, setMinistries] = useState<any>([]);
   const [divisions, setDivisions] = useState<string[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -122,7 +123,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
     setLoading(true);
     const [data, err] = await getMinistries();
     if (err) setMinistries([]);
-    else setMinistries(data || []);
+    setMinistries(data || []);
     setLoading(false);
   };
 
@@ -170,7 +171,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
   };
 
   const isAdmin = currentUser?.client_roles?.includes('sso-admin');
-  const isPO = currentUser.idir_username.toLocaleLowerCase() === realm.product_owner_idir_userid.toLocaleLowerCase();
+  const isPO = currentUser?.idir_username.toLowerCase() === realm?.productOwnerIdirUserId.toLowerCase();
 
   if (!realm) return null;
 
@@ -181,7 +182,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
       <form onSubmit={handleSubmit(onSubmit)}>
         <label htmlFor="displayName">
           Realm
-          <InfoPopover>Name of the realm you've configured in custom realm setting</InfoPopover>
+          <InfoPopover>Name of the realm you&apos;ve configured in custom realm setting</InfoPopover>
         </label>
         <input
           type="text"
@@ -189,14 +190,14 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           disabled
           {...register('realm', { required: false, minLength: 2, maxLength: 1000 })}
         />
-        <label htmlFor="product_name">
+        <label htmlFor="productName">
           Product Name<span className="required">*</span>
           <InfoPopover>Help us understand what product this realm is tied to</InfoPopover>
         </label>
         <input
           type="text"
           placeholder="Product Name"
-          {...register('product_name', { required: true, minLength: 2, maxLength: 1000 })}
+          {...register('productName', { required: true, minLength: 2, maxLength: 1000 })}
         />
         {loading ? (
           <AlignCenter>
@@ -210,15 +211,17 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
                   Ministry<span className="required">*</span>
                 </label>
                 <select {...register('ministry')}>
-                  {ministries.map((ministry) => (
-                    <option value={ministry}>{ministry}</option>
+                  {ministries.map((ministry: any) => (
+                    <option value={ministry?.title} key={ministry?.id}>
+                      {ministry?.title}
+                    </option>
                   ))}
                 </select>
                 {values?.ministry === 'Other' && (
                   <input
                     type="text"
                     placeholder="<Please enter the ministry name>"
-                    {...register('ministry_other', { required: true, minLength: 2, maxLength: 1000 })}
+                    {...register('ministryOther', { required: true, minLength: 2, maxLength: 1000 })}
                   />
                 )}
               </>
@@ -230,14 +233,16 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
                 </label>
                 <select {...register('division')}>
                   {divisions.map((division) => (
-                    <option value={division}>{division}</option>
+                    <option value={division} key={Math.random() * 120}>
+                      {division}
+                    </option>
                   ))}
                 </select>
                 {values?.division === 'Other' && (
                   <input
                     type="text"
                     placeholder="<Please enter the division name>"
-                    {...register('division_other', { required: true, minLength: 2, maxLength: 1000 })}
+                    {...register('divisionOther', { required: true, minLength: 2, maxLength: 1000 })}
                   />
                 )}
               </>
@@ -249,21 +254,23 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
                 </label>
                 <select {...register('branch')}>
                   {branches.map((branch) => (
-                    <option value={branch}>{branch}</option>
+                    <option value={branch} key={Math.random() * 120}>
+                      {branch}
+                    </option>
                   ))}
                 </select>
                 {values?.branch === 'Other' && (
                   <input
                     type="text"
                     placeholder="<Please enter the branch name>"
-                    {...register('branch_other', { required: true, minLength: 2, maxLength: 1000 })}
+                    {...register('branchOther', { required: true, minLength: 2, maxLength: 1000 })}
                   />
                 )}
               </>
             )}
           </>
         )}
-        <label htmlFor="product_owner_email">
+        <label htmlFor="productOwnerEmail">
           Product Owner Email<span className="required">*</span>
           <InfoPopover>If not dithered, you can update this field with the appropriate product owner email</InfoPopover>
         </label>
@@ -271,9 +278,9 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           type="text"
           placeholder="Product Owner Email"
           disabled={!isAdmin && !isPO}
-          {...register('product_owner_email', { required: true, pattern: /^\S+@\S+$/i })}
+          {...register('productOwnerEmail', { required: true, pattern: /^\S+@\S+$/i })}
         />
-        <label htmlFor="product_owner_idir_userid">
+        <label htmlFor="productOwnerIdirUserId">
           Product Owner Idir
           <InfoPopover>
             If not dithered, you can update this field with the appropriate product owner Idir
@@ -293,9 +300,9 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           type="text"
           placeholder="Product Owner Idir"
           disabled={!isAdmin}
-          {...register('product_owner_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
+          {...register('productOwnerIdirUserId', { required: false, minLength: 2, maxLength: 1000 })}
         />
-        <label htmlFor="technical_contact_email">
+        <label htmlFor="technicalContactEmail">
           Technical Contact Email<span className="required">*</span>
           <InfoPopover>
             If not dithered, you can update this field with the appropriate technical contact email
@@ -304,9 +311,9 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <input
           type="text"
           placeholder="Technical Contact Email"
-          {...register('technical_contact_email', { required: true, pattern: /^\S+@\S+$/i })}
+          {...register('technicalContactEmail', { required: true, pattern: /^\S+@\S+$/i })}
         />
-        <label htmlFor="technical_contact_idir_userid">
+        <label htmlFor="technicalContactIdirUserId">
           Technical Contact Idir<span className="required">*</span>
           <InfoPopover>
             If not dithered, you can update this field with the appropriate technical contact Idir
@@ -316,9 +323,9 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           type="text"
           placeholder="Technical Contact Idir"
           disabled={!isAdmin && !isPO}
-          {...register('technical_contact_idir_userid', { required: true, minLength: 2, maxLength: 1000 })}
+          {...register('technicalContactIdirUserId', { required: true, minLength: 2, maxLength: 1000 })}
         />
-        <label htmlFor="second_technical_contact_email">
+        <label htmlFor="secondTechnicalContactEmail">
           Second Technical Contact Email(optional)
           <InfoPopover>
             If not dithered, you can update this field with the appropriate optional technical contact email
@@ -327,9 +334,9 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
         <input
           type="text"
           placeholder="Second Technical Contact Email"
-          {...register('second_technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
+          {...register('secondTechnicalContactEmail', { required: false, pattern: /^\S+@\S+$/i })}
         />
-        <label htmlFor="second_technical_contact_idir_userid">
+        <label htmlFor="secondTechnicalContactIdirUserId">
           Second Technical Contact Idir(optional)
           <InfoPopover>
             If not dithered, you can update this field with the appropriate optional technical contact Idir
@@ -339,37 +346,37 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           type="text"
           placeholder="Second Technical Contact Idir"
           disabled={!isAdmin && !isPO}
-          {...register('second_technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
+          {...register('secondTechnicalContactIdirUserId', { required: false, minLength: 2, maxLength: 1000 })}
         />
         {isAdmin && (
           <>
             {/* Rocket.Chat Channel */}
-            <label htmlFor="rc_channel">Rocket.Chat Channel</label>
+            <label htmlFor="rcChannel">Rocket.Chat Channel</label>
             <input
               type="text"
               placeholder="Rocket.Chat Channel"
               disabled={!isAdmin && !isPO}
-              {...register('rc_channel', { required: false, minLength: 2, maxLength: 2000 })}
+              {...register('rcChannel', { required: false, minLength: 2, maxLength: 2000 })}
             />
             {/* Rocket.Chat Channel Owner */}
-            <label htmlFor="rc_channel_owned_by">Rocket.Chat Channel Owner</label>
+            <label htmlFor="rcChannelOwnedBy">Rocket.Chat Channel Owner</label>
             <input
               type="text"
               placeholder="Rocket.Chat Channel Owner"
               disabled={!isAdmin && !isPO}
-              {...register('rc_channel_owned_by', { required: false, minLength: 2, maxLength: 2000 })}
+              {...register('rcChannelOwnedBy', { required: false, minLength: 2, maxLength: 2000 })}
             />
             {/* Material To Send */}
-            <label htmlFor="material_to_send">Material To Send</label>
+            <label htmlFor="materialToSend">Material To Send</label>
             <textarea
               rows={6}
               placeholder="Material To Send"
               disabled={!isAdmin && !isPO}
-              {...register('material_to_send', { required: false, minLength: 2, maxLength: 2000 })}
+              {...register('materialToSend', { required: false, minLength: 2, maxLength: 2000 })}
             />
           </>
         )}
-        {realm && <p>Last Updated: {new Date(realm.updated_at).toLocaleString()}</p>}
+        {realm && <p>Last Updated: {new Date(realm?.updatedAt).toLocaleString()}</p>}
         <Button type="submit" variant="primary">
           Save
         </Button>

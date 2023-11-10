@@ -19,14 +19,14 @@ function RealmTable({ realms, onEditClick }: Props) {
             productName: r.product_name,
             idps: r.idps.join(', '),
             protocol: r.protocol.join(', '),
-            productOwnerEmail: r.product_owner_email,
-            productOwnerIdirUserId: r.product_owner_idir_userid,
-            technicalContactEmail: r.technical_contact_email,
-            technicalContactIdirUserId: r.technical_contact_idir_userid,
-            secondTechnicalContactEmail: r.second_technical_contact_email,
-            secondTechnicalContactIdirUserId: r.second_technical_contact_idir_userid,
-            rcChannel: r.rc_channel,
-            rcChannelOwnedBy: r.rc_channel_owned_by,
+            productOwnerEmail: r.productOwnerEmail,
+            productOwnerIdirUserId: r.productOwnerIdirUserId,
+            technicalContactEmail: r.technicalContactEmail,
+            technicalContactIdirUserId: r.technicalContactIdirUserId,
+            secondTechnicalContactEmail: r.secondTechnicalContactEmail,
+            secondTechnicalContactIdirUserId: r.secondTechnicalContactIdirUserId,
+            rcChannel: r.rcChannel,
+            rcChannelOwnedBy: r.rcChannelOwnedBy,
             actions: (
               <Button
                 size="small"

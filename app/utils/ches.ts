@@ -47,9 +47,11 @@ const fetchChesToken = async () => {
 export const sendEmail = async ({ from = 'bcgov.sso@gov.bc.ca', to, body, ...rest }: EmailOptions) => {
   try {
     const [accessToken, error] = await fetchChesToken();
-    if (error) throw Error(JSON.stringify(error));
+    if (error) {
+      throw new Error('unable to fetch ches token');
+    }
 
-    return axios.post(
+    const res = await axios.post(
       ches_api_endpoint,
       {
         // see https://ches.nrs.gov.bc.ca/api/v1/docs#operation/postEmail for options
@@ -66,6 +68,7 @@ export const sendEmail = async ({ from = 'bcgov.sso@gov.bc.ca', to, body, ...res
         headers: { Authorization: `Bearer ${accessToken}` },
       },
     );
+    return res;
   } catch (err) {
     console.error(err);
   }
