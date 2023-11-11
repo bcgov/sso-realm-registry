@@ -55,6 +55,7 @@ spec:
             export CHES_USERNAME="{{ .Data.data.CHES_USERNAME }}"
             export GH_ACCESS_TOKEN="{{ .Data.data.GH_ACCESS_TOKEN }}"
             export GH_API_TOKEN="{{ .Data.data.GH_API_TOKEN }}"
+            export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?schema=public"
           {{- end }}`}}
     spec:
       initContainers:
@@ -116,8 +117,6 @@ spec:
               value: {{ .Values.postgres.database }}
             - name: PGSSL
               value: {{ .Values.postgres.ssl | quote }}
-            - name: DATABASE_URL
-              value: postgresql://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)?schema=public
             {{- range $key, $val := .Values.env }}
             - name: {{  $key | quote | upper }}
               value: {{ $val | quote }}
