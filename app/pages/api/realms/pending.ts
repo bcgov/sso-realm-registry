@@ -1,11 +1,13 @@
+import { addUserAsRealmAdmin } from 'controllers/keycloak';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import getConfig from 'next/config';
 import { createEvent, getUpdatedProperties } from 'utils/helpers';
+import { generateXML, getBceidAccounts, makeSoapRequest } from 'utils/idir';
 import prisma from 'utils/prisma';
 import { ActionEnum, EventEnum, StatusEnum } from 'validators/create-realm';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
-const { gh_api_token } = serverRuntimeConfig;
+const { gh_api_token, idir_requestor_user_guid } = serverRuntimeConfig;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { Authorization, authorization } = req.headers || {};
@@ -70,6 +72,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         idirUserId: 'Pathfinder-SSO-Team',
         details: getUpdatedProperties(currentRequest, updatedRealm),
       });
+
+      if (success && action === ActionEnum.TF_APPLY) {
+        const currentRequest = await prisma.roster.findUnique({
+          where: {
+            id,
+          },
+        });
+
+        const samlPayload = generateXML('userId', currentRequest?.productOwnerIdirUserId!, idir_requestor_user_guid);
+        const { response }: any = await makeSoapRequest(samlPayload);
+        const accounts = await getBceidAccounts(response);
+
+        if (accounts[0].guid) {
+          await addUserAsRealmAdmin(
+            `${currentRequest?.productOwnerIdirUserId}@${currentRequest?.preferredAdminLoginMethod}`,
+            currentRequest?.environments!,
+            currentRequest?.realm!,
+          );
+        }
+      }
     });
 
     return res.status(200).json({ success: true });
