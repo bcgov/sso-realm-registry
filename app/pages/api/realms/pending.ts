@@ -4,7 +4,8 @@ import getConfig from 'next/config';
 import { createEvent, getUpdatedProperties } from 'utils/helpers';
 import { generateXML, getBceidAccounts, makeSoapRequest } from 'utils/idir';
 import prisma from 'utils/prisma';
-import { ActionEnum, EventEnum, StatusEnum } from 'validators/create-realm';
+import { ActionEnum, EventEnum, StatusEnum, realmPlanAndApplySchema } from 'validators/create-realm';
+import { ValidationError } from 'yup';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { gh_api_token, idir_requestor_user_guid } = serverRuntimeConfig;
@@ -25,7 +26,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     return res.status(200).json(pending.map((r: any) => r.id));
   } else if (req.method === 'PUT') {
-    let { ids, action, success } = req.body;
+    let data = req.body;
+    try {
+      data = realmPlanAndApplySchema.validateSync(req.body, { abortEarly: false, stripUnknown: true });
+    } catch (e) {
+      const error = e as ValidationError;
+      return res.status(400).json({ success: false, error: error.errors });
+    }
+    let { ids, action, success } = data;
     let updatedRealm;
     let newStatus: string;
     let newEvent: string;

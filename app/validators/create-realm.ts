@@ -119,3 +119,11 @@ export const requestUpdateSchema = yup
     error: yup.string(),
   })
   .required();
+
+export const realmPlanAndApplySchema = yup
+  .object({
+    ids: yup.array().required().min(1),
+    action: yup.string().oneOf([ActionEnum.TF_PLAN, ActionEnum.TF_APPLY]).required(),
+    status: yup.boolean().required(),
+  })
+  .required();
