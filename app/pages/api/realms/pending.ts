@@ -71,6 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
         data: {
           status: newStatus,
+          lastUpdatedBy: 'Pathfinder-SSO-Team',
         },
       });
 
@@ -92,12 +93,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { response }: any = await makeSoapRequest(samlPayload);
         const accounts = await getBceidAccounts(response);
 
-        if (accounts[0].guid) {
-          await addUserAsRealmAdmin(
-            `${currentRequest?.productOwnerIdirUserId}@${currentRequest?.preferredAdminLoginMethod}`,
-            currentRequest?.environments!,
-            currentRequest?.realm!,
-          );
+        if (accounts.length > 0) {
+          await addUserAsRealmAdmin(`${accounts[0].guid}@idir`, currentRequest?.environments!, currentRequest?.realm!);
+        } else {
+          console.log(`No guid found for user ${currentRequest?.productOwnerIdirUserId!}`);
         }
       }
     });
