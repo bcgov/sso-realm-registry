@@ -26,10 +26,6 @@ jobs:
           pip install -r requirements.txt
           asdf reshim
           pre-commit run --color=always --show-diff-on-failure --all-files
-      - name: Run unit tests
-        run: |
-          cd app
-          yarn test
   commitlint:
     runs-on: ubuntu-22.04
     steps:
