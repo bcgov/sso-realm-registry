@@ -157,7 +157,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
   }, [realm]);
 
   const onSubmit = async (formData: any) => {
-    const [data, err] = await updateRealmProfile(realm.id, formData as RealmProfile);
+    const [data, err] = await updateRealmProfile(String(realm.id), formData as RealmProfile);
     if (!err) {
       onUpdate(data as RealmProfile);
 
@@ -199,6 +199,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
           placeholder="Product Name"
           {...register('productName', { required: true, minLength: 2, maxLength: 1000 })}
         />
+        <label htmlFor=""></label>
         {loading ? (
           <AlignCenter>
             <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />

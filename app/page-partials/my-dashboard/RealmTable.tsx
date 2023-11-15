@@ -32,7 +32,7 @@ function RealmTable({ realms, onEditClick }: Props) {
                 size="small"
                 variant="secondary"
                 style={{ position: 'relative' }}
-                onClick={() => onEditClick(r.id)}
+                onClick={() => onEditClick(String(r.id))}
               >
                 Edit{' '}
               </Button>
