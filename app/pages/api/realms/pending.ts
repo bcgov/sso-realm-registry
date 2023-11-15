@@ -1,11 +1,14 @@
+import { addUserAsRealmAdmin } from 'controllers/keycloak';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import getConfig from 'next/config';
 import { createEvent, getUpdatedProperties } from 'utils/helpers';
+import { generateXML, getBceidAccounts, makeSoapRequest } from 'utils/idir';
 import prisma from 'utils/prisma';
-import { ActionEnum, EventEnum, StatusEnum } from 'validators/create-realm';
+import { ActionEnum, EventEnum, StatusEnum, realmPlanAndApplySchema } from 'validators/create-realm';
+import { ValidationError } from 'yup';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
-const { gh_api_token } = serverRuntimeConfig;
+const { gh_api_token, idir_requestor_user_guid } = serverRuntimeConfig;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { Authorization, authorization } = req.headers || {};
@@ -23,7 +26,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     return res.status(200).json(pending.map((r: any) => r.id));
   } else if (req.method === 'PUT') {
-    let { ids, action, success } = req.body;
+    let data = req.body;
+    try {
+      data = realmPlanAndApplySchema.validateSync(req.body, { abortEarly: false, stripUnknown: true });
+    } catch (e) {
+      const error = e as ValidationError;
+      return res.status(400).json({ success: false, error: error.errors });
+    }
+    let { ids, action, success } = data;
     let updatedRealm;
     let newStatus: string;
     let newEvent: string;
@@ -61,6 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
         data: {
           status: newStatus,
+          lastUpdatedBy: 'Pathfinder-SSO-Team',
         },
       });
 
@@ -70,6 +81,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         idirUserId: 'Pathfinder-SSO-Team',
         details: getUpdatedProperties(currentRequest, updatedRealm),
       });
+
+      if (success && action === ActionEnum.TF_APPLY) {
+        const currentRequest = await prisma.roster.findUnique({
+          where: {
+            id,
+          },
+        });
+
+        const samlPayload = generateXML('userId', currentRequest?.productOwnerIdirUserId!, idir_requestor_user_guid);
+        const { response }: any = await makeSoapRequest(samlPayload);
+        const accounts = await getBceidAccounts(response);
+
+        if (accounts.length > 0) {
+          await addUserAsRealmAdmin(`${accounts[0].guid}@idir`, currentRequest?.environments!, currentRequest?.realm!);
+        } else {
+          console.log(`No guid found for user ${currentRequest?.productOwnerIdirUserId!}`);
+        }
+      }
     });
 
     return res.status(200).json({ success: true });

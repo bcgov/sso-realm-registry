@@ -6,6 +6,11 @@ export enum ActionEnum {
   TF_APPLY = 'tf_apply',
 }
 
+export enum LoginIDPEnum {
+  IDIR = 'idir',
+  AZUREIDIR = 'azureidir',
+}
+
 export enum StatusEnum {
   PENDING = 'pending',
   PRSUCCESS = 'prSuccess',
@@ -46,7 +51,7 @@ export const createRealmSchema = yup.object().shape({
   purpose: yup.string().min(2).required(),
   primaryEndUsers: yup.array().required().min(1),
   environments: yup.array().required().min(1),
-  preferredAdminLoginMethod: yup.string().required().min(4),
+  preferredAdminLoginMethod: yup.string().oneOf([LoginIDPEnum.IDIR, LoginIDPEnum.AZUREIDIR]).required(),
   technicalContactEmail: yup.string().required().email(),
   productOwnerEmail: yup.string().required().email(),
   technicalContactIdirUserId: yup.string().required().min(2),
@@ -112,5 +117,13 @@ export const requestUpdateSchema = yup
     id: yup.number().required(),
     status: yup.string().oneOf([StatusEnum.APPLIED, StatusEnum.APPLYFAILED]).required(),
     error: yup.string(),
+  })
+  .required();
+
+export const realmPlanAndApplySchema = yup
+  .object({
+    ids: yup.array().required().min(1),
+    action: yup.string().oneOf([ActionEnum.TF_PLAN, ActionEnum.TF_APPLY]).required(),
+    status: yup.boolean().required(),
   })
   .required();

@@ -53,6 +53,7 @@ module.exports = {
     tf_module_gh_ref: process.env.TF_MODULE_GH_REF,
     gh_access_token: process.env.GH_ACCESS_TOKEN,
     gh_api_token: process.env.GH_API_TOKEN || '',
+    idir_requestor_user_guid: process.env.IDIR_REQUESTOR_USER_GUID || '',
   },
   publicRuntimeConfig: {},
   async headers() {
