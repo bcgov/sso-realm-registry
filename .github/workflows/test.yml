@@ -1,0 +1,16 @@
+name: Run unit tests
+
+on: push
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: |
+          cd app
+          yarn
+          yarn test
