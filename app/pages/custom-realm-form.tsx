@@ -366,7 +366,7 @@ function RealmForm({ alert }: Props) {
 
         <div className="input-wrapper first-col">
           <label htmlFor="product-owner-email-input" className="required">
-            5. Product owner's email
+            5. Product owner&apos;s email
           </label>
           <input
             required
@@ -380,7 +380,7 @@ function RealmForm({ alert }: Props) {
 
         <div className="input-wrapper second-col">
           <label htmlFor="product-owner-idir-input" className="required">
-            6. Product owner's IDIR
+            6. Product owner&apos;s IDIR
           </label>
           <input
             required
@@ -394,7 +394,7 @@ function RealmForm({ alert }: Props) {
 
         <div className="input-wrapper first-col">
           <label htmlFor="technical-contact-email-input" className="required">
-            7. Technical contact's email
+            7. Technical contact&apos;s email
           </label>
           <input
             required
@@ -408,7 +408,7 @@ function RealmForm({ alert }: Props) {
 
         <div className="input-wrapper second-col">
           <label htmlFor="technical-contact-idir-input" className="required">
-            8. Technical contact's IDIR
+            8. Technical contact&apos;s IDIR
           </label>
           <input
             required
@@ -421,7 +421,7 @@ function RealmForm({ alert }: Props) {
         </div>
 
         <div className="input-wrapper first-col">
-          <label htmlFor="secondary-contact-email-input">9. Secondary technical contact's email</label>
+          <label htmlFor="secondary-contact-email-input">9. Secondary technical contact&apos;s email</label>
           <input
             required
             id="secondary-contact-email-input"
@@ -433,7 +433,7 @@ function RealmForm({ alert }: Props) {
         </div>
 
         <div className="input-wrapper second-col">
-          <label htmlFor="secondary-contact-idir-input">10. Secondary technical contact's IDIR</label>
+          <label htmlFor="secondary-contact-idir-input">10. Secondary technical contact&apos;s IDIR</label>
           <input
             required
             id="secondary-contact-idir-input"

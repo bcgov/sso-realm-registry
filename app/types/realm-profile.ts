@@ -1,26 +1,16 @@
-export interface RealmProfile {
-  id: string;
-  realm: string;
+export interface RealmProfile extends CustomRealmFormData {
   displayName: string;
-  product_name: string;
-  openshift_namespace: string;
+  productName: string;
+  openshiftNamespace: string;
   ministry: string;
   division: string;
   branch: string;
-  product_owner_email: string;
-  product_owner_idir_userid: string;
-  product_owner_name: string;
-  technical_contact_email: string;
-  technical_contact_idir_userid: string;
-  technical_contact_name: string;
-  second_technical_contact_name: string;
-  second_technical_contact_email: string;
-  second_technical_contact_idir_userid: string;
-  willing_to_move: string;
-  when_to_move: string;
+  productOwnerName: string;
+  willingToMove: string;
+  whenToMove: string;
   idps: string[];
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   [key: string]: any;
 }
 
@@ -43,7 +33,7 @@ type Status =
   | 'applyFailed';
 
 export interface CustomRealmFormData {
-  id?: number;
+  id?: number | string;
   realm: string;
   purpose: string;
   primaryEndUsers: PrimaryEndUser[];

@@ -157,7 +157,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
   }, [realm]);
 
   const onSubmit = async (formData: any) => {
-    const [data, err] = await updateRealmProfile(realm.id, formData as RealmProfile);
+    const [data, err] = await updateRealmProfile(String(realm.id), formData as RealmProfile);
     if (!err) {
       onUpdate(data as RealmProfile);
 
