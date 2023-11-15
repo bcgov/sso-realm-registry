@@ -46,7 +46,7 @@ jest.mock('next-auth/react', () => {
 });
 
 describe('Form Validation', () => {
-  const requiredFieldCount = 11;
+  const requiredFieldCount = 8;
 
   const submitForm = () => {
     const submitButon = screen.getByText('Submit', { selector: 'button' });
@@ -95,26 +95,17 @@ describe('Form Validation', () => {
     clickInput('Development');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 4);
 
-    clickInput('IDIR');
+    fillTextInput("5. Product owner's email");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 5);
 
-    fillTextInput("6. Product owner's email");
+    fillTextInput("6. Product owner's IDIR");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 6);
 
-    fillTextInput("7. Product owner's IDIR");
+    fillTextInput("7. Technical contact's email");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 7);
 
-    fillTextInput("8. Technical contact's email");
+    fillTextInput("8. Technical contact's IDIR");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 8);
-
-    fillTextInput("9. Technical contact's IDIR");
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 9);
-
-    fillTextInput("10. Secondary technical contact's email");
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 10);
-
-    fillTextInput("11. Secondary technical contact's IDIR");
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 11);
   });
 
   it('Sends off the expected form data when a proper submission is made', async () => {
@@ -123,41 +114,29 @@ describe('Form Validation', () => {
     fillTextInput('2. Purpose of Realm', 'purpose');
     clickInput('People living in BC');
     clickInput('Development');
-    clickInput('IDIR');
-    fillTextInput("6. Product owner's email", 'po@gmail.com');
-    fillTextInput("7. Product owner's IDIR", 'poidir');
-    fillTextInput("8. Technical contact's email", 'tc@gmail.com');
-    fillTextInput("9. Technical contact's IDIR", 'tcidir');
-    fillTextInput("10. Secondary technical contact's email", 'stc@gmail.com');
-    fillTextInput("11. Secondary technical contact's IDIR", 'stcidir');
+    fillTextInput("5. Product owner's email", 'po@gmail.com');
+    fillTextInput("6. Product owner's IDIR", 'poidir');
+    fillTextInput("7. Technical contact's email", 'tc@gmail.com');
+    fillTextInput("8. Technical contact's IDIR", 'tcidir');
+    fillTextInput("9. Secondary technical contact's email", 'stc@gmail.com');
+    fillTextInput("10. Secondary technical contact's IDIR", 'stcidir');
 
     await act(async () => {
       submitForm();
     });
 
     expect(submitRealmRequest).toHaveBeenCalledWith({
-      environments: {
-        dev: true,
-        prod: false,
-        test: false,
-      },
-      loginIdp: 'idir',
-      primaryUsers: {
-        businessInBC: false,
-        govEmployees: false,
-        livingInBC: true,
-        other: false,
-        otherDetails: '',
-      },
+      environments: ['dev'],
+      primaryEndUsers: ['livingInBC'],
       productOwnerEmail: 'po@gmail.com',
-      productOwnerIdir: 'poidir',
-      realmName: 'name',
-      realmPurpose: 'purpose',
-      secondaryTechnicalContactEmail: 'stc@gmail.com',
-      secondaryTechnicalContactIdir: 'stcidir',
+      productOwnerIdirUserId: 'poidir',
+      realm: 'name',
+      purpose: 'purpose',
+      secondTechnicalContactEmail: 'stc@gmail.com',
+      secondTechnicalContactIdirUserId: 'stcidir',
       status: 'pending',
       technicalContactEmail: 'tc@gmail.com',
-      technicalContactIdir: 'tcidir',
+      technicalContactIdirUserId: 'tcidir',
     });
   });
 });

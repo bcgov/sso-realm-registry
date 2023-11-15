@@ -17,6 +17,57 @@ interface ErrorData {
 
 type Data = ErrorData | string;
 
+export const getAllRealms = async (username: string, isAdmin: boolean) => {
+  let rosters: any = null;
+
+  if (isAdmin) {
+    rosters = await prisma.roster.findMany();
+  } else {
+    rosters = await prisma.roster.findMany({
+      where: {
+        OR: [
+          {
+            technicalContactIdirUserId: {
+              equals: username,
+              mode: 'insensitive',
+            },
+          },
+          {
+            secondTechnicalContactIdirUserId: {
+              equals: username,
+              mode: 'insensitive',
+            },
+          },
+          {
+            productOwnerIdirUserId: {
+              equals: username,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      },
+    });
+  }
+
+  const kcCore = new KeycloakCore('prod');
+
+  if (rosters?.length > 0) {
+    const kcAdminClient = await kcCore.getAdminClient();
+    if (kcAdminClient) {
+      for (let x = 0; x < rosters?.length; x++) {
+        const realm = rosters[x];
+        const [realmData] = await Promise.all([kcCore.getRealm(realm.realm)]);
+        realm.idps = realmData?.identityProviders?.map((v) => v.displayName || v.alias) || [];
+        const distinctProviders = new Set(realmData?.identityProviders?.map((v) => v.providerId) || []);
+        realm.protocol = Array.from(distinctProviders);
+      }
+    }
+  }
+
+  rosters = !isAdmin ? rosters.map((r: any) => omit(r, adminOnlyFields)) : rosters;
+  return rosters;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   let username;
   try {
@@ -27,55 +78,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const isAdmin = checkAdminRole(session?.user);
 
     if (req.method === 'GET') {
-      let rosters: any = null;
-
-      if (isAdmin) {
-        rosters = await prisma.roster.findMany();
-      } else {
-        rosters = await prisma.roster.findMany({
-          where: {
-            OR: [
-              {
-                technicalContactIdirUserId: {
-                  equals: username,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                secondTechnicalContactIdirUserId: {
-                  equals: username,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                productOwnerIdirUserId: {
-                  equals: username,
-                  mode: 'insensitive',
-                },
-              },
-            ],
-          },
-        });
-      }
-
-      const kcCore = new KeycloakCore('prod');
-
-      if (rosters?.length > 0) {
-        const kcAdminClient = await kcCore.getAdminClient();
-        if (kcAdminClient) {
-          for (let x = 0; x < rosters?.length; x++) {
-            const realm = rosters[x];
-            const [realmData] = await Promise.all([kcCore.getRealm(realm.realm)]);
-            realm.idps = realmData?.identityProviders?.map((v) => v.displayName || v.alias) || [];
-            const distinctProviders = new Set(realmData?.identityProviders?.map((v) => v.providerId) || []);
-            realm.protocol = Array.from(distinctProviders);
-          }
-        }
-      }
-
-      rosters = !isAdmin ? rosters.map((r: any) => omit(r, adminOnlyFields)) : rosters;
-
-      return res.send(rosters);
+      const rosters = await getAllRealms(username, isAdmin);
+      res.send(rosters);
+      return;
     } else if (req.method === 'POST') {
       let data = req.body;
       data.realm = kebabCase(data.realm);
@@ -93,13 +98,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       if (existingRealm.length > 0) {
-        return res.status(400).json({ success: false, error: 'Realm already exists' });
+        return res.status(400).json({ success: false, error: 'Realm name already taken' });
       }
 
       let newRealm = await prisma.roster.create({
         data: {
           ...data,
           requestor: `${session.user.family_name}, ${session.user.given_name}`,
+          preferredAdminLoginMethod: 'idir',
           lastUpdatedBy: `${session.user.family_name}, ${session.user.given_name}`,
           status: StatusEnum.PENDING,
         },

@@ -11,6 +11,9 @@ import { useRouter } from 'next/router';
 import { ModalContext } from 'context/modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { createRealmSchema } from 'validators/create-realm';
+import { ValidationError } from 'yup';
+import cloneDeep from 'lodash.clonedeep';
 
 const SForm = styled.form`
   display: grid;
@@ -113,52 +116,32 @@ const ButtonContainer = styled.div`
 
 const defaultData: CustomRealmFormData = {
   status: 'pending',
-  realmName: '',
-  realmPurpose: '',
-  primaryUsers: {
-    livingInBC: false,
-    businessInBC: false,
-    govEmployees: false,
-    other: false,
-    otherDetails: '',
-  },
-  environments: {
-    dev: false,
-    test: false,
-    prod: false,
-  },
-  loginIdp: '',
+  realm: '',
+  purpose: '',
+  primaryEndUsers: [],
+  environments: [],
   productOwnerEmail: '',
-  productOwnerIdir: '',
+  productOwnerIdirUserId: '',
   technicalContactEmail: '',
-  technicalContactIdir: '',
-  secondaryTechnicalContactIdir: '',
-  secondaryTechnicalContactEmail: '',
+  technicalContactIdirUserId: '',
+  secondTechnicalContactIdirUserId: '',
+  secondTechnicalContactEmail: '',
 };
 
-const flatFields = [
-  'loginIdp',
-  'productOwnerEmail',
-  'productOwnerIdir',
-  'technicalContactEmail',
-  'technicalContactIdir',
-  'secondaryTechnicalContactIdir',
-  'secondaryTechnicalContactEmail',
-  'realmName',
-  'realmPurpose',
-];
-
 const validateForm = (data: CustomRealmFormData) => {
-  const errors: { [key in keyof CustomRealmFormData]?: boolean } = {};
-  // All flatFields are required
-  flatFields.forEach((fieldName) => {
-    if (!data[fieldName]) {
-      errors[fieldName] = true;
-    }
-  });
-  errors['environments'] = Object.values(data.environments).every((val) => !val);
-  errors['primaryUsers'] = Object.values(data.primaryUsers).every((val) => !val);
-  return errors;
+  try {
+    createRealmSchema.validateSync(data, { abortEarly: false, stripUnknown: true });
+    return { valid: true, errors: null };
+  } catch (e) {
+    const err = e as ValidationError;
+    const formErrors: { [key in keyof CustomRealmFormData]?: boolean } = {};
+    err.errors.forEach((error) => {
+      // Yup error strings begin with object key
+      const fieldName = error.split(' ')[0] as keyof CustomRealmFormData;
+      formErrors[fieldName] = true;
+    });
+    return { valid: false, errors: formErrors };
+  }
 };
 
 interface Props {
@@ -173,6 +156,9 @@ function RealmForm({ alert }: Props) {
   const { setModalConfig } = useContext(ModalContext);
   const router = useRouter();
 
+  const [otherPrimaryEndUsersSelected, setOtherPrimaryEndUsersSelected] = useState(false);
+  const [otherPrimaryEndUserDetails, setOtherPrimaryEndUserDetails] = useState('');
+
   // Redirect if not authenticated/loading
   const { status } = useSession();
   if (!['loading', 'authenticated'].includes(status)) {
@@ -183,17 +169,25 @@ function RealmForm({ alert }: Props) {
   }
 
   const requiredMessage = 'Fill in the required fields.';
+  const requiredEmailMessage = 'Fill this in with a proper email.';
+  const twoCharactersRequiredMessage = 'This field must be at least two characters.';
 
   const handleSubmit = async () => {
-    const errors = validateForm(formData);
-    const hasError = Object.values(errors).some((val) => val);
-    if (hasError) {
-      return setFormErrors(errors);
+    const submission = cloneDeep(formData);
+    const { valid, errors } = validateForm(submission);
+    if (!valid) {
+      setFormErrors(errors as any);
+      return;
     }
     setSubmittingForm(true);
-    const [response, err] = await submitRealmRequest(formData);
+
+    // Add other primary users if present
+    if (otherPrimaryEndUsersSelected) {
+      submission.primaryEndUsers.push(otherPrimaryEndUserDetails);
+    }
+    const [response, err] = await submitRealmRequest(submission);
     if (err) {
-      const content = err?.response?.data?.message || 'Network request failure. Please try again.';
+      const content = err?.response?.data?.error || 'Network request failure. Please try again.';
       alert.show({
         variant: 'danger',
         fadeOut: 10000,
@@ -217,17 +211,19 @@ function RealmForm({ alert }: Props) {
     setFormErrors({ ...formErrors, [e.target.name]: false });
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  const handleFormCheckboxGroupChange = (e: ChangeEvent<HTMLInputElement>, groupName: keyof CustomRealmFormData) => {
+
+  const handleFormCheckboxGroupChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    groupName: 'environments' | 'primaryEndUsers',
+  ) => {
     setFormErrors({ ...formErrors, [groupName]: false });
-    const newData = { ...formData, [groupName]: { ...formData[groupName], [e.target.name]: e.target.checked } };
-    // Clear the details textarea if unchecking "other"
-    if (e.target.name === 'other' && e.target.checked === false) {
-      newData[groupName]['otherDetails'] = '';
+    let newData = { ...formData };
+    if (e.target.checked && !formData[groupName].includes(e.target.value)) {
+      newData = { ...formData, [groupName]: [...formData[groupName], e.target.name] };
+    } else {
+      newData = { ...formData, [groupName]: formData[groupName].filter((val) => val !== e.target.name) };
     }
     setFormData(newData);
-  };
-  const handleOtherDetailsChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setFormData({ ...formData, primaryUsers: { ...formData.primaryUsers, otherDetails: e.target.value } });
   };
 
   return (
@@ -243,14 +239,8 @@ function RealmForm({ alert }: Props) {
             1. Custom Realm name
             <FontAwesomeIcon icon={faInfoCircle} title="Select a unique realm name." color="#777777" />
           </label>
-          <input
-            required
-            id="realm-name-input"
-            name="realmName"
-            onChange={handleFormInputChange}
-            value={formData.realmName}
-          />
-          {formErrors.realmName && <p className="error-message">{requiredMessage}</p>}
+          <input required id="realm-name-input" name="realm" onChange={handleFormInputChange} value={formData.realm} />
+          {formErrors.realm && <p className="error-message">{twoCharactersRequiredMessage}</p>}
         </div>
 
         <div className="input-wrapper second-col">
@@ -261,26 +251,26 @@ function RealmForm({ alert }: Props) {
           <input
             required
             id="realm-purpose-input"
-            name="realmPurpose"
+            name="purpose"
             onChange={handleFormInputChange}
-            value={formData.realmPurpose}
+            value={formData.purpose}
           />
-          {formErrors.realmPurpose && <p className="error-message">{requiredMessage}</p>}
+          {formErrors.purpose && <p className="error-message">{twoCharactersRequiredMessage}</p>}
         </div>
 
         <fieldset className="span-cols">
           <legend className="required">
             3. Who are the primary end users of your project/application? (select all that apply)
           </legend>
-          {formErrors.primaryUsers && <p className="error-message">You must select one or more.</p>}
+          {formErrors.primaryEndUsers && <p className="error-message">You must select one or more.</p>}
           <div className="grid">
             <div className="checkbox-wrapper">
               <input
                 type="checkbox"
                 id="living-in-bc-checkbox"
                 name="livingInBC"
-                onChange={(e) => handleFormCheckboxGroupChange(e, 'primaryUsers')}
-                checked={formData.primaryUsers.livingInBC}
+                onChange={(e) => handleFormCheckboxGroupChange(e, 'primaryEndUsers')}
+                checked={formData.primaryEndUsers.includes('livingInBC')}
               />
               <label htmlFor="living-in-bc-checkbox">People living in BC</label>
             </div>
@@ -290,8 +280,8 @@ function RealmForm({ alert }: Props) {
                 type="checkbox"
                 id="people-doing-business-checkbox"
                 name="businessInBC"
-                onChange={(e) => handleFormCheckboxGroupChange(e, 'primaryUsers')}
-                checked={formData.primaryUsers.businessInBC}
+                onChange={(e) => handleFormCheckboxGroupChange(e, 'primaryEndUsers')}
+                checked={formData.primaryEndUsers.includes('businessInBC')}
               />
               <label htmlFor="people-doing-business-checkbox">People doing business/travel in BC</label>
             </div>
@@ -301,8 +291,8 @@ function RealmForm({ alert }: Props) {
                 type="checkbox"
                 id="bc-gov-employees-checkbox"
                 name="govEmployees"
-                onChange={(e) => handleFormCheckboxGroupChange(e, 'primaryUsers')}
-                checked={formData.primaryUsers.govEmployees}
+                onChange={(e) => handleFormCheckboxGroupChange(e, 'primaryEndUsers')}
+                checked={formData.primaryEndUsers.includes('govEmployees')}
               />
               <label htmlFor="bc-gov-employees-checkbox">BC Gov employees</label>
             </div>
@@ -312,8 +302,11 @@ function RealmForm({ alert }: Props) {
                 type="checkbox"
                 id="other-users-checkbox"
                 name="other"
-                onChange={(e) => handleFormCheckboxGroupChange(e, 'primaryUsers')}
-                checked={formData.primaryUsers.other}
+                onChange={(e) => {
+                  setOtherPrimaryEndUsersSelected(!otherPrimaryEndUsersSelected);
+                  if (!e.target.checked) setOtherPrimaryEndUserDetails('');
+                }}
+                checked={otherPrimaryEndUsersSelected}
               />
               <label htmlFor="other-users-checkbox">Other</label>
               <div className="textarea-container">
@@ -321,9 +314,9 @@ function RealmForm({ alert }: Props) {
                   rows={3}
                   placeholder="Enter details"
                   name="otherDetails"
-                  onChange={handleOtherDetailsChange}
-                  disabled={!formData.primaryUsers.other}
-                  value={formData.primaryUsers.otherDetails}
+                  onChange={(e) => setOtherPrimaryEndUserDetails(e.target.value)}
+                  disabled={!otherPrimaryEndUsersSelected}
+                  value={otherPrimaryEndUserDetails}
                   maxLength={100}
                 />
                 <p className="help-text">100 Characters max.</p>
@@ -342,7 +335,7 @@ function RealmForm({ alert }: Props) {
                 id="dev-env-checkbox"
                 name="dev"
                 onChange={(e) => handleFormCheckboxGroupChange(e, 'environments')}
-                checked={formData.environments.dev}
+                checked={formData.environments.includes('dev')}
               />
               <label htmlFor="dev-env-checkbox">Development</label>
             </div>
@@ -353,7 +346,7 @@ function RealmForm({ alert }: Props) {
                 id="test-env-checkbox"
                 name="test"
                 onChange={(e) => handleFormCheckboxGroupChange(e, 'environments')}
-                checked={formData.environments.test}
+                checked={formData.environments.includes('test')}
               />
               <label htmlFor="test-env-checkbox">Test</label>
             </div>
@@ -364,38 +357,16 @@ function RealmForm({ alert }: Props) {
                 id="prod-env-checkbox"
                 name="prod"
                 onChange={(e) => handleFormCheckboxGroupChange(e, 'environments')}
-                checked={formData.environments.prod}
+                checked={formData.environments.includes('prod')}
               />
               <label htmlFor="prod-env-checkbox">Prod</label>
             </div>
           </div>
         </fieldset>
 
-        <fieldset className="span-cols">
-          <legend className="required">5. How will your Realm Admin(s) be logging in?</legend>
-          {formErrors.loginIdp && <p className="error-message">You must select one.</p>}
-          <div className="grid">
-            <div className="radio-wrapper">
-              <input type="radio" id="idir-radio" name="loginIdp" value="idir" onChange={handleFormInputChange} />
-              <label htmlFor="idir-radio">IDIR</label>
-            </div>
-
-            <div className="radio-wrapper">
-              <input
-                type="radio"
-                id="azure-idir-radio"
-                name="loginIdp"
-                value="azureIdir"
-                onChange={handleFormInputChange}
-              />
-              <label htmlFor="azure-idir-radio">Azure IDIR</label>
-            </div>
-          </div>
-        </fieldset>
-
         <div className="input-wrapper first-col">
           <label htmlFor="product-owner-email-input" className="required">
-            6. Product owner's email
+            5. Product owner's email
           </label>
           <input
             required
@@ -404,26 +375,26 @@ function RealmForm({ alert }: Props) {
             value={formData.productOwnerEmail}
             onChange={handleFormInputChange}
           />
-          {formErrors.productOwnerEmail && <p className="error-message">{requiredMessage}</p>}
+          {formErrors.productOwnerEmail && <p className="error-message">{requiredEmailMessage}</p>}
         </div>
 
         <div className="input-wrapper second-col">
           <label htmlFor="product-owner-idir-input" className="required">
-            7. Product owner's IDIR
+            6. Product owner's IDIR
           </label>
           <input
             required
             id="product-owner-idir-input"
-            name="productOwnerIdir"
-            value={formData.productOwnerIdir}
+            name="productOwnerIdirUserId"
+            value={formData.productOwnerIdirUserId}
             onChange={handleFormInputChange}
           />
-          {formErrors.productOwnerIdir && <p className="error-message">{requiredMessage}</p>}
+          {formErrors.productOwnerIdirUserId && <p className="error-message">{twoCharactersRequiredMessage}</p>}
         </div>
 
         <div className="input-wrapper first-col">
           <label htmlFor="technical-contact-email-input" className="required">
-            8. Technical contact's email
+            7. Technical contact's email
           </label>
           <input
             required
@@ -432,49 +403,45 @@ function RealmForm({ alert }: Props) {
             value={formData.technicalContactEmail}
             onChange={handleFormInputChange}
           />
-          {formErrors.technicalContactEmail && <p className="error-message">{requiredMessage}</p>}
+          {formErrors.technicalContactEmail && <p className="error-message">{requiredEmailMessage}</p>}
         </div>
 
         <div className="input-wrapper second-col">
           <label htmlFor="technical-contact-idir-input" className="required">
-            9. Technical contact's IDIR
+            8. Technical contact's IDIR
           </label>
           <input
             required
             id="technical-contact-idir-input"
-            name="technicalContactIdir"
-            value={formData.technicalContactIdir}
+            name="technicalContactIdirUserId"
+            value={formData.technicalContactIdirUserId}
             onChange={handleFormInputChange}
           />
-          {formErrors.technicalContactIdir && <p className="error-message">{requiredMessage}</p>}
+          {formErrors.technicalContactIdirUserId && <p className="error-message">{twoCharactersRequiredMessage}</p>}
         </div>
 
         <div className="input-wrapper first-col">
-          <label htmlFor="secondary-contact-email-input" className="required">
-            10. Secondary technical contact's email
-          </label>
+          <label htmlFor="secondary-contact-email-input">9. Secondary technical contact's email</label>
           <input
             required
             id="secondary-contact-email-input"
-            name="secondaryTechnicalContactEmail"
-            value={formData.secondaryTechnicalContactEmail}
+            name="secondTechnicalContactEmail"
+            value={formData.secondTechnicalContactEmail}
             onChange={handleFormInputChange}
           />
-          {formErrors.secondaryTechnicalContactEmail && <p className="error-message">{requiredMessage}</p>}
+          {formErrors.secondTechnicalContactEmail && <p className="error-message">{requiredEmailMessage}</p>}
         </div>
 
         <div className="input-wrapper second-col">
-          <label htmlFor="secondary-contact-idir-input" className="required">
-            11. Secondary technical contact's IDIR
-          </label>
+          <label htmlFor="secondary-contact-idir-input">10. Secondary technical contact's IDIR</label>
           <input
             required
             id="secondary-contact-idir-input"
-            name="secondaryTechnicalContactIdir"
-            value={formData.secondaryTechnicalContactIdir}
+            name="secondTechnicalContactIdirUserId"
+            value={formData.secondTechnicalContactIdirUserId}
             onChange={handleFormInputChange}
           />
-          {formErrors.secondaryTechnicalContactIdir && <p className="error-message">{requiredMessage}</p>}
+          {formErrors.secondTechnicalContactIdirUserId && <p className="error-message">{requiredMessage}</p>}
         </div>
       </SForm>
       <ButtonContainer className="button-container">

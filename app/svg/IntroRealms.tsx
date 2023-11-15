@@ -36,7 +36,7 @@ export default (
         d="M533.157 196.226L533.11 196.193C533.075 196.17 533.029 196.178 533.005 196.212L532.043 197.594C532.019 197.628 532.028 197.675 532.062 197.698L532.109 197.731C532.143 197.755 532.19 197.746 532.214 197.712L533.176 196.331C533.199 196.296 533.191 196.25 533.157 196.226Z"
         fill="#313132"
       />
-      <g opacity="0.75" clip-path="url(#clip0_427_5921)">
+      <g opacity="0.75" clipPath="url(#clip0_427_5921)">
         <path
           d="M690.368 291.49C679.769 282.474 681.899 273.527 686.651 261.94C694.886 241.861 681.215 218.818 661.344 212.858C639.891 206.422 616.152 216.558 608.166 237.964C606.153 243.382 605.289 249.159 605.629 254.928C606.029 261.743 609.027 267.146 611.192 273.45C615.165 285.02 604.702 294.843 595.796 300.572C584.986 307.538 587.408 309.765 593.85 310.227C599.249 310.614 604.122 309.178 608.923 306.757C611.048 305.685 618.32 302.39 619.346 300.162C616.532 306.296 610.81 316.932 614.389 323.713C618.8 332.07 629.889 316.385 632.105 313.146C634.089 310.247 642.028 294.398 646.8 302.322C651.157 309.556 648.786 319.943 655.054 326.455C662.642 334.343 666.869 322.231 666.928 316.255C666.966 312.469 665.519 294.145 673.833 302.428C678.781 307.36 686.052 318.847 694.287 317.887C703.233 316.846 689.178 302.21 687.76 299.736C689.005 300.723 700.154 307.608 700.189 301.931C700.215 297.598 693.241 293.935 690.368 291.49Z"
           fill="#FCBA19"
@@ -253,9 +253,9 @@ export default (
         width="433"
         height="758"
         filterUnits="userSpaceOnUse"
-        color-interpolation-filters="sRGB"
+        colorInterpolationFilters="sRGB"
       >
-        <feFlood flood-opacity="0" result="BackgroundImageFix" />
+        <feFlood floodOpacity="0" result="BackgroundImageFix" />
         <feColorMatrix
           in="SourceAlpha"
           type="matrix"
@@ -276,9 +276,9 @@ export default (
         width="433"
         height="758"
         filterUnits="userSpaceOnUse"
-        color-interpolation-filters="sRGB"
+        colorInterpolationFilters="sRGB"
       >
-        <feFlood flood-opacity="0" result="BackgroundImageFix" />
+        <feFlood floodOpacity="0" result="BackgroundImageFix" />
         <feColorMatrix
           in="SourceAlpha"
           type="matrix"

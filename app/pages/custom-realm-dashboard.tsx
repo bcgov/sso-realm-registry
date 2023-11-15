@@ -1,13 +1,18 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { getCoreRowModel, useReactTable, flexRender, createColumnHelper } from '@tanstack/react-table';
-import { CustomRealmFormData } from 'types/realm-profile';
-import { faTrash, faCircleCheck, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Button from '@button-inc/bcgov-theme/Button';
 import { ModalContext } from 'context/modal';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
-import { updateRealmRequestStatus, deleteRealmRequest } from 'services/realm';
+import { getRealmProfiles, deleteRealmRequest, updateRealmProfile } from 'services/realm';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from './api/auth/[...nextauth]';
+import { GetServerSidePropsContext } from 'next';
+import { checkAdminRole } from 'utils/helpers';
+import { getAllRealms } from 'pages/api/realms';
+import CustomRealmTabs from 'page-partials/custom-realm-dashboard/CustomRealmTabs';
 
 const Container = styled.div`
   padding: 2em;
@@ -69,156 +74,85 @@ const Table = styled.table`
   }
 `;
 
-const Tabs = styled.ul`
-  display: flex;
-  flex-direction: row;
-  list-style-type: none;
-  border-bottom: 1px solid grey;
-  margin: 0;
-
-  li {
-    margin: 0 1em;
-    &:hover {
-      cursor: pointer;
-    }
-    &.selected {
-      font-weight: bold;
-    }
-    &:first-child {
-      margin-left: 0;
-    }
-  }
-`;
-
-const TabPanel = styled.div`
-  margin-top: 1em;
-  .button-container {
-    button {
-      margin-right: 1em;
-    }
-  }
-`;
-
-const ApprovalList = styled.ul`
-  list-style-type: none;
-  margin: 0;
-  width: 100%;
-
-  li {
-    border-bottom: 1px solid black;
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    margin-bottom: 0;
-    align-items: center;
-    margin-top: 0.3em;
-  }
-`;
-
-/**
- * Return an object with formatted key values to display the details
- */
-const formatRealmData = (realm?: CustomRealmFormData) => {
-  if (!realm) return null;
-  let primaryUsers = Object.keys(realm.primaryUsers)
-    .filter((key) => !['other', 'otherDetails'].includes(key))
-    .join(', ');
-  if (Object.keys(realm.primaryUsers).includes('otherDetails')) {
-    primaryUsers += `, Other: ${realm.primaryUsers.otherDetails}`;
-  }
-  const environments = Object.keys(realm.environments)
-    .filter((env) => realm.environments[env as 'dev' | 'test' | 'prod'])
-    .join(', ');
-
-  return {
-    Name: realm.realmName,
-    Purpose: realm.realmPurpose,
-    'Primary end users': primaryUsers,
-    Environments: environments,
-    'Realm Admin(s) login method': realm.loginIdp,
-    "Product owner's email": realm.productOwnerEmail,
-    "Product owner's IDIR": realm.productOwnerIdir,
-    "Technical contact's email": realm.technicalContactEmail,
-    "Technical contact's IDIR": realm.technicalContactIdir,
-    "Secondary technical contact's email": realm.secondaryTechnicalContactEmail,
-    "Secondary technical contact's IDIR": realm.secondaryTechnicalContactIdir,
-  };
-};
-
 const columnHelper = createColumnHelper<CustomRealmFormData>();
 interface Props {
   defaultRealmRequests: CustomRealmFormData[];
   alert: BottomAlert;
 }
 
+const realmCreatingStatuses = ['pending', 'prSuccess', 'planned'];
+
 function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
-  const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>(defaultRealmRequests);
-  const [selectedTab, setSelectedTab] = useState('Details');
+  const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>(defaultRealmRequests || []);
   const [selectedRow, setSelectedRow] = useState<CustomRealmFormData | undefined>(defaultRealmRequests[0]);
-  const { setModalConfig, modalConfig } = useContext(ModalContext);
+  const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
+  const { setModalConfig } = useContext(ModalContext);
 
-  const tabs = ['Details', 'Access Request'];
+  // To Add once api in place
+  // const handleDeleteRequest = (id: number) => {
+  //   const handleConfirm = async () => {
+  //     const [, err] = await deleteRealmRequest(id);
+  //     if (err) {
+  //       return alert.show({
+  //         variant: 'danger',
+  //         fadeOut: 3500,
+  //         closable: true,
+  //         content: `Network error when deleting request id ${id}. Please try again.`,
+  //       });
+  //     }
+  //     alert.show({
+  //       fadeOut: 3500,
+  //       closable: true,
+  //       content: `Deleted request id ${id} successfully.`,
+  //     });
+  //     const remainingRealms = realmRequests.filter((realm) => realm.id !== id);
+  //     setRealmRequests(remainingRealms);
+  //     setSelectedRow(remainingRealms[0]);
+  //   };
+  //   setModalConfig({
+  //     show: true,
+  //     title: 'Delete Realm Request',
+  //     body: `Are you sure you want to delete request ${id}?`,
+  //     showCancelButton: true,
+  //     showConfirmButton: true,
+  //     onConfirm: handleConfirm,
+  //   });
+  // };
 
-  const handleDeleteRequest = (id: number) => {
+  const handleRequestStatusChange = (approval: 'approved' | 'declined', realm: CustomRealmFormData) => {
+    const realmId = realm.id;
+    const approving = approval === 'approved';
     const handleConfirm = async () => {
-      const [, err] = await deleteRealmRequest(id);
+      const [, err] = await updateRealmProfile(String(realmId), {
+        ...realm,
+        approved: approving,
+      } as unknown as RealmProfile);
       if (err) {
         return alert.show({
           variant: 'danger',
           fadeOut: 3500,
           closable: true,
-          content: `Network error when deleting request id ${id}. Please try again.`,
+          content: `Network error when updating request id ${realmId}. Please try again.`,
         });
       }
       alert.show({
+        variant: 'success',
         fadeOut: 3500,
         closable: true,
-        content: `Deleted request id ${id} successfully.`,
-      });
-      const remainingRealms = realmRequests.filter((realm) => realm.id !== id);
-      setRealmRequests(remainingRealms);
-      setSelectedRow(remainingRealms[0]);
-    };
-    setModalConfig({
-      show: true,
-      title: 'Delete Realm Request',
-      body: `Are you sure you want to delete request ${id}?`,
-      showCancelButton: true,
-      showConfirmButton: true,
-      onConfirm: handleConfirm,
-    });
-  };
-
-  const handleRequestStatusChange = (newStatus: 'approved' | 'declined', id?: number) => {
-    if (!id) return;
-    const handleConfirm = async () => {
-      const [, err] = await updateRealmRequestStatus(id, newStatus);
-      if (err) {
-        return alert.show({
-          variant: 'danger',
-          fadeOut: 3500,
-          closable: true,
-          content: `Network error when updating request id ${id}. Please try again.`,
-        });
-      }
-      alert.show({
-        fadeOut: 3500,
-        closable: true,
-        content: `Request id ${id} ${newStatus}.`,
+        content: `Request id ${realmId} ${approval}.`,
       });
       const updatedRealms = realmRequests.map((realm) => {
-        if (realm.id === id) return { ...realm, status: newStatus } as CustomRealmFormData;
+        if (realm.id === realmId) return { ...realm, approved: approving } as CustomRealmFormData;
         return realm;
       });
       setRealmRequests(updatedRealms);
-      setSelectedRow({ ...selectedRow, status: newStatus } as CustomRealmFormData);
+      setSelectedRow({ ...selectedRow, approved: approving } as CustomRealmFormData);
     };
-    const statusVerb = newStatus === 'approved' ? 'Approve' : 'Decline';
+    const statusVerb = approval === 'approved' ? 'Approve' : 'Decline';
     setModalConfig({
       show: true,
       title: `${statusVerb} Realm Request`,
-      body: `Are you sure you want to ${statusVerb.toLocaleLowerCase()} request ${id}?`,
+      body: `Are you sure you want to ${statusVerb.toLocaleLowerCase()} request ${realmId}?`,
       showCancelButton: true,
       showConfirmButton: true,
       onConfirm: handleConfirm,
@@ -230,7 +164,7 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
       header: () => 'Custom Realm ID',
       cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor('realmName', {
+    columnHelper.accessor('realm', {
       header: () => 'Custom Realm Name',
       cell: (info) => info.getValue(),
     }),
@@ -246,11 +180,20 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
       header: 'Request Status',
       cell: (info) => info.renderValue(),
     }),
+    columnHelper.accessor('approved', {
+      header: 'Approval Status',
+      cell: (info) => {
+        const approved = info.renderValue();
+        if (approved === null) return 'Undecided';
+        return approved ? 'Approved' : 'Declined';
+      },
+    }),
     columnHelper.display({
       header: 'Actions',
       cell: (props) => (
         <FontAwesomeIcon
-          onClick={() => handleDeleteRequest(props.row.getValue('id'))}
+          // Include when deletion implemented
+          // onClick={() => handleDeleteRequest(props.row.getValue('id'))}
           icon={faTrash}
           className="delete-icon"
           role="button"
@@ -266,7 +209,33 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const formattedRealmData = formatRealmData(selectedRow);
+  const fetchRealms = async () => {
+    // Intentionally not flashing error since this is a background fetch.
+    const [profiles, err] = await getRealmProfiles();
+    if (profiles) {
+      setLastUpdateTime(new Date());
+      setRealmRequests(profiles);
+      if (selectedRow) {
+        const selectedRowId = selectedRow?.id;
+        const updatedRow = profiles.find((profile) => profile.id === selectedRowId);
+        if (!updatedRow) return;
+        setSelectedRow(updatedRow);
+      }
+    }
+  };
+
+  let interval: any;
+  useEffect(() => {
+    if (interval) clearInterval(interval);
+
+    if (selectedRow?.approved && realmCreatingStatuses.includes(selectedRow?.status || '')) {
+      interval = setInterval(() => {
+        fetchRealms();
+      }, 15000);
+    }
+
+    return () => clearInterval(interval);
+  }, [selectedRow]);
 
   return (
     <Container>
@@ -298,54 +267,12 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
           ))}
         </tbody>
       </Table>
-      <h2>Custom Realm Details</h2>
-      <Tabs>
-        {tabs.map((tab) => (
-          <li onClick={() => setSelectedTab(tab)} key={tab} className={tab === selectedTab ? 'selected' : ''}>
-            {tab}
-          </li>
-        ))}
-      </Tabs>
-      {/* Only display details if formattedRealmData is not null */}
-      {formattedRealmData && selectedTab === 'Details' && (
-        <TabPanel>
-          {Object.entries(formattedRealmData).map(([label, value]) => (
-            <div key={label}>
-              <span>{label}</span>: <strong>{value}</strong>
-              <br />
-            </div>
-          ))}
-        </TabPanel>
-      )}
-      {selectedTab === 'Access Request' && (
-        <TabPanel>
-          {selectedRow?.status === 'pending' && (
-            <>
-              <p>To begin the approval process for this Custom Realm, click below.</p>
-              <div className="button-container">
-                <Button onClick={() => handleRequestStatusChange('approved', selectedRow?.id)}>
-                  Approve Custom Realm
-                </Button>
-                <Button variant="secondary" onClick={() => handleRequestStatusChange('declined', selectedRow?.id)}>
-                  Decline Custom Realm
-                </Button>
-              </div>
-            </>
-          )}
-          {['approved', 'created'].includes(selectedRow?.status || '') && (
-            <ApprovalList>
-              <li>
-                <span>SSO Approval</span>
-                <FontAwesomeIcon icon={faCircleCheck} color="green" />
-              </li>
-              <li>
-                <span>Access Custom Realm</span>
-                <FontAwesomeIcon icon={selectedRow?.status === 'approved' ? faSpinner : faCircleCheck} />
-              </li>
-            </ApprovalList>
-          )}
-          {selectedRow?.status === 'declined' && <p>This request has been declined.</p>}
-        </TabPanel>
+      {selectedRow && (
+        <CustomRealmTabs
+          lastUpdateTime={lastUpdateTime}
+          selectedRow={selectedRow}
+          handleRequestStatusChange={handleRequestStatusChange}
+        />
       )}
     </Container>
   );
@@ -353,62 +280,41 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
 
 export default withBottomAlert(CustomRealmDashboard);
 
-export const getServerSideProps = () => {
-  // TODO: fetch requests from db. Just putting some example data.
-  return {
-    props: {
-      defaultRealmRequests: [
-        {
-          id: 1,
-          realmName: 'realm 1',
-          realmPurpose: 'something',
-          primaryUsers: {
-            livingInBC: true,
-            businessInBC: true,
-            govEmployees: true,
-            other: true,
-            otherDetails: 'Some stuff',
-          },
-          environments: {
-            dev: true,
-            test: true,
-            prod: true,
-          },
-          loginIdp: 'idir',
-          productOwnerEmail: 'a@b.com',
-          productOwnerIdir: 'me',
-          technicalContactEmail: 'b@c.com',
-          technicalContactIdir: 'd@e.com',
-          secondaryTechnicalContactIdir: 'dmsd',
-          secondaryTechnicalContactEmail: 'dksadlks@fkjlsdj.com',
-          status: 'pending',
-        },
-        {
-          id: 2,
-          realmName: 'realm 2',
-          realmPurpose: 'something',
-          primaryUsers: {
-            livingInBC: true,
-            businessInBC: true,
-            govEmployees: true,
-            other: true,
-            otherDetails: 'Something',
-          },
-          environments: {
-            dev: true,
-            test: true,
-            prod: true,
-          },
-          loginIdp: 'idir',
-          productOwnerEmail: 'a@b.com',
-          productOwnerIdir: 'me',
-          technicalContactEmail: 'b@c.com',
-          technicalContactIdir: 'd@e.com',
-          secondaryTechnicalContactIdir: 'dmsd',
-          secondaryTechnicalContactEmail: 'dksadlks@fkjlsdj.com',
-          status: 'approved',
-        },
-      ],
-    },
-  };
+interface ExtendedForm extends CustomRealmFormData {
+  createdAt: object;
+  updatedAt: object;
+}
+
+/**Fetch realm data with first page load */
+export const getServerSideProps = async (context: GetServerSidePropsContext) => {
+  const session = await getServerSession(context.req, context.res, authOptions);
+  if (!session)
+    return {
+      props: { defaultRealmRequests: [] },
+    };
+
+  const username = session?.user?.idir_username || '';
+  const isAdmin = checkAdminRole(session?.user);
+
+  try {
+    const realms = await getAllRealms(username, isAdmin);
+    // Strip non-serializable dates
+    const formattedRealms = realms.map((realm: ExtendedForm) => {
+      const { createdAt, updatedAt, ...rest } = realm;
+      return rest;
+    });
+
+    return {
+      props: {
+        defaultRealmRequests: formattedRealms,
+      },
+    };
+  } catch (err) {
+    console.log(err);
+    return {
+      props: {
+        defaltRealmRequests: [],
+      },
+    };
+  }
 };

@@ -25,12 +25,7 @@ export const allowedPoFields: string[] = allowedTechContactFields.concat([
   'primaryEndUsers',
 ]);
 
-export const allowedFormFields: string[] = allowedPoFields.concat([
-  'realm',
-  'environments',
-  'purpose',
-  'preferredAdminLoginMethod',
-]);
+export const allowedFormFields: string[] = allowedPoFields.concat(['realm', 'environments', 'purpose']);
 
 export const adminOnlyFields: string[] = ['rcChannel', 'rcChannelOwnedBy', 'materialToSend'];
 

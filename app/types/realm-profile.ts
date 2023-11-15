@@ -29,29 +29,32 @@ export interface ModalData {
   when_to_move?: string;
 }
 
+type PrimaryEndUser = 'livingInBc' | 'businessInBC' | 'govEmployees' | string;
+type Environment = 'dev' | 'test' | 'prod' | string;
+type Status =
+  | 'unapproved'
+  | 'declined'
+  | 'pending'
+  | 'prSuccess'
+  | 'PrFailed'
+  | 'planned'
+  | 'planFailed'
+  | 'applied'
+  | 'applyFailed';
+
 export interface CustomRealmFormData {
   id?: number;
-  realmName: string;
-  realmPurpose: string;
-  primaryUsers: {
-    livingInBC: boolean;
-    businessInBC: boolean;
-    govEmployees: boolean;
-    other: boolean;
-    otherDetails: string;
-  };
-  environments: {
-    dev: boolean;
-    test: boolean;
-    prod: boolean;
-  };
-  loginIdp: string;
+  realm: string;
+  purpose: string;
+  primaryEndUsers: PrimaryEndUser[];
+  environments: Environment[];
+  preferredAdminLoginMethod?: string;
   productOwnerEmail: string;
-  productOwnerIdir: string;
+  productOwnerIdirUserId: string;
   technicalContactEmail: string;
-  technicalContactIdir: string;
-  secondaryTechnicalContactIdir: string;
-  secondaryTechnicalContactEmail: string;
-  status?: 'pending' | 'approved' | 'declined' | 'created';
-  [key: string]: any;
+  technicalContactIdirUserId: string;
+  secondTechnicalContactIdirUserId: string;
+  secondTechnicalContactEmail: string;
+  approved?: boolean | null;
+  status: Status;
 }

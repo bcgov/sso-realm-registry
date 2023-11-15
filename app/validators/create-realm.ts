@@ -7,6 +7,8 @@ export enum ActionEnum {
 }
 
 export enum StatusEnum {
+  UNAPPROVED = 'unapproved',
+  DECLINED = 'declined',
   PENDING = 'pending',
   PRSUCCESS = 'prSuccess',
   PRFAILED = 'PrFailed',
@@ -46,13 +48,13 @@ export const createRealmSchema = yup.object().shape({
   purpose: yup.string().min(2).required(),
   primaryEndUsers: yup.array().required().min(1),
   environments: yup.array().required().min(1),
-  preferredAdminLoginMethod: yup.string().required().min(4),
   technicalContactEmail: yup.string().required().email(),
   productOwnerEmail: yup.string().required().email(),
   technicalContactIdirUserId: yup.string().required().min(2),
   productOwnerIdirUserId: yup.string().required().min(2),
   secondTechnicalContactEmail: yup.string().email().optional(),
   secondTechnicalContactIdirUserId: yup.string().optional(),
+  status: yup.string().matches(/pending/),
 });
 
 const commonSchema = yup.object().shape({
@@ -75,21 +77,21 @@ export const getUpdateRealmSchemaByRole = (role: string = '') => {
   switch (role) {
     case RoleEnum.ADMIN:
       return yup.object().shape({
-        approved: yup.string().optional(),
-        productName: yup.string().required().optional(),
-        productOwnerEmail: yup.string().email().optional(),
-        productOwnerIdirUserId: yup.string().optional(),
-        primaryEndUsers: yup.array().optional(),
-        rcChannel: yup.string().optional(),
-        rcChannelOwnedBy: yup.string().optional(),
-        materialToSend: yup.string().optional(),
-        technicalContactIdirUserId: yup.string().min(2).optional(),
-        technicalContactEmail: yup.string().email().optional(),
-        secondTechnicalContactEmail: yup.string().email().optional(),
-        secondTechnicalContactIdirUserId: yup.string().optional(),
-        ministry: yup.string().optional(),
-        division: yup.string().optional(),
-        branch: yup.string().optional(),
+        approved: yup.string().optional().nullable(),
+        productName: yup.string().required().optional().nullable(),
+        productOwnerEmail: yup.string().email().optional().nullable(),
+        productOwnerIdirUserId: yup.string().optional().nullable(),
+        primaryEndUsers: yup.array().optional().nullable(),
+        rcChannel: yup.string().optional().nullable(),
+        rcChannelOwnedBy: yup.string().optional().nullable(),
+        materialToSend: yup.string().optional().nullable(),
+        technicalContactIdirUserId: yup.string().min(2).optional().nullable(),
+        technicalContactEmail: yup.string().email().optional().nullable(),
+        secondTechnicalContactEmail: yup.string().email().optional().nullable(),
+        secondTechnicalContactIdirUserId: yup.string().optional().nullable(),
+        ministry: yup.string().optional().nullable(),
+        division: yup.string().optional().nullable(),
+        branch: yup.string().optional().nullable(),
       });
     case RoleEnum.PRODUCT_OWNER:
       return yup
