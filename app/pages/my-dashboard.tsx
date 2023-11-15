@@ -134,7 +134,7 @@ function MyDashboard() {
                 <Grid.Col span={4}>
                   <RealmRightPanel
                     key={new Date().getTime()}
-                    realm={realms.find((v) => v.id === selectedId) as RealmProfile}
+                    realm={realms.find((v) => String(v.id) === selectedId) as RealmProfile}
                     currentUser={currentUser}
                     onUpdate={handleUpdate}
                     onCancel={handleCancel}
