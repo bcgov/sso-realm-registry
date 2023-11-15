@@ -8,14 +8,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const { field, search, limit, page } = payload;
     const { authorization } = reqHeaders;
     const token = authorization?.split('Bearer ')[1];
-    if (!token) throw Error('invalid access');
+    if (!token) return res.status(401).json({ success: false, error: 'unauthorized' });
 
-    const idirUserGuid = await getIdirUserGuid(token);
+    const idirUserGuid = await getIdirUserGuid(token as string);
     const xml = generateXML(field as SearchCriteria, search, idirUserGuid, limit, page);
     const { response }: any = await makeSoapRequest(xml);
     return res.send(await getBceidAccounts(response));
   } catch (err: any) {
     console.error('error:', err);
-    res.status(200).json({ success: false, error: err.message || err });
+    return res.status(200).json({ success: false, error: err.message || err });
   }
 }
