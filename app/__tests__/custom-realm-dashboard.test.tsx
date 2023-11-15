@@ -107,7 +107,7 @@ jest.mock('../pages/api/auth/[...nextauth]', () => {
 });
 
 describe('Table', () => {
-  it.skip('Loads in table data from serverside props', () => {
+  it('Loads in table data from serverside props', () => {
     render(<CustomRealmDashboard defaultRealmRequests={defaultData} />);
     const table = screen.getByTestId('custom-realm-table');
     expect(within(table).getByText('realm 1'));
