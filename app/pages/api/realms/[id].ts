@@ -146,17 +146,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             });
             updateRequest.approved = false;
           }
-        }
 
-        updatedRealm = await prisma.roster.update({
-          where: {
-            id: parseInt(req.query.id as string, 10),
-          },
-          data: {
-            ...updateRequest,
-            lastUpdatedBy,
-          },
-        });
+          updatedRealm = await prisma.roster.update({
+            where: {
+              id: parseInt(req.query.id as string, 10),
+            },
+            data: {
+              ...updateRequest,
+              lastUpdatedBy,
+            },
+          });
+        } else {
+          updatedRealm = await prisma.roster.update({
+            where: {
+              id: parseInt(req.query.id as string, 10),
+              OR: [
+                {
+                  technicalContactIdirUserId: {
+                    equals: username,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  secondTechnicalContactIdirUserId: {
+                    equals: username,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  productOwnerIdirUserId: {
+                    equals: username,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            },
+            data: {
+              ...updateRequest,
+              lastUpdatedBy,
+            },
+          });
+        }
 
         await createEvent({
           realmId: parseInt(req.query.id as string, 10),

@@ -6,9 +6,18 @@ export enum ActionEnum {
   TF_APPLY = 'tf_apply',
 }
 
+<<<<<<< HEAD
 export enum StatusEnum {
   UNAPPROVED = 'unapproved',
   DECLINED = 'declined',
+=======
+export enum LoginIDPEnum {
+  IDIR = 'idir',
+  AZUREIDIR = 'azureidir',
+}
+
+export enum StatusEnum {
+>>>>>>> dev
   PENDING = 'pending',
   PRSUCCESS = 'prSuccess',
   PRFAILED = 'PrFailed',
@@ -77,6 +86,7 @@ export const getUpdateRealmSchemaByRole = (role: string = '') => {
   switch (role) {
     case RoleEnum.ADMIN:
       return yup.object().shape({
+<<<<<<< HEAD
         approved: yup.string().optional().nullable(),
         productName: yup.string().required().optional().nullable(),
         productOwnerEmail: yup.string().email().optional().nullable(),
@@ -92,6 +102,23 @@ export const getUpdateRealmSchemaByRole = (role: string = '') => {
         ministry: yup.string().optional().nullable(),
         division: yup.string().optional().nullable(),
         branch: yup.string().optional().nullable(),
+=======
+        approved: yup.string().optional(),
+        productName: yup.string().required().optional(),
+        productOwnerEmail: yup.string().email().optional(),
+        productOwnerIdirUserId: yup.string().optional(),
+        primaryEndUsers: yup.array().optional(),
+        rcChannel: yup.string().optional(),
+        rcChannelOwnedBy: yup.string().optional(),
+        materialToSend: yup.string().optional(),
+        technicalContactIdirUserId: yup.string().min(2).optional(),
+        technicalContactEmail: yup.string().email().optional(),
+        secondTechnicalContactEmail: yup.string().email().optional(),
+        secondTechnicalContactIdirUserId: yup.string().optional(),
+        ministry: yup.string().optional(),
+        division: yup.string().optional(),
+        branch: yup.string().optional(),
+>>>>>>> dev
       });
     case RoleEnum.PRODUCT_OWNER:
       return yup
@@ -116,3 +143,14 @@ export const requestUpdateSchema = yup
     error: yup.string(),
   })
   .required();
+<<<<<<< HEAD
+=======
+
+export const realmPlanAndApplySchema = yup
+  .object({
+    ids: yup.array().required().min(1),
+    action: yup.string().oneOf([ActionEnum.TF_PLAN, ActionEnum.TF_APPLY]).required(),
+    status: yup.boolean().required(),
+  })
+  .required();
+>>>>>>> dev
