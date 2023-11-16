@@ -67,9 +67,9 @@ const SApprovalList = styled.ul`
 `;
 
 const EventContents = styled.div`
-  margin-top: 20px;
-  max-height: calc(100vh - 250px);
-  overflow: auto;
+  margin-top: 1em;
+  max-height: 25em;
+  overflow-y: auto;
 `;
 
 const realmCreationFailedStatuses = ['PrFailed', 'planFailed', 'applyFailed'];
