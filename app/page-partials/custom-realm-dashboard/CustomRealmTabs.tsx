@@ -1,9 +1,12 @@
 import styled from 'styled-components';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CustomRealmFormData } from 'types/realm-profile';
 import { faCircleCheck, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '@button-inc/bcgov-theme/Button';
+import { getRealmEvents } from 'services/events';
+import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
+import { Event } from 'types/event';
 
 const Tabs = styled.ul`
   display: flex;
@@ -61,6 +64,12 @@ const SApprovalList = styled.ul`
     align-items: center;
     margin-top: 0.3em;
   }
+`;
+
+const EventContents = styled.div`
+  margin-top: 20px;
+  max-height: calc(100vh - 250px);
+  overflow: auto;
 `;
 
 const realmCreationFailedStatuses = ['PrFailed', 'planFailed', 'applyFailed'];
@@ -124,15 +133,38 @@ function ApprovalList({ selectedRow, lastUpdateTime }: Props) {
   );
 }
 
-const tabs = ['Details', 'Access Request'];
+const tabs = ['Details', 'Access Request', 'Events'];
 
 interface CRTProps extends Props {
   handleRequestStatusChange: (status: 'approved' | 'declined', row: CustomRealmFormData) => void;
+  alert: BottomAlert;
 }
 
-export default function CutsomRealmTabs({ selectedRow, handleRequestStatusChange, lastUpdateTime }: CRTProps) {
+function CutsomRealmTabs({ selectedRow, handleRequestStatusChange, lastUpdateTime, alert }: CRTProps) {
   const [selectedTab, setSelectedTab] = useState('Details');
+  const [events, setEvents] = useState<Event[]>([]);
   const formattedRealmData = formatRealmData(selectedRow);
+
+  const fetchEvents = async () => {
+    if (selectedRow.id) {
+      const [events, err] = await getRealmEvents(String(selectedRow.id));
+      if (events) {
+        setEvents(events);
+      } else if (err) {
+        return alert.show({
+          variant: 'danger',
+          fadeOut: 3500,
+          closable: true,
+          content: `Network error when fetching realm events.`,
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, [selectedRow]);
+
   return (
     <>
       <h2>Custom Realm Details</h2>
@@ -171,6 +203,33 @@ export default function CutsomRealmTabs({ selectedRow, handleRequestStatusChange
           )}
         </TabPanel>
       )}
+      {selectedTab === 'Events' && (
+        <EventContents>
+          <h2>Events</h2>
+          <hr />
+          {events.length === 0 ? (
+            <div>No events found</div>
+          ) : (
+            events.map((event) => (
+              <div key={event.id}>
+                <div>
+                  <strong>Event Code: </strong>
+                  {event.eventCode}
+                </div>
+                {event.createdAt && (
+                  <div>
+                    <strong>Created Time: </strong>
+                    {new Date(event.createdAt).toLocaleString()}
+                  </div>
+                )}
+                <hr />
+              </div>
+            ))
+          )}
+        </EventContents>
+      )}
     </>
   );
 }
+
+export default withBottomAlert(CutsomRealmTabs);

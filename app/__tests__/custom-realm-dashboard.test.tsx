@@ -1,15 +1,49 @@
 import React from 'react';
-import { render, screen, within, waitFor } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
 import App from 'pages/_app';
 import CustomRealmDashboard from 'pages/custom-realm-dashboard';
 import { updateRealmProfile } from 'services/realm';
+import { getRealmEvents } from 'services/events';
 import { CustomRealmFormData } from 'types/realm-profile';
 import Router from 'next/router';
+import { Event } from 'types/event';
 
 jest.mock('services/realm', () => {
   return {
     deleteRealmRequest: jest.fn((realmInfo: CustomRealmFormData) => Promise.resolve([true, null])),
     updateRealmProfile: jest.fn((id: number, status: string) => Promise.resolve([true, null])),
+  };
+});
+
+jest.mock('services/events', () => {
+  return {
+    getRealmEvents: jest.fn((realmId: string) => {
+      if (realmId === '1') {
+        return Promise.resolve([
+          [
+            {
+              id: 1,
+              idirUserId: 'idir',
+              createdAt: '2023-11-10T20:25:06.856Z',
+              eventCode: 'request-create-success',
+              realmId: 1,
+            },
+          ],
+        ]);
+      } else {
+        return Promise.resolve([
+          [
+            {
+              id: 1,
+              idirUserId: 'idir',
+              createdAt: '2023-11-11T20:25:06.856Z',
+              eventCode: 'request-update-success',
+              realmId: 2,
+            },
+          ],
+        ]);
+      }
+    }),
   };
 });
 
@@ -233,5 +267,57 @@ describe('Status update', () => {
     screen.getByText('Decline Custom Realm', { selector: 'button' }).click();
     screen.getByText('Confirm', { selector: 'button' }).click();
     await waitFor(() => within(firstRow).getByText('Declined'));
+  });
+});
+
+describe('Events table', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('fetches correct events when selected row changes', async () => {
+    render(<CustomRealmDashboard defaultRealmRequests={defaultData} />);
+    expect(getRealmEvents).toHaveBeenCalledTimes(1);
+    // Called with correct realm id
+    expect(getRealmEvents).toHaveBeenCalledWith('1');
+
+    const table = screen.getByTestId('custom-realm-table');
+    const row = within(table).getByText('realm 2');
+    row.click();
+
+    await waitFor(() => expect(getRealmEvents).toHaveBeenCalledTimes(2));
+    // Called with correct realm id
+    expect(getRealmEvents).toHaveBeenCalledWith('2');
+  });
+
+  it('displays events for the selected realm and updates when changing rows', async () => {
+    render(<CustomRealmDashboard defaultRealmRequests={defaultData} />);
+
+    const table = screen.getByTestId('custom-realm-table');
+    const secondRealmRow = within(table).getByText('realm 2');
+    const eventTab = screen.getByText('Events');
+    eventTab.click();
+
+    // Expect only realm 1 event to show
+    await waitFor(() => screen.getByText('request-create-success'));
+    expect(screen.queryByText('request-update-success')).toBeNull();
+
+    secondRealmRow.click();
+    await waitFor(() => screen.getByText('request-update-success'));
+    expect(screen.queryByText('request-create-success')).toBeNull();
+  });
+
+  it('flashes an error message if network request fails', async () => {
+    (getRealmEvents as jest.MockedFunction<any>).mockImplementationOnce(() =>
+      Promise.resolve([null, { message: 'failure' }]),
+    );
+    render(
+      <App
+        Component={CustomRealmDashboard}
+        pageProps={{ session: {}, defaultRealmRequests: defaultData }}
+        router={Router as any}
+      />,
+    );
+    await waitFor(() => screen.getByText('Network error when fetching realm events.'));
   });
 });
