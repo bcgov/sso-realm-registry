@@ -8,7 +8,7 @@ export const sendUpdateEmail = (realm: any, session: any) => {
   const prefix = app_env === 'development' ? '[DEV] ' : '';
 
   return sendEmail({
-    to: [realm.technical_contact_email, realm.product_owner_email],
+    to: [realm.technicalContactEmail, realm.productOwnerEmail],
     body: `
 <h1>Your Realm Registry has been updated.</h1>
 <p>
