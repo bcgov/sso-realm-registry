@@ -174,6 +174,11 @@ function RealmForm({ alert }: Props) {
 
   const handleSubmit = async () => {
     const submission = cloneDeep(formData);
+    // Add other primary users if present
+    if (otherPrimaryEndUsersSelected) {
+      submission.primaryEndUsers.push(otherPrimaryEndUserDetails);
+    }
+
     const { valid, errors } = validateForm(submission);
     if (!valid) {
       setFormErrors(errors as any);
@@ -181,10 +186,6 @@ function RealmForm({ alert }: Props) {
     }
     setSubmittingForm(true);
 
-    // Add other primary users if present
-    if (otherPrimaryEndUsersSelected) {
-      submission.primaryEndUsers.push(otherPrimaryEndUserDetails);
-    }
     const [response, err] = await submitRealmRequest(submission);
     if (err) {
       const content = err?.response?.data?.error || 'Network request failure. Please try again.';
@@ -240,7 +241,9 @@ function RealmForm({ alert }: Props) {
             <FontAwesomeIcon icon={faInfoCircle} title="Select a unique realm name." color="#777777" />
           </label>
           <input required id="realm-name-input" name="realm" onChange={handleFormInputChange} value={formData.realm} />
-          {formErrors.realm && <p className="error-message">{twoCharactersRequiredMessage}</p>}
+          {formErrors.realm && (
+            <p className="error-message">Please include a realm name with only letters, underscores and hypens</p>
+          )}
         </div>
 
         <div className="input-wrapper second-col">
