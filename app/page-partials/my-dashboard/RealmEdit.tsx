@@ -25,7 +25,7 @@ setInterval(() => {
   time++;
 }, 1000);
 
-function RealmTable({ alert, realm, currentUser, onUpdate }: Props) {
+function RealmTable({ alert, realm, currentUser, onUpdate, onCancel }: Props) {
   const [formData, setFormData] = useState(realm as CustomRealmFormData);
 
   const onSubmit = async (formData: any) => {
@@ -59,6 +59,7 @@ function RealmTable({ alert, realm, currentUser, onUpdate }: Props) {
         setFormData={setFormData}
         onSubmit={onSubmit}
         validationSchema={getUpdateRealmSchemaByRole(role)}
+        onCancel={onCancel}
       />
     </>
   );

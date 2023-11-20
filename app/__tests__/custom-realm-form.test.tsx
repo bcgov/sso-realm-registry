@@ -67,8 +67,8 @@ describe('Form Validation', () => {
     return Array.from(errorText).length;
   };
 
-  const fillTextInput = (label: string, value = 'a') => {
-    const field = screen.getByLabelText(label, { exact: false });
+  const fillTextInput = (label: string, value = 'a', exact: boolean = false) => {
+    const field = screen.getByLabelText(label, { exact });
     fireEvent.change(field, { target: { value } });
   };
 
@@ -90,10 +90,10 @@ describe('Form Validation', () => {
     // Trigger all errors
     const { container } = render(<CustomRealmForm />);
     submitForm();
-    fillTextInput('1. Custom Realm name');
+    fillTextInput('Custom Realm name');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 1);
 
-    fillTextInput('2. Purpose of Realm');
+    fillTextInput('Purpose of Realm');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 2);
 
     // Primary users section
@@ -104,31 +104,31 @@ describe('Form Validation', () => {
     clickInput('Development');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 4);
 
-    fillTextInput("5. Product owner's email");
+    fillTextInput("Product owner's email");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 5);
 
-    fillTextInput("6. Product owner's IDIR");
+    fillTextInput("Product owner's IDIR");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 6);
 
-    fillTextInput("7. Technical contact's email");
+    fillTextInput("Technical contact's email", 'a@b.com', true);
     expect(getErrorCount(container)).toBe(requiredFieldCount - 7);
 
-    fillTextInput("8. Technical contact's IDIR");
+    fillTextInput("Technical contact's IDIR", 'aa', true);
     expect(getErrorCount(container)).toBe(requiredFieldCount - 8);
   });
 
   it('Sends off the expected form data when a proper submission is made', async () => {
     render(<CustomRealmForm />);
-    fillTextInput('1. Custom Realm name', 'name');
-    fillTextInput('2. Purpose of Realm', 'purpose');
+    fillTextInput('Custom Realm name', 'name');
+    fillTextInput('Purpose of Realm', 'purpose');
     clickInput('People living in BC');
     clickInput('Development');
-    fillTextInput("5. Product owner's email", 'po@gmail.com');
-    fillTextInput("6. Product owner's IDIR", 'poidir');
-    fillTextInput("7. Technical contact's email", 'tc@gmail.com');
-    fillTextInput("8. Technical contact's IDIR", 'tcidir');
-    fillTextInput("9. Secondary technical contact's email", 'stc@gmail.com');
-    fillTextInput("10. Secondary technical contact's IDIR", 'stcidir');
+    fillTextInput("Product owner's email", 'po@gmail.com');
+    fillTextInput("Product owner's IDIR", 'poidir');
+    fillTextInput("Technical contact's email", 'tc@gmail.com', true);
+    fillTextInput("Technical contact's IDIR", 'tcidir', true);
+    fillTextInput("Secondary technical contact's email", 'stc@gmail.com');
+    fillTextInput("Secondary technical contact's IDIR", 'stcidir');
 
     await act(async () => {
       submitForm();

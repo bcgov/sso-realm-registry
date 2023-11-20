@@ -10,11 +10,43 @@ import InfoPopover from 'components/InfoPopover';
 import { Ministry } from 'types/realm-profile';
 import * as yup from 'yup';
 
+const Container = styled.div`
+  font-size: 1rem;
+  padding: 0 0.5rem 0 0.5rem;
+  label {
+    display: block;
+    margin-bottom: 0.2777em;
+    .required {
+      color: red;
+    }
+    font-weight: 700;
+    font-size: 0.8rem;
+  }
+  input,
+  select,
+  textarea {
+    display: block;
+    border: 2px solid #606060;
+    padding: 0.5em 0.6em;
+    border-radius: 0.25em;
+    margin-bottom: 1rem;
+    width: 100%;
+    &:focus {
+      outline: 4px solid #3b99fc;
+      outline-offset: 1px;
+    }
+    &:disabled {
+      background: #dddddd;
+    }
+  }
+`;
+
 const SForm = styled.form<{ collapse: boolean }>`
   display: grid;
   grid-template-columns: ${(props) => (props.collapse ? '1fr' : '1fr 1fr')};
   column-gap: 2em;
   row-gap: 1em;
+  font-size: 1rem;
 
   .error-message {
     color: red;
@@ -39,12 +71,18 @@ const SForm = styled.form<{ collapse: boolean }>`
   legend {
     &.required:after {
       content: ' *';
+      color: red;
     }
 
     &.with-info svg {
       margin: 0 0.3em;
     }
   }
+
+  legend {
+    font-weight: 700;
+  }
+
   fieldset {
     border: 0;
     legend {
@@ -72,7 +110,7 @@ const SForm = styled.form<{ collapse: boolean }>`
     justify-content: space-between;
 
     input {
-      margin-top: 0.4em;
+      margin-top: 0.2em;
     }
 
     .textarea-container {
@@ -90,15 +128,31 @@ const SForm = styled.form<{ collapse: boolean }>`
     }
   }
 
-  select {
-    height: 1.8em;
-  }
-
   .grid {
     display: grid;
     grid-template-columns: ${(props) => (props.collapse ? '1fr' : '1fr 1fr')};
     column-gap: 2em;
     row-gap: 1em;
+  }
+
+  label {
+    font-weight: 700;
+    font-size: 0.8rem;
+  }
+
+  input,
+  select,
+  textarea {
+    border: 2px solid #606060;
+    border-radius: 0.25em;
+    padding: 0.5em 0.6em;
+    &:focus {
+      outline: 4px solid #3b99fc;
+      outline-offset: 1px;
+    }
+    &:disabled {
+      background: #dddddd;
+    }
   }
 `;
 
@@ -192,10 +246,6 @@ export default function RealmForm({
     onSubmit(submission).then(() => setSubmittingForm(false));
   };
 
-  const handleCancel = () => {
-    onCancel();
-  };
-
   const loadBranches = async (division: string = 'Other') => {
     const [data, err] = await getBranches(formData?.ministry as string, division);
     if (err) setBranches([]);
@@ -240,7 +290,7 @@ export default function RealmForm({
       <SForm collapse={collapse}>
         <div className="input-wrapper first-col">
           <label htmlFor="realm-name-input" className="required with-info">
-            1. Custom Realm name
+            Custom Realm name
             <InfoPopover>The realm name. Can only include letters, underscores and hypens.</InfoPopover>
           </label>
           <input
@@ -256,7 +306,7 @@ export default function RealmForm({
 
         <div className="input-wrapper second-col">
           <label htmlFor="product-name-input" className="with-info">
-            2. Product Name
+            Product Name
             <InfoPopover>Help us understand what product this realm is tied to</InfoPopover>
           </label>
           <input
@@ -327,7 +377,7 @@ export default function RealmForm({
 
         <div className="input-wrapper second-col">
           <label htmlFor="realm-purpose-input" className="required with-info">
-            2. Purpose of Realm
+            Purpose of Realm
             <InfoPopover>What is this relams purpose?</InfoPopover>
           </label>
           <input
@@ -343,7 +393,7 @@ export default function RealmForm({
 
         <fieldset className="span-cols" disabled={!schemaFields.includes('primaryEndUsers')}>
           <legend className="required">
-            3. Who are the primary end users of your project/application? (select all that apply)
+            Who are the primary end users of your project/application? (select all that apply)
           </legend>
           {formErrors.primaryEndUsers && <p className="error-message">You must select one or more.</p>}
           <div className="grid">
@@ -409,7 +459,7 @@ export default function RealmForm({
         </fieldset>
 
         <fieldset className="span-cols" disabled={!schemaFields.includes('environments')}>
-          <legend className="required">4. Select all applicable environments</legend>
+          <legend className="required">Select all applicable environments</legend>
           {formErrors.environments && <p className="error-message">You must select one or more.</p>}
           <div className="grid">
             <div className="checkbox-wrapper">
@@ -449,7 +499,7 @@ export default function RealmForm({
 
         <div className="input-wrapper first-col">
           <label htmlFor="product-owner-email-input" className="required">
-            5. Product owner&apos;s email
+            Product owner&apos;s email
           </label>
           <input
             required
@@ -464,7 +514,7 @@ export default function RealmForm({
 
         <div className="input-wrapper second-col">
           <label htmlFor="product-owner-idir-input" className="required">
-            6. Product owner&apos;s IDIR
+            Product owner&apos;s IDIR
           </label>
           <input
             required
@@ -479,7 +529,7 @@ export default function RealmForm({
 
         <div className="input-wrapper first-col">
           <label htmlFor="technical-contact-email-input" className="required">
-            7. Technical contact&apos;s email
+            Technical contact&apos;s email
           </label>
           <input
             required
@@ -494,7 +544,7 @@ export default function RealmForm({
 
         <div className="input-wrapper second-col">
           <label htmlFor="technical-contact-idir-input" className="required">
-            8. Technical contact&apos;s IDIR
+            Technical contact&apos;s IDIR
           </label>
           <input
             required
@@ -508,7 +558,7 @@ export default function RealmForm({
         </div>
 
         <div className="input-wrapper first-col">
-          <label htmlFor="secondary-contact-email-input">9. Secondary technical contact&apos;s email</label>
+          <label htmlFor="secondary-contact-email-input">Secondary technical contact&apos;s email</label>
           <input
             required
             id="secondary-contact-email-input"
@@ -520,7 +570,7 @@ export default function RealmForm({
         </div>
 
         <div className="input-wrapper second-col">
-          <label htmlFor="secondary-contact-idir-input">10. Secondary technical contact&apos;s IDIR</label>
+          <label htmlFor="secondary-contact-idir-input">Secondary technical contact&apos;s IDIR</label>
           <input
             required
             id="secondary-contact-idir-input"
@@ -579,7 +629,7 @@ export default function RealmForm({
       </SForm>
 
       <ButtonContainer className="button-container">
-        <Button variant="secondary" onClick={handleCancel}>
+        <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
         <Button onClick={handleSubmit} disabled={submittingForm}>
