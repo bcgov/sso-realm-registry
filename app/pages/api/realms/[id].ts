@@ -75,6 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       let updaterRole = '';
       let isPO = false;
       let updatedRealm: any;
+      let updatingApprovalStatus = false;
 
       try {
         const lastUpdatedBy = `${session.user.family_name}, ${session.user.given_name}`;
@@ -118,6 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             !currentRequest.prNumber &&
             !currentRequest.approved
           ) {
+            updatingApprovalStatus = true;
             await createEvent({
               realmId: parseInt(req.query.id as string, 10),
               eventCode: EventEnum.REQUEST_APPROVE_SUCCESS,
@@ -138,6 +140,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             String(updateRequest.approved) === 'false' &&
             !currentRequest.prNumber
           ) {
+            updatingApprovalStatus = true;
             await createEvent({
               realmId: parseInt(req.query.id as string, 10),
               eventCode: EventEnum.REQUEST_REJECT_SUCCESS,
@@ -195,7 +198,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           details: getUpdatedProperties(currentRequest, updatedRealm),
         });
         updatedRealm = !isAdmin ? omit(updatedRealm, adminOnlyFields) : updatedRealm;
-        sendUpdateEmail(updatedRealm, session);
+        sendUpdateEmail(updatedRealm, session, updatingApprovalStatus).catch((err) =>
+          console.error(`Error sending email for ${updatedRealm.realm}`, err),
+        );
         return res.send(updatedRealm);
       } catch (err) {
         await createEvent({

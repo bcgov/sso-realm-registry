@@ -9,6 +9,7 @@ import { ValidationError } from 'yup';
 import omit from 'lodash.omit';
 import pick from 'lodash.pick';
 import kebabCase from 'lodash.kebabcase';
+import { sendCreateEmail } from 'utils/mailer';
 
 interface ErrorData {
   success: boolean;
@@ -116,7 +117,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         idirUserId: username,
         details: pick(newRealm, allowedFormFields),
       });
-
+      sendCreateEmail(newRealm).catch((err) => console.error(`Error sending email for ${data.realm}`, err));
       return res.status(201).json(newRealm);
     }
   } catch (err: any) {
