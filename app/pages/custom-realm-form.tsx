@@ -76,6 +76,7 @@ function NewRealmForm({ alert }: Props) {
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleSubmit}
+        onCancel={() => router.push('/')}
         isAdmin={true}
         isPO={true}
         validationSchema={createRealmSchema}

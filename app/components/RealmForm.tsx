@@ -131,6 +131,7 @@ interface Props {
   formData: CustomRealmFormData;
   setFormData: (data: CustomRealmFormData) => void;
   onSubmit: (data: CustomRealmFormData) => Promise<void>;
+  onCancel: () => void;
   isAdmin?: boolean;
   isPO?: boolean;
   validationSchema: yup.AnyObjectSchema;
@@ -141,7 +142,14 @@ const requiredMessage = 'Fill in the required fields.';
 const requiredEmailMessage = 'Fill this in with a proper email.';
 const twoCharactersRequiredMessage = 'This field must be at least two characters.';
 
-export default function RealmForm({ onSubmit, formData, setFormData, validationSchema, collapse = false }: Props) {
+export default function RealmForm({
+  onSubmit,
+  formData,
+  setFormData,
+  validationSchema,
+  onCancel,
+  collapse = false,
+}: Props) {
   const [formErrors, setFormErrors] = useState<{ [key in keyof CustomRealmFormData]?: boolean }>({});
   const [otherPrimaryEndUsersSelected, setOtherPrimaryEndUsersSelected] = useState(false);
   const [otherPrimaryEndUserDetails, setOtherPrimaryEndUserDetails] = useState('');
@@ -182,6 +190,10 @@ export default function RealmForm({ onSubmit, formData, setFormData, validationS
     }
     setSubmittingForm(true);
     onSubmit(submission).then(() => setSubmittingForm(false));
+  };
+
+  const handleCancel = () => {
+    onCancel();
   };
 
   const loadBranches = async (division: string = 'Other') => {
@@ -567,7 +579,9 @@ export default function RealmForm({ onSubmit, formData, setFormData, validationS
       </SForm>
 
       <ButtonContainer className="button-container">
-        <Button variant="secondary">Cancel</Button>
+        <Button variant="secondary" onClick={handleCancel}>
+          Cancel
+        </Button>
         <Button onClick={handleSubmit} disabled={submittingForm}>
           {submittingForm ? <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" /> : 'Submit'}
         </Button>
