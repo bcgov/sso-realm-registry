@@ -3,8 +3,6 @@ import styled from 'styled-components';
 import React, { useState, ChangeEvent, useEffect } from 'react';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import Button from '@button-inc/bcgov-theme/Button';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { ValidationError } from 'yup';
 import cloneDeep from 'lodash.clonedeep';
 import { getMinistries, getDivisions, getBranches } from 'services/meta';
@@ -114,7 +112,6 @@ const ButtonContainer = styled.div`
 `;
 
 const validateForm = (data: CustomRealmFormData, validationSchema: yup.AnyObjectSchema) => {
-  console.log(data);
   try {
     validationSchema.validateSync(data, { abortEarly: false, stripUnknown: true });
     return { valid: true, errors: null };
@@ -532,6 +529,7 @@ export default function RealmForm({ onSubmit, formData, setFormData, validationS
               data-testid="rc-channel-input"
               type="text"
               placeholder="Rocket.Chat Channel"
+              value={formData.rcChannel}
               name="rcChannel"
               onChange={handleFormInputChange}
             />
@@ -546,6 +544,7 @@ export default function RealmForm({ onSubmit, formData, setFormData, validationS
               id="rcChannelOwnedBy"
               data-testid="rc-channel-owner-input"
               placeholder="Rocket.Chat Channel Owner"
+              value={formData.rcChannelOwnedBy}
               name="rcChannelOwnedBy"
               onChange={handleFormInputChange}
             />
@@ -560,6 +559,7 @@ export default function RealmForm({ onSubmit, formData, setFormData, validationS
               id="materialToSend"
               name="materialToSend"
               onChange={handleFormInputChange}
+              value={formData.materialToSend}
               placeholder="Material To Send"
             />
           </div>
