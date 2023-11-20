@@ -1,9 +1,18 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, prettyDOM } from '@testing-library/react';
 import CustomRealmForm from 'pages/custom-realm-form';
 import { submitRealmRequest } from 'services/realm';
 import { CustomRealmFormData } from 'types/realm-profile';
 import { act } from 'react-dom/test-utils';
+import { getBranches, getDivisions, getMinistries } from 'services/meta';
+
+jest.mock('services/meta', () => {
+  return {
+    getBranches: jest.fn(() => Promise.resolve([[], null])),
+    getDivisions: jest.fn(() => Promise.resolve([[], null])),
+    getMinistries: jest.fn(() => Promise.resolve([[], null])),
+  };
+});
 
 jest.mock('services/realm', () => {
   return {
@@ -134,9 +143,43 @@ describe('Form Validation', () => {
       purpose: 'purpose',
       secondTechnicalContactEmail: 'stc@gmail.com',
       secondTechnicalContactIdirUserId: 'stcidir',
-      status: 'pending',
       technicalContactEmail: 'tc@gmail.com',
       technicalContactIdirUserId: 'tcidir',
     });
+  });
+});
+
+describe('Ministry Fetching', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  it('Fetches ministry list when first loading', () => {
+    render(<CustomRealmForm />);
+    expect(getMinistries).toHaveBeenCalledTimes(1);
+  });
+
+  it('Fetches division list only when new ministries are selected', () => {
+    render(<CustomRealmForm />);
+    expect(getDivisions).toHaveBeenCalledTimes(0);
+
+    const ministryInput = screen.getByLabelText('Ministry');
+    fireEvent.change(ministryInput, { target: { value: 'Ministry of Truth' } });
+    fireEvent.blur(ministryInput);
+    expect(getDivisions).toHaveBeenCalledTimes(1);
+  });
+
+  it('Fetches branch list only when new divisions are selected', () => {
+    render(<CustomRealmForm />);
+
+    // Branches only fetched if division is entered
+    const ministryInput = screen.getByLabelText('Ministry');
+    fireEvent.change(ministryInput, { target: { value: 'Ministry of Truth' } });
+    fireEvent.blur(ministryInput);
+    expect(getBranches).toHaveBeenCalledTimes(0);
+
+    const divisionInput = screen.getByLabelText('Division');
+    fireEvent.change(divisionInput, { target: { value: 'Division of Plenty' } });
+    fireEvent.blur(divisionInput);
+    expect(getBranches).toHaveBeenCalledTimes(1);
   });
 });

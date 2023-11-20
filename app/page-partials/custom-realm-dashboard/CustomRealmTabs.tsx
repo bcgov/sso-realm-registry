@@ -97,7 +97,7 @@ function ApprovalList({ selectedRow, lastUpdateTime }: Props) {
 
   return (
     <>
-      {[...realmCreatingStatuses, 'applied'].includes(selectedRow.status) && (
+      {[...realmCreatingStatuses, 'applied'].includes(selectedRow.status!) && (
         <SApprovalList>
           <p className="title">Approval process initiated.</p>
           <p className="help-text">
@@ -117,7 +117,7 @@ function ApprovalList({ selectedRow, lastUpdateTime }: Props) {
           </li>
         </SApprovalList>
       )}
-      {realmCreationFailedStatuses.includes(selectedRow.status) && (
+      {realmCreationFailedStatuses.includes(selectedRow.status!) && (
         <p>This request is in a failed state: {selectedRow.status}</p>
       )}
     </>

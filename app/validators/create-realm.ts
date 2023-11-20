@@ -47,73 +47,63 @@ export enum EnvironmentsEnum {
   PROD = 'prod',
 }
 
-export const createRealmSchema = yup.object().shape({
-  realm: yup
-    .string()
-    .required()
-    .min(2)
-    .matches(/^[A-Za-z][A-Za-z0-9_-]*$/, 'realm name should contain only letters, underscores and hypens'),
-  purpose: yup.string().min(2).required(),
-  primaryEndUsers: yup.array().required().min(1),
-  environments: yup.array().required().min(1),
-  technicalContactEmail: yup.string().required().email(),
-  productOwnerEmail: yup.string().required().email(),
+/**
+ * Shared fields all roles can update
+ */
+const commonSchema = yup.object().shape({
+  ministry: yup.string().optional(),
+  division: yup.string().optional(),
+  branch: yup.string().optional(),
   technicalContactIdirUserId: yup.string().required().min(2),
-  productOwnerIdirUserId: yup.string().required().min(2),
+  technicalContactEmail: yup.string().required().email(),
   secondTechnicalContactEmail: yup.string().email().optional(),
   secondTechnicalContactIdirUserId: yup.string().optional(),
-  status: yup.string().matches(/pending/),
 });
 
-const commonSchema = yup.object().shape({
-  ministry: yup.string().required(),
-  division: yup.string().required(),
-  branch: yup.string().required(),
-});
-
-const technicalContactSchema = yup
+export const createRealmSchema = yup
   .object()
   .shape({
-    technicalContactIdirUserId: yup.string().min(2).required(),
-    technicalContactEmail: yup.string().email().required(),
-    secondTechnicalContactEmail: yup.string().email().optional(),
-    secondTechnicalContactIdirUserId: yup.string().optional(),
+    realm: yup
+      .string()
+      .required()
+      .min(2)
+      .matches(/^[A-Za-z][A-Za-z0-9_-]*$/, 'realm name should contain only letters, underscores and hypens'),
+    purpose: yup.string().min(2).required(),
+    productName: yup.string().optional(),
+    primaryEndUsers: yup.array().required().min(1),
+    environments: yup.array().required().min(1),
+    productOwnerEmail: yup.string().required().email(),
+    productOwnerIdirUserId: yup.string().required().min(2),
   })
-  .required();
+  .concat(commonSchema);
 
 export const getUpdateRealmSchemaByRole = (role: string = '') => {
+  const productOwnerFields = yup
+    .object()
+    .shape({
+      productName: yup.string().required().optional().nullable(),
+      purpose: yup.string().min(2).required(),
+      primaryEndUsers: yup.array().optional(),
+      productOwnerEmail: yup.string().email().required(),
+      productOwnerIdirUserId: yup.string().required(),
+    })
+    .concat(commonSchema);
+
   switch (role) {
     case RoleEnum.ADMIN:
-      return yup.object().shape({
-        approved: yup.string().optional().nullable(),
-        productName: yup.string().required().optional().nullable(),
-        productOwnerEmail: yup.string().email().optional().nullable(),
-        productOwnerIdirUserId: yup.string().optional().nullable(),
-        primaryEndUsers: yup.array().optional().nullable(),
-        rcChannel: yup.string().optional().nullable(),
-        rcChannelOwnedBy: yup.string().optional().nullable(),
-        materialToSend: yup.string().optional().nullable(),
-        technicalContactIdirUserId: yup.string().min(2).optional().nullable(),
-        technicalContactEmail: yup.string().email().optional().nullable(),
-        secondTechnicalContactEmail: yup.string().email().optional().nullable(),
-        secondTechnicalContactIdirUserId: yup.string().optional().nullable(),
-        ministry: yup.string().optional().nullable(),
-        division: yup.string().optional().nullable(),
-        branch: yup.string().optional().nullable(),
-      });
-    case RoleEnum.PRODUCT_OWNER:
       return yup
         .object()
         .shape({
-          productName: yup.string().required(),
-          productOwnerEmail: yup.string().email().required(),
-          productOwnerIdirUserId: yup.string().required(),
-          primaryEndUsers: yup.array().optional(),
+          approved: yup.string().optional().nullable(),
+          rcChannel: yup.string().optional().nullable(),
+          rcChannelOwnedBy: yup.string().optional().nullable(),
+          materialToSend: yup.string().optional().nullable(),
         })
-        .concat(commonSchema)
-        .concat(technicalContactSchema);
+        .concat(productOwnerFields);
+    case RoleEnum.PRODUCT_OWNER:
+      return productOwnerFields;
     default:
-      return commonSchema.concat(technicalContactSchema);
+      return commonSchema;
   }
 };
 
