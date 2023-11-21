@@ -1,4 +1,4 @@
-import { CustomRealmFormData } from 'types/realm-profile';
+import { CustomRealmFormData, PrimaryEndUser } from 'types/realm-profile';
 import styled from 'styled-components';
 import React, { useState, ChangeEvent, useEffect } from 'react';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
@@ -178,6 +178,16 @@ const requiredMessage = 'Fill in the required fields.';
 const requiredEmailMessage = 'Fill this in with a proper email.';
 const twoCharactersRequiredMessage = 'This field must be at least two characters.';
 
+const defaultUserOptions = ['livingInBC', 'businessInBC', 'govEmployees'];
+const hasOtherPrimaryEndUsers = (primaryEndUsers: PrimaryEndUser[]) =>
+  primaryEndUsers.some((user) => !defaultUserOptions.includes(user));
+
+const otherPrimaryEndUser = (primaryEndUsers: PrimaryEndUser[]) => {
+  const hasOther = hasOtherPrimaryEndUsers(primaryEndUsers);
+  if (hasOther) return primaryEndUsers.filter((user) => !defaultUserOptions.includes(user))[0];
+  else return '';
+};
+
 export default function RealmForm({
   onSubmit,
   formData,
@@ -188,8 +198,12 @@ export default function RealmForm({
   collapse = false,
 }: Props) {
   const [formErrors, setFormErrors] = useState<{ [key in keyof CustomRealmFormData]?: boolean }>({});
-  const [otherPrimaryEndUsersSelected, setOtherPrimaryEndUsersSelected] = useState(false);
-  const [otherPrimaryEndUserDetails, setOtherPrimaryEndUserDetails] = useState('');
+  const [otherPrimaryEndUsersSelected, setOtherPrimaryEndUsersSelected] = useState(
+    hasOtherPrimaryEndUsers(formData.primaryEndUsers),
+  );
+  const [otherPrimaryEndUserDetails, setOtherPrimaryEndUserDetails] = useState(
+    otherPrimaryEndUser(formData.primaryEndUsers),
+  );
   const [submittingForm, setSubmittingForm] = useState(false);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [divisions, setDivisions] = useState<string[]>([]);
@@ -216,7 +230,8 @@ export default function RealmForm({
 
   const handleSubmit = () => {
     const submission = cloneDeep(formData);
-    // Add other primary users if present
+    // Update primary users
+    submission.primaryEndUsers = submission.primaryEndUsers.filter((user) => defaultUserOptions.includes(user));
     if (otherPrimaryEndUsersSelected) {
       submission.primaryEndUsers.push(otherPrimaryEndUserDetails);
     }
@@ -284,7 +299,9 @@ export default function RealmForm({
             value={formData.realm}
             disabled={!schemaFields.includes('realm')}
           />
-          {formErrors.realm && <p className="error-message">{twoCharactersRequiredMessage}</p>}
+          {formErrors.realm && (
+            <p className="error-message">Realm name should contain only letters, underscores and hypens</p>
+          )}
         </div>
 
         <div className="input-wrapper second-col">
