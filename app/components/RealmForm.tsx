@@ -9,37 +9,7 @@ import { getMinistries, getDivisions, getBranches } from 'services/meta';
 import InfoPopover from 'components/InfoPopover';
 import { Ministry } from 'types/realm-profile';
 import * as yup from 'yup';
-
-const Container = styled.div`
-  font-size: 1rem;
-  padding: 0 0.5rem 0 0.5rem;
-  label {
-    display: block;
-    margin-bottom: 0.2777em;
-    .required {
-      color: red;
-    }
-    font-weight: 700;
-    font-size: 0.8rem;
-  }
-  input,
-  select,
-  textarea {
-    display: block;
-    border: 2px solid #606060;
-    padding: 0.5em 0.6em;
-    border-radius: 0.25em;
-    margin-bottom: 1rem;
-    width: 100%;
-    &:focus {
-      outline: 4px solid #3b99fc;
-      outline-offset: 1px;
-    }
-    &:disabled {
-      background: #dddddd;
-    }
-  }
-`;
+import kebabCase from 'lodash.kebabcase';
 
 const SForm = styled.form<{ collapse: boolean }>`
   display: grid;
@@ -143,6 +113,7 @@ const SForm = styled.form<{ collapse: boolean }>`
   input,
   select,
   textarea {
+    scroll-margin-top: 1em;
     border: 2px solid #606060;
     border-radius: 0.25em;
     padding: 0.5em 0.6em;
@@ -172,11 +143,21 @@ const validateForm = (data: CustomRealmFormData, validationSchema: yup.AnyObject
   } catch (e) {
     const err = e as ValidationError;
     const formErrors: { [key in keyof CustomRealmFormData]?: boolean } = {};
-    err.errors.forEach((error) => {
+    let firstError = '';
+    err.errors.forEach((error, i) => {
       // Yup error strings begin with object key
       const fieldName = error.split(' ')[0] as keyof CustomRealmFormData;
+      if (i === 0) firstError = fieldName;
       formErrors[fieldName] = true;
     });
+    // Scroll error into view if found
+    try {
+      const firstFieldInputId = `${kebabCase(firstError)}-input`;
+      const firstErrorInput = document.querySelector(`#${firstFieldInputId}`);
+      if (firstErrorInput) {
+        firstErrorInput.scrollIntoView();
+      }
+    } catch (e) {}
     return { valid: false, errors: formErrors };
   }
 };
@@ -190,6 +171,7 @@ interface Props {
   isPO?: boolean;
   validationSchema: yup.AnyObjectSchema;
   collapse: boolean;
+  updatedMessage?: string;
 }
 
 const requiredMessage = 'Fill in the required fields.';
@@ -202,6 +184,7 @@ export default function RealmForm({
   setFormData,
   validationSchema,
   onCancel,
+  updatedMessage,
   collapse = false,
 }: Props) {
   const [formErrors, setFormErrors] = useState<{ [key in keyof CustomRealmFormData]?: boolean }>({});
@@ -289,13 +272,13 @@ export default function RealmForm({
     <>
       <SForm collapse={collapse}>
         <div className="input-wrapper first-col">
-          <label htmlFor="realm-name-input" className="required with-info">
+          <label htmlFor="realm-input" className="required with-info">
             Custom Realm name
             <InfoPopover>The realm name. Can only include letters, underscores and hypens.</InfoPopover>
           </label>
           <input
             required
-            id="realm-name-input"
+            id="realm-input"
             name="realm"
             onChange={handleFormInputChange}
             value={formData.realm}
@@ -305,7 +288,7 @@ export default function RealmForm({
         </div>
 
         <div className="input-wrapper second-col">
-          <label htmlFor="product-name-input" className="with-info">
+          <label htmlFor="product-name-input" className="with-info required">
             Product Name
             <InfoPopover>Help us understand what product this realm is tied to</InfoPopover>
           </label>
@@ -316,6 +299,7 @@ export default function RealmForm({
             value={formData.productName}
             disabled={!schemaFields.includes('productName')}
           />
+          {formErrors.productName && <p className="error-message">{twoCharactersRequiredMessage}</p>}
         </div>
 
         <div className="input-wrapper first-col">
@@ -348,9 +332,9 @@ export default function RealmForm({
           />
 
           <datalist id="division-list">
-            {divisions.map((division: any) => (
-              <option value={division?.title} key={division?.id}>
-                {division?.title}
+            {divisions.map((division: string) => (
+              <option value={division} key={division}>
+                {division}
               </option>
             ))}
           </datalist>
@@ -368,21 +352,21 @@ export default function RealmForm({
 
           <datalist id="branch-list">
             {branches.map((branch: any) => (
-              <option value={branch?.title} key={branch?.id}>
-                {branch?.title}
+              <option value={branch} key={branch}>
+                {branch}
               </option>
             ))}
           </datalist>
         </div>
 
         <div className="input-wrapper second-col">
-          <label htmlFor="realm-purpose-input" className="required with-info">
+          <label htmlFor="purpose-input" className="required with-info">
             Purpose of Realm
             <InfoPopover>What is this relams purpose?</InfoPopover>
           </label>
           <input
             required
-            id="realm-purpose-input"
+            id="purpose-input"
             name="purpose"
             onChange={handleFormInputChange}
             value={formData.purpose}
@@ -627,6 +611,8 @@ export default function RealmForm({
           </div>
         )}
       </SForm>
+
+      {updatedMessage && <p>{updatedMessage}</p>}
 
       <ButtonContainer className="button-container">
         <Button variant="secondary" onClick={onCancel}>
