@@ -15,7 +15,7 @@ export interface ModalData {
   when_to_move?: string;
 }
 
-type PrimaryEndUser = 'livingInBc' | 'businessInBC' | 'govEmployees' | string;
+export type PrimaryEndUser = 'livingInBc' | 'businessInBC' | 'govEmployees' | string;
 type Environment = 'dev' | 'test' | 'prod' | string;
 type Status =
   | 'unapproved'
