@@ -22,6 +22,7 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
         realm: userIdp,
         username,
         emailVerified: true,
+        enabled: true,
       });
 
       // assign federated links to user
@@ -51,6 +52,7 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
         realm: 'master',
         username: username,
         emailVerified: true,
+        enabled: true,
       });
 
       // assign federated links to user for idp
