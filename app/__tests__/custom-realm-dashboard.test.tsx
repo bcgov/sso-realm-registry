@@ -1,12 +1,12 @@
 import React from 'react';
-import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import App from 'pages/_app';
 import CustomRealmDashboard from 'pages/custom-realm-dashboard';
 import { updateRealmProfile } from 'services/realm';
 import { getRealmEvents } from 'services/events';
 import { CustomRealmFormData } from 'types/realm-profile';
 import Router from 'next/router';
-import { Event } from 'types/event';
+import { CustomRealms } from './fixtures';
 
 jest.mock('services/realm', () => {
   return {
@@ -90,45 +90,10 @@ jest.mock('next-auth/next', () => {
   };
 });
 
-const defaultData: CustomRealmFormData[] = [
-  {
-    id: 1,
-    realm: 'realm 1',
-    purpose: 'purpose',
-    primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
-    environments: ['dev', 'test', 'prod'],
-    preferredAdminLoginMethod: 'idir',
-    productOwnerEmail: 'a@b.com',
-    productOwnerIdirUserId: 'me',
-    technicalContactEmail: 'b@c.com',
-    technicalContactIdirUserId: 'd@e.com',
-    secondTechnicalContactIdirUserId: 'dmsd',
-    secondTechnicalContactEmail: 'dksadlks@fkjlsdj.com',
-    status: 'pending',
-    approved: null,
-  },
-  {
-    id: 2,
-    realm: 'realm 2',
-    purpose: 'purpose',
-    primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
-    environments: ['dev', 'test', 'prod'],
-    preferredAdminLoginMethod: 'idir',
-    productOwnerEmail: 'a@b.com',
-    productOwnerIdirUserId: 'me',
-    technicalContactEmail: 'b@c.com',
-    technicalContactIdirUserId: 'd@e.com',
-    secondTechnicalContactIdirUserId: 'dmsd',
-    secondTechnicalContactEmail: 'dksadlks@fkjlsdj.com',
-    status: 'pending',
-    approved: null,
-  },
-];
-
 jest.mock('../pages/api/realms', () => {
   return {
     __esModule: true,
-    getAllRealms: jest.fn(() => Promise.resolve([defaultData, null])),
+    getAllRealms: jest.fn(() => Promise.resolve([CustomRealms, null])),
     authOptions: {},
   };
 });
@@ -142,7 +107,7 @@ jest.mock('../pages/api/auth/[...nextauth]', () => {
 
 describe('Table', () => {
   it('Loads in table data from serverside props', () => {
-    render(<CustomRealmDashboard defaultRealmRequests={defaultData} />);
+    render(<CustomRealmDashboard defaultRealmRequests={CustomRealms} />);
     const table = screen.getByTestId('custom-realm-table');
     expect(within(table).getByText('realm 1'));
     expect(within(table).getByText('realm 2'));
@@ -158,7 +123,7 @@ describe('Status update', () => {
     render(
       <App
         Component={CustomRealmDashboard}
-        pageProps={{ session: {}, defaultRealmRequests: defaultData }}
+        pageProps={{ session: {}, defaultRealmRequests: CustomRealms }}
         router={Router as any}
       />,
     );
@@ -172,7 +137,7 @@ describe('Status update', () => {
     render(
       <App
         Component={CustomRealmDashboard}
-        pageProps={{ session: {}, defaultRealmRequests: defaultData }}
+        pageProps={{ session: {}, defaultRealmRequests: CustomRealms }}
         router={Router as any}
       />,
     );
@@ -185,7 +150,7 @@ describe('Status update', () => {
     render(
       <App
         Component={CustomRealmDashboard}
-        pageProps={{ session: {}, defaultRealmRequests: defaultData }}
+        pageProps={{ session: {}, defaultRealmRequests: CustomRealms }}
         router={Router as any}
       />,
     );
@@ -202,7 +167,7 @@ describe('Status update', () => {
     render(
       <App
         Component={CustomRealmDashboard}
-        pageProps={{ session: {}, defaultRealmRequests: defaultData }}
+        pageProps={{ session: {}, defaultRealmRequests: CustomRealms }}
         router={Router as any}
       />,
     );
@@ -219,7 +184,7 @@ describe('Status update', () => {
     render(
       <App
         Component={CustomRealmDashboard}
-        pageProps={{ session: {}, defaultRealmRequests: defaultData }}
+        pageProps={{ session: {}, defaultRealmRequests: CustomRealms }}
         router={Router as any}
       />,
     );
@@ -246,7 +211,7 @@ describe('Status update', () => {
     render(
       <App
         Component={CustomRealmDashboard}
-        pageProps={{ session: {}, defaultRealmRequests: defaultData }}
+        pageProps={{ session: {}, defaultRealmRequests: CustomRealms }}
         router={Router as any}
       />,
     );
@@ -276,7 +241,7 @@ describe('Events table', () => {
   });
 
   it('fetches correct events when selected row changes', async () => {
-    render(<CustomRealmDashboard defaultRealmRequests={defaultData} />);
+    render(<CustomRealmDashboard defaultRealmRequests={CustomRealms} />);
     expect(getRealmEvents).toHaveBeenCalledTimes(1);
     // Called with correct realm id
     expect(getRealmEvents).toHaveBeenCalledWith('1');
@@ -291,7 +256,7 @@ describe('Events table', () => {
   });
 
   it('displays events for the selected realm and updates when changing rows', async () => {
-    render(<CustomRealmDashboard defaultRealmRequests={defaultData} />);
+    render(<CustomRealmDashboard defaultRealmRequests={CustomRealms} />);
 
     const table = screen.getByTestId('custom-realm-table');
     const secondRealmRow = within(table).getByText('realm 2');
@@ -314,7 +279,7 @@ describe('Events table', () => {
     render(
       <App
         Component={CustomRealmDashboard}
-        pageProps={{ session: {}, defaultRealmRequests: defaultData }}
+        pageProps={{ session: {}, defaultRealmRequests: CustomRealms }}
         router={Router as any}
       />,
     );

@@ -9,10 +9,11 @@ const createJestConfig = nextJest({
 /** @type {import('jest').Config} */
 const config = {
   // Add more setup options before each test is run
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/singleton.ts'],
   testEnvironment: 'jest-environment-jsdom',
   preset: 'ts-jest',
   moduleDirectories: ['<rootDir>', 'node_modules'],
+  testMatch: ['**/__tests__/**/*.test.(ts|tsx)'],
 };
 
 module.exports = createJestConfig(config);

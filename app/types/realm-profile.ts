@@ -1,10 +1,6 @@
 export interface RealmProfile extends CustomRealmFormData {
   displayName: string;
-  productName: string;
   openshiftNamespace: string;
-  ministry: string;
-  division: string;
-  branch: string;
   productOwnerName: string;
   willingToMove: string;
   whenToMove: string;
@@ -35,6 +31,10 @@ type Status =
 export interface CustomRealmFormData {
   id?: number | string;
   realm: string;
+  productName?: string;
+  ministry?: string;
+  division?: string;
+  branch?: string;
   purpose: string;
   primaryEndUsers: PrimaryEndUser[];
   environments: Environment[];
@@ -46,5 +46,14 @@ export interface CustomRealmFormData {
   secondTechnicalContactIdirUserId: string;
   secondTechnicalContactEmail: string;
   approved?: boolean | null;
-  status: Status;
+  rcChannel?: string;
+  rcChannelOwnedBy?: string;
+  materialToSend?: string;
+  status?: Status;
+}
+
+export interface Ministry {
+  title: string;
+  id: string;
+  name: string;
 }

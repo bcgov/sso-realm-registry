@@ -16,7 +16,7 @@ function RealmTable({ realms, onEditClick }: Props) {
         data={realms.map((r) => {
           return {
             realm: r.realm,
-            productName: r.product_name,
+            productName: r.productName,
             idps: r.idps.join(', '),
             protocol: r.protocol.join(', '),
             productOwnerEmail: r.productOwnerEmail,

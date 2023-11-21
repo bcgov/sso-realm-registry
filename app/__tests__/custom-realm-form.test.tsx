@@ -1,9 +1,18 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, prettyDOM } from '@testing-library/react';
 import CustomRealmForm from 'pages/custom-realm-form';
 import { submitRealmRequest } from 'services/realm';
 import { CustomRealmFormData } from 'types/realm-profile';
 import { act } from 'react-dom/test-utils';
+import { getBranches, getDivisions, getMinistries } from 'services/meta';
+
+jest.mock('services/meta', () => {
+  return {
+    getBranches: jest.fn(() => Promise.resolve([[], null])),
+    getDivisions: jest.fn(() => Promise.resolve([[], null])),
+    getMinistries: jest.fn(() => Promise.resolve([[], null])),
+  };
+});
 
 jest.mock('services/realm', () => {
   return {
@@ -58,8 +67,8 @@ describe('Form Validation', () => {
     return Array.from(errorText).length;
   };
 
-  const fillTextInput = (label: string, value = 'a') => {
-    const field = screen.getByLabelText(label, { exact: false });
+  const fillTextInput = (label: string, value = 'a', exact: boolean = false) => {
+    const field = screen.getByLabelText(label, { exact });
     fireEvent.change(field, { target: { value } });
   };
 
@@ -81,10 +90,10 @@ describe('Form Validation', () => {
     // Trigger all errors
     const { container } = render(<CustomRealmForm />);
     submitForm();
-    fillTextInput('1. Custom Realm name');
+    fillTextInput('Custom Realm name');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 1);
 
-    fillTextInput('2. Purpose of Realm');
+    fillTextInput('Purpose of Realm');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 2);
 
     // Primary users section
@@ -95,31 +104,31 @@ describe('Form Validation', () => {
     clickInput('Development');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 4);
 
-    fillTextInput("5. Product owner's email");
+    fillTextInput("Product owner's email");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 5);
 
-    fillTextInput("6. Product owner's IDIR");
+    fillTextInput("Product owner's IDIR");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 6);
 
-    fillTextInput("7. Technical contact's email");
+    fillTextInput("Technical contact's email", 'a@b.com', true);
     expect(getErrorCount(container)).toBe(requiredFieldCount - 7);
 
-    fillTextInput("8. Technical contact's IDIR");
+    fillTextInput("Technical contact's IDIR", 'aa', true);
     expect(getErrorCount(container)).toBe(requiredFieldCount - 8);
   });
 
   it('Sends off the expected form data when a proper submission is made', async () => {
     render(<CustomRealmForm />);
-    fillTextInput('1. Custom Realm name', 'name');
-    fillTextInput('2. Purpose of Realm', 'purpose');
+    fillTextInput('Custom Realm name', 'name');
+    fillTextInput('Purpose of Realm', 'purpose');
     clickInput('People living in BC');
     clickInput('Development');
-    fillTextInput("5. Product owner's email", 'po@gmail.com');
-    fillTextInput("6. Product owner's IDIR", 'poidir');
-    fillTextInput("7. Technical contact's email", 'tc@gmail.com');
-    fillTextInput("8. Technical contact's IDIR", 'tcidir');
-    fillTextInput("9. Secondary technical contact's email", 'stc@gmail.com');
-    fillTextInput("10. Secondary technical contact's IDIR", 'stcidir');
+    fillTextInput("Product owner's email", 'po@gmail.com');
+    fillTextInput("Product owner's IDIR", 'poidir');
+    fillTextInput("Technical contact's email", 'tc@gmail.com', true);
+    fillTextInput("Technical contact's IDIR", 'tcidir', true);
+    fillTextInput("Secondary technical contact's email", 'stc@gmail.com');
+    fillTextInput("Secondary technical contact's IDIR", 'stcidir');
 
     await act(async () => {
       submitForm();
@@ -134,9 +143,43 @@ describe('Form Validation', () => {
       purpose: 'purpose',
       secondTechnicalContactEmail: 'stc@gmail.com',
       secondTechnicalContactIdirUserId: 'stcidir',
-      status: 'pending',
       technicalContactEmail: 'tc@gmail.com',
       technicalContactIdirUserId: 'tcidir',
     });
+  });
+});
+
+describe('Ministry Fetching', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  it('Fetches ministry list when first loading', () => {
+    render(<CustomRealmForm />);
+    expect(getMinistries).toHaveBeenCalledTimes(1);
+  });
+
+  it('Fetches division list only when new ministries are selected', () => {
+    render(<CustomRealmForm />);
+    expect(getDivisions).toHaveBeenCalledTimes(0);
+
+    const ministryInput = screen.getByLabelText('Ministry');
+    fireEvent.change(ministryInput, { target: { value: 'Ministry of Truth' } });
+    fireEvent.blur(ministryInput);
+    expect(getDivisions).toHaveBeenCalledTimes(1);
+  });
+
+  it('Fetches branch list only when new divisions are selected', () => {
+    render(<CustomRealmForm />);
+
+    // Branches only fetched if division is entered
+    const ministryInput = screen.getByLabelText('Ministry');
+    fireEvent.change(ministryInput, { target: { value: 'Ministry of Truth' } });
+    fireEvent.blur(ministryInput);
+    expect(getBranches).toHaveBeenCalledTimes(0);
+
+    const divisionInput = screen.getByLabelText('Division');
+    fireEvent.change(divisionInput, { target: { value: 'Division of Plenty' } });
+    fireEvent.blur(divisionInput);
+    expect(getBranches).toHaveBeenCalledTimes(1);
   });
 });

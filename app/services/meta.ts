@@ -1,9 +1,10 @@
 import { instance } from './axios';
+import { Ministry } from 'types/realm-profile';
 
-export const getMinistries = async (): Promise<[string[], null] | [null, any]> => {
+export const getMinistries = async (): Promise<[Ministry[], null] | [null, any]> => {
   try {
     const result = await instance.get('meta/ministry').then((res) => res.data);
-    return [result as string[], null];
+    return [result as Ministry[], null];
   } catch (err: any) {
     console.error(err);
     return [null, err];
