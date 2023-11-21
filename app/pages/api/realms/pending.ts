@@ -89,14 +89,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
         });
 
-        const samlPayload = generateXML('userId', currentRequest?.productOwnerIdirUserId!, idir_requestor_user_guid);
-        const { response }: any = await makeSoapRequest(samlPayload);
-        const accounts = await getBceidAccounts(response);
+        try {
+          [currentRequest?.productOwnerIdirUserId, currentRequest?.technicalContactIdirUserId].forEach(
+            async (idirUserId) => {
+              const samlPayload = generateXML('userId', idirUserId as string, idir_requestor_user_guid);
+              const { response }: any = await makeSoapRequest(samlPayload);
+              const accounts = await getBceidAccounts(response);
 
-        if (accounts.length > 0) {
-          await addUserAsRealmAdmin(`${accounts[0].guid}@idir`, currentRequest?.environments!, currentRequest?.realm!);
-        } else {
-          console.log(`No guid found for user ${currentRequest?.productOwnerIdirUserId!}`);
+              if (accounts.length > 0) {
+                await addUserAsRealmAdmin(
+                  `${accounts[0].guid}@idir`,
+                  currentRequest?.environments!,
+                  currentRequest?.realm!,
+                );
+              } else {
+                console.error(`No guid found for user ${String(idirUserId)}`);
+              }
+            },
+          );
+        } catch (err) {
+          console.trace(err);
+          console.error(err);
         }
       }
     });
