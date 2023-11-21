@@ -55,7 +55,7 @@ jest.mock('next-auth/react', () => {
 });
 
 describe('Form Validation', () => {
-  const requiredFieldCount = 8;
+  const requiredFieldCount = 9;
 
   const submitForm = () => {
     const submitButon = screen.getByText('Submit', { selector: 'button' });
@@ -115,12 +115,16 @@ describe('Form Validation', () => {
 
     fillTextInput("Technical contact's IDIR", 'aa', true);
     expect(getErrorCount(container)).toBe(requiredFieldCount - 8);
+
+    fillTextInput('Product Name', 'aa', true);
+    expect(getErrorCount(container)).toBe(requiredFieldCount - 9);
   });
 
   it('Sends off the expected form data when a proper submission is made', async () => {
     render(<CustomRealmForm />);
     fillTextInput('Custom Realm name', 'name');
     fillTextInput('Purpose of Realm', 'purpose');
+    fillTextInput('Product Name', 'name');
     clickInput('People living in BC');
     clickInput('Development');
     fillTextInput("Product owner's email", 'po@gmail.com');
@@ -137,6 +141,7 @@ describe('Form Validation', () => {
     expect(submitRealmRequest).toHaveBeenCalledWith({
       environments: ['dev'],
       primaryEndUsers: ['livingInBC'],
+      productName: 'name',
       productOwnerEmail: 'po@gmail.com',
       productOwnerIdirUserId: 'poidir',
       realm: 'name',

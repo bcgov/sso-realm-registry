@@ -51,9 +51,9 @@ export enum EnvironmentsEnum {
  * Shared fields all roles can update
  */
 const commonSchema = yup.object().shape({
-  ministry: yup.string().optional(),
-  division: yup.string().optional(),
-  branch: yup.string().optional(),
+  ministry: yup.string().optional().nullable(),
+  division: yup.string().optional().nullable(),
+  branch: yup.string().optional().nullable(),
   technicalContactIdirUserId: yup.string().required().min(2),
   technicalContactEmail: yup.string().required().email(),
   secondTechnicalContactEmail: yup.string().email().optional(),
@@ -69,7 +69,7 @@ export const createRealmSchema = yup
       .min(2)
       .matches(/^[A-Za-z][A-Za-z0-9_-]*$/, 'realm name should contain only letters, underscores and hypens'),
     purpose: yup.string().min(2).required(),
-    productName: yup.string().optional(),
+    productName: yup.string().required(),
     primaryEndUsers: yup.array().required().min(1),
     environments: yup.array().required().min(1),
     productOwnerEmail: yup.string().required().email(),
@@ -81,7 +81,7 @@ export const getUpdateRealmSchemaByRole = (role: string = '') => {
   const productOwnerFields = yup
     .object()
     .shape({
-      productName: yup.string().required().optional().nullable(),
+      productName: yup.string().required(),
       purpose: yup.string().min(2).required(),
       primaryEndUsers: yup.array().optional(),
       productOwnerEmail: yup.string().email().required(),
