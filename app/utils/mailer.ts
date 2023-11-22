@@ -117,7 +117,7 @@ const emailFooter = `
 `;
 
 export const sendUpdateEmail = (realm: any, session: any, updatingApprovalStatus: boolean) => {
-  const prefix = app_env === 'local' ? '[DEV] ' : '';
+  const prefix = app_env === 'development' ? '[DEV] ' : '';
   let message: string = `<h2>Your Realm Registry has been updated.</h2>
     <p>
         <strong>Project name: </strong>${realm.realm}<br /><strong>Updated by: </strong>${session.user?.given_name} ${session.user?.family_name}
