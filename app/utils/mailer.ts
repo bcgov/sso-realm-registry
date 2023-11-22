@@ -137,7 +137,7 @@ export const sendUpdateEmail = (realm: any, session: any, updatingApprovalStatus
   }
 
   return sendEmail({
-    to: ['jonathan.langlois@gov.bc.ca'],
+    to: [realm.technicalContactEmail, realm.productOwnerEmail],
     body: `
         ${emailHeader}
         ${message}
