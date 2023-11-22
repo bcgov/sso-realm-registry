@@ -116,23 +116,34 @@ const emailFooter = `
 </footer>
 `;
 
-export const sendUpdateEmail = (realm: any, session: any, updating: boolean) => {
+export const sendUpdateEmail = (realm: any, session: any, updatingApprovalStatus: boolean) => {
   const prefix = app_env === 'local' ? '[DEV] ' : '';
-  let realmRegistryStatusMessage = 'updated';
-  if (updating && realm.approved === true) realmRegistryStatusMessage = 'approved';
-  else if (updating && realm.approved === false) realmRegistryStatusMessage = 'declined';
+  let message: string = `<h2>Your Realm Registry has been updated.</h2>
+    <p>
+        <strong>Project name: </strong>${realm.realm}<br /><strong>Updated by: </strong>${session.user?.given_name} ${session.user?.family_name}
+    </p>`;
+  let subject = `${prefix}Realm Registry has been updated`;
+
+  if (updatingApprovalStatus && realm.approved === true) {
+    message = `
+        <p>This custom realm request has been approved and is under processing. Please wait up to 24 hours to get an update from us.</p>
+        `;
+    subject = `${prefix}Update: Custom Realm Request is in process`;
+  } else if (updatingApprovalStatus && realm.approved === false) {
+    message = `
+        <p>An SSO team member will be in touch with you to explain why this was declined.</p>
+        `;
+    subject = `${prefix}Update: Custom Realm Request has been declined`;
+  }
 
   return sendEmail({
     to: [realm.technicalContactEmail, realm.productOwnerEmail],
     body: `
         ${emailHeader}
-<h1>Your Realm Registry has been ${realmRegistryStatusMessage}.</h1>
-<p>
-    <strong>Project name: </strong>${realm.realm}<br /><strong>Updated by: </strong>${session.user?.given_name} ${session.user?.family_name}
-</p>
+        ${message}
         ${emailFooter}
     `,
-    subject: `${prefix}Realm Registry has been updated`,
+    subject,
   });
 };
 
