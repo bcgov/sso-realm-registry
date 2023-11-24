@@ -81,11 +81,13 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({ session, token }: { session: any; token: JWT }) {
+    async session({ session, token }: { session: any; token: any }) {
       // Send properties to the client, like an access_token from a provider.
       if (token) {
         session.accessToken = token.accessToken;
         session.user = token.user;
+        session.refreshTokenExpired = token.refreshTokenExpired;
+        session.accessTokenExpired = token.accessTokenExpired;
       }
 
       return session;

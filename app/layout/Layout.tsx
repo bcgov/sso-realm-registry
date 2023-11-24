@@ -160,9 +160,19 @@ const RightMenuItems = () => (
 // identity_provider, idir_userid, client_roles, family_name, given_name
 function Layout({ children, onLoginClick, onLogoutClick }: any) {
   const router = useRouter();
-  const { data } = useSession();
-  const currentUser: Partial<User> = data?.user!;
+  const session: any = useSession();
+  const currentUser: Partial<User> = session?.data?.user!;
   const pathname = router.pathname;
+
+  useEffect(() => {
+    // logout user when both access and refresh tokens expire
+    const interval = setInterval(() => {
+      if (Date.now() > session?.data?.refreshTokenExpired && Date.now() > session?.data?.accessTokenExpired) {
+        onLogoutClick();
+      }
+    }, 1000 * 5);
+    return () => clearInterval(interval);
+  }, [session]);
 
   const rightSide = currentUser ? (
     <LoggedUser>
