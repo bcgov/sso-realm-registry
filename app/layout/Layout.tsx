@@ -4,13 +4,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCommentDots, faEnvelope, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 import Button from '@button-inc/bcgov-theme/Button';
 import Footer from '@button-inc/bcgov-theme/Footer';
-import StyledLink from '@button-inc/bcgov-theme/Link';
 import styled from 'styled-components';
-import { startCase } from 'lodash';
 import BCSans from './BCSans';
 import Navigation from './Navigation';
 import BottomAlertProvider from './BottomAlert';
-import { useSession } from 'next-auth/react';
+import { getSession, useSession } from 'next-auth/react';
 import { useEffect } from 'react';
 import { User } from 'next-auth';
 
@@ -164,15 +162,21 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
   const currentUser: Partial<User> = session?.data?.user!;
   const pathname = router.pathname;
 
-  useEffect(() => {
-    // logout user when both access and refresh tokens expire
-    const interval = setInterval(() => {
-      if (Date.now() > session?.data?.refreshTokenExpired && Date.now() > session?.data?.accessTokenExpired) {
+  const checkSession = async () => {
+    if (Date.now() > session?.data?.accessTokenExpiry) {
+      const session: any = await getSession();
+      if (session?.error === 'RefreshAccessTokenError') {
         onLogoutClick();
       }
-    }, 1000 * 5);
-    return () => clearInterval(interval);
-  }, [session]);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.status === 'authenticated') {
+      const interval = setInterval(checkSession, 1000 * 1);
+      return () => clearInterval(interval);
+    }
+  });
 
   const rightSide = currentUser ? (
     <LoggedUser>
