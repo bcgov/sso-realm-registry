@@ -158,13 +158,13 @@ const RightMenuItems = () => (
 // identity_provider, idir_userid, client_roles, family_name, given_name
 function Layout({ children, onLoginClick, onLogoutClick }: any) {
   const router = useRouter();
-  const session: any = useSession();
+  const session = useSession();
   const currentUser: Partial<User> = session?.data?.user!;
   const pathname = router.pathname;
 
   const checkSession = async () => {
     if (Date.now() > session?.data?.accessTokenExpiry) {
-      const session: any = await getSession();
+      const session = await getSession();
       if (session?.error === 'RefreshAccessTokenError') {
         onLogoutClick();
       }
