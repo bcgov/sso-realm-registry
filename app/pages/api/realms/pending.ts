@@ -115,5 +115,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     return res.status(200).json({ success: true });
+  } else {
+    return res.status(404).json({ success: false, error: 'not found' });
   }
 }

@@ -54,6 +54,9 @@ module.exports = {
     gh_access_token: process.env.GH_ACCESS_TOKEN,
     gh_api_token: process.env.GH_API_TOKEN || '',
     idir_requestor_user_guid: process.env.IDIR_REQUESTOR_USER_GUID || '',
+    ms_graph_api_authority: process.env.MS_GRAPH_API_AUTHORITY,
+    ms_graph_api_client_id: process.env.MS_GRAPH_API_CLIENT_ID,
+    ms_graph_api_client_secret: process.env.MS_GRAPH_API_CLIENT_SECRET,
   },
   publicRuntimeConfig: {},
   async headers() {
