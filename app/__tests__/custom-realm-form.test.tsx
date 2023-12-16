@@ -4,8 +4,6 @@ import CustomRealmForm from 'pages/custom-realm-form';
 import { submitRealmRequest } from 'services/realm';
 import { AzureUser, CustomRealmFormData } from 'types/realm-profile';
 import { getBranches, getDivisions, getMinistries } from 'services/meta';
-import { debug } from 'jest-preview';
-import { getIdirUsersByEmail } from 'services/azure';
 
 const testAzureUser: AzureUser = {
   businessPhones: ['1234567890'],

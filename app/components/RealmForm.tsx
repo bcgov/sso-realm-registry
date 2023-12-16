@@ -540,6 +540,7 @@ export default function RealmForm({
             }}
             className="product-owner-email"
             classNamePrefix="product-owner-email"
+            isDisabled={!schemaFields.includes('productOwnerEmail')}
           />
 
           {formErrors.productOwnerEmail && <p className="error-message">{requiredEmailMessage}</p>}
@@ -624,6 +625,7 @@ export default function RealmForm({
           <input
             required
             id="secondary-contact-idir-input"
+            data-testid="secondary-contact-idir"
             name="secondTechnicalContactIdirUserId"
             value={formData.secondTechnicalContactIdirUserId}
             onChange={handleFormInputChange}
