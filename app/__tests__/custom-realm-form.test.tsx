@@ -1,10 +1,25 @@
 import React from 'react';
-import { render, screen, fireEvent, prettyDOM } from '@testing-library/react';
+import { render, screen, fireEvent, prettyDOM, waitFor, act } from '@testing-library/react';
 import CustomRealmForm from 'pages/custom-realm-form';
 import { submitRealmRequest } from 'services/realm';
-import { CustomRealmFormData } from 'types/realm-profile';
-import { act } from 'react-dom/test-utils';
+import { AzureUser, CustomRealmFormData } from 'types/realm-profile';
 import { getBranches, getDivisions, getMinistries } from 'services/meta';
+import { debug } from 'jest-preview';
+import { getIdirUsersByEmail } from 'services/azure';
+
+const testAzureUser: AzureUser = {
+  businessPhones: ['1234567890'],
+  displayName: 'Test Azure User',
+  givenName: 'Test Azure',
+  jobTitle: 'Automation Tester',
+  mail: 'test.azure.user@gov.bc.ca',
+  mobilePhone: '',
+  officeLocation: '',
+  preferredLanguage: '',
+  surname: 'User',
+  userPrincipalName: '',
+  id: 'dasc-asdw-dfer-gree-vdfv-sads',
+};
 
 jest.mock('services/meta', () => {
   return {
@@ -17,6 +32,13 @@ jest.mock('services/meta', () => {
 jest.mock('services/realm', () => {
   return {
     submitRealmRequest: jest.fn((realmInfo: CustomRealmFormData) => Promise.resolve([true, null])),
+  };
+});
+
+jest.mock('services/azure', () => {
+  return {
+    getIdirUsersByEmail: jest.fn((email: string) => Promise.resolve([[testAzureUser], null])),
+    getIdirUserId: jest.fn((id: string) => Promise.resolve(['TAUSER', null])),
   };
 });
 
@@ -72,6 +94,15 @@ describe('Form Validation', () => {
     fireEvent.change(field, { target: { value } });
   };
 
+  const fillSelectField = async (classSelector: string, container: HTMLElement) => {
+    const field = container.querySelector(`input.${classSelector}__input`);
+    fireEvent.input(field!, { target: { value: testAzureUser.mail } });
+    await waitFor(() => {
+      const option = container.querySelector(`.${classSelector}__option`);
+      fireEvent.click(option!);
+    });
+  };
+
   const clickInput = (label: string) => {
     const field = screen.getByLabelText(label);
     fireEvent.click(field);
@@ -86,9 +117,10 @@ describe('Form Validation', () => {
     expect(submitRealmRequest).not.toHaveBeenCalled();
   });
 
-  it('Clears out validation messages as fields are completed', () => {
+  it('Clears out validation messages as fields are completed', async () => {
     // Trigger all errors
     const { container } = render(<CustomRealmForm />);
+
     submitForm();
     fillTextInput('Custom Realm name');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 1);
@@ -104,16 +136,12 @@ describe('Form Validation', () => {
     clickInput('Development');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 4);
 
-    fillTextInput("Product owner's email");
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 5);
+    await fillSelectField('product-owner-email', container);
 
-    fillTextInput("Product owner's IDIR");
     expect(getErrorCount(container)).toBe(requiredFieldCount - 6);
 
-    fillTextInput("Technical contact's email", 'a@b.com', true);
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 7);
+    await fillSelectField('technical-contact-email', container);
 
-    fillTextInput("Technical contact's IDIR", 'aa', true);
     expect(getErrorCount(container)).toBe(requiredFieldCount - 8);
 
     fillTextInput('Product Name', 'aa', true);
@@ -121,18 +149,15 @@ describe('Form Validation', () => {
   });
 
   it('Sends off the expected form data when a proper submission is made', async () => {
-    render(<CustomRealmForm />);
+    const { container } = render(<CustomRealmForm />);
     fillTextInput('Custom Realm name', 'name');
     fillTextInput('Purpose of Realm', 'purpose');
     fillTextInput('Product Name', 'name');
     clickInput('People living in BC');
     clickInput('Development');
-    fillTextInput("Product owner's email", 'po@gmail.com');
-    fillTextInput("Product owner's IDIR", 'poidir');
-    fillTextInput("Technical contact's email", 'tc@gmail.com', true);
-    fillTextInput("Technical contact's IDIR", 'tcidir', true);
-    fillTextInput("Secondary technical contact's email", 'stc@gmail.com');
-    fillTextInput("Secondary technical contact's IDIR", 'stcidir');
+    await fillSelectField('product-owner-email', container);
+    await fillSelectField('technical-contact-email', container);
+    await fillSelectField('secondary-contact-email', container);
 
     await act(async () => {
       submitForm();
@@ -142,14 +167,14 @@ describe('Form Validation', () => {
       environments: ['dev'],
       primaryEndUsers: ['livingInBC'],
       productName: 'name',
-      productOwnerEmail: 'po@gmail.com',
-      productOwnerIdirUserId: 'poidir',
+      productOwnerEmail: testAzureUser.mail,
+      productOwnerIdirUserId: 'TAUSER',
       realm: 'name',
       purpose: 'purpose',
-      secondTechnicalContactEmail: 'stc@gmail.com',
-      secondTechnicalContactIdirUserId: 'stcidir',
-      technicalContactEmail: 'tc@gmail.com',
-      technicalContactIdirUserId: 'tcidir',
+      secondTechnicalContactEmail: testAzureUser.mail,
+      secondTechnicalContactIdirUserId: 'TAUSER',
+      technicalContactEmail: testAzureUser.mail,
+      technicalContactIdirUserId: 'TAUSER',
     });
   });
 });

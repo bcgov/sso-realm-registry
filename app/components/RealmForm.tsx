@@ -228,9 +228,9 @@ export default function RealmForm({
 
   const handleFormSelectChange = async (e: any, selectorName: string, dependentInput: string) => {
     let idirUserId: string | null = '';
-    setFormErrors({ ...formErrors, [selectorName]: false });
     if (e?.value) {
       [idirUserId] = await getIdirUserId(e?.value);
+      if (idirUserId) setFormErrors({ ...formErrors, [selectorName]: false, [dependentInput]: false });
     }
     setFormData({ ...formData, [selectorName]: e?.label || '', [dependentInput]: idirUserId || '' });
   };
@@ -538,7 +538,10 @@ export default function RealmForm({
             defaultValue={() => {
               if (formData.productOwnerEmail) return { label: formData.productOwnerEmail };
             }}
+            className="product-owner-email"
+            classNamePrefix="product-owner-email"
           />
+
           {formErrors.productOwnerEmail && <p className="error-message">{requiredEmailMessage}</p>}
         </div>
 
@@ -561,9 +564,7 @@ export default function RealmForm({
           <label htmlFor="technical-contact-email-input" className="required">
             Technical contact&apos;s email
           </label>
-
           <AsyncSelect
-            data-testid="tech-contact-email"
             id="technical-contact-email-input"
             name="technicalContactEmail"
             loadOptions={fuzzySearchIdirUsersByEmail}
@@ -573,7 +574,10 @@ export default function RealmForm({
             defaultValue={() => {
               if (formData.technicalContactEmail) return { label: formData.technicalContactEmail };
             }}
+            className="technical-contact-email"
+            classNamePrefix="technical-contact-email"
           />
+
           {formErrors.technicalContactEmail && <p className="error-message">{requiredEmailMessage}</p>}
         </div>
 
@@ -596,7 +600,6 @@ export default function RealmForm({
         <div className="input-wrapper first-col">
           <label htmlFor="secondary-contact-email-input">Secondary technical contact&apos;s email</label>
           <AsyncSelect
-            data-testid="sec-contact-email"
             id="secondary-contact-email-input"
             name="secondTechnicalContactEmail"
             loadOptions={fuzzySearchIdirUsersByEmail}
@@ -609,7 +612,10 @@ export default function RealmForm({
             defaultValue={() => {
               if (formData.secondTechnicalContactEmail) return { label: formData.secondTechnicalContactEmail };
             }}
+            className="secondary-contact-email"
+            classNamePrefix="secondary-contact-email"
           />
+
           {formErrors.secondTechnicalContactEmail && <p className="error-message">{requiredEmailMessage}</p>}
         </div>
 
