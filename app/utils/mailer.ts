@@ -1,5 +1,6 @@
 import { sendEmail } from 'utils/ches';
 import getConfig from 'next/config';
+import { generateMasterRealmLinksByEnv, generateRealmLinksByEnv } from './helpers';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { app_env } = serverRuntimeConfig;
@@ -165,5 +166,130 @@ export const sendCreateEmail = (realm: any) => {
     ${emailFooter}
     `,
     subject: `${prefix}Realm Registry request received`,
+  });
+};
+
+export const sendReadyToUseEmail = (realm: any) => {
+  const prefix = app_env === 'development' ? '[DEV] ' : '';
+  return sendEmail({
+    to: [realm.technicalContactEmail, realm.productOwnerEmail],
+    body: `
+        ${emailHeader}
+          <main style="padding: 0 30px;">
+            <div>Hello Pathfinder SSO friend,</div>
+            <div>&nbsp;</div>
+            <div>
+            <div>Your custom realm <strong>${realm.realm}</strong> is ready to be accessed.</div>
+            <div>&nbsp;</div>
+            <div>
+            <div>Please follow the instructions below to add Realm Admins:</div>
+            <div>&nbsp;</div>
+            <div><strong>1. You are a Realm Admin</strong></div>
+            <div>&nbsp;</div>
+            <div>&nbsp; &nbsp; Please save these links URLs of your custom realm</div>
+            <div>
+            <ul>
+            <li><p><code><a href="${generateRealmLinksByEnv('dev', realm.realm)}">${generateRealmLinksByEnv(
+      'dev',
+      realm.realm,
+    )}</a></p></code></li>
+            <li><p><code><a href="${generateRealmLinksByEnv('test', realm.realm)}"></a>${generateRealmLinksByEnv(
+      'test',
+      realm.realm,
+    )}</p></code></li>
+            <li><p><code><a href="${generateRealmLinksByEnv('prod', realm.realm)}">${generateRealmLinksByEnv(
+      'prod',
+      realm.realm,
+    )}</a></p></code></li>
+            </ul>
+            <div><strong>2. You must have your identity provider configured. Please follow these <a href="https://stackoverflow.developer.gov.bc.ca/questions/864">instructions</a></strong></div>
+            <div>&nbsp;</div>
+            <div><strong>3. User friendly URLS and configure additional realm admins</strong></div>
+            <div>&nbsp;</div>
+            <div>
+            <div>&nbsp; &nbsp; To add yourself and others as realm admins via a user friendly url:</div>
+            <div>&nbsp;</div>
+            <div>&nbsp; &nbsp; Once you&rsquo;ve logged in with your IDIR, we advise you add yourself and other realm admins to your custom realm admin group with next steps</div>
+            <div>&nbsp;</div>
+            <div>&nbsp; &nbsp; &nbsp; a. Log into your custom realm account so that you and other admins can be imported into the custom realm</div>
+            <ul>
+            <li style="list-style-type: none;">
+            <ul>
+            <li>
+            <p><code><a href="${generateRealmLinksByEnv('dev', realm.realm)}">${generateRealmLinksByEnv(
+      'dev',
+      realm.realm,
+    )}</a></code></p>
+            </li>
+            <li>
+            <p><code><a href="${generateRealmLinksByEnv('test', realm.realm)}">${generateRealmLinksByEnv(
+      'test',
+      realm.realm,
+    )}</a></code></p>
+            </li>
+            <li>
+            <p><code><a href="${generateRealmLinksByEnv('prod', realm.realm)}">${generateRealmLinksByEnv(
+      'prod',
+      realm.realm,
+    )}</a></code></p>
+            </li>
+            </ul>
+            </li>
+            </ul>
+            <div>&nbsp; &nbsp; &nbsp; b. At this point you will see a <strong>forbidden</strong> message.</div>
+            <div>&nbsp;</div>
+            <div>&nbsp; &nbsp; &nbsp; c. One of the existing Realm Admins will need to add the user that logged in to #1 above to the custom realm admin group via the <strong>master</strong> links</div>
+            <div>
+            <ul>
+            <li style="list-style-type: none;">
+            <ul>
+            <li><p><code><a href="${generateMasterRealmLinksByEnv('dev', realm.realm)}">${generateMasterRealmLinksByEnv(
+      'dev',
+      realm.realm,
+    )}</a></code></p></li>
+            <li><p><code><a href="${generateMasterRealmLinksByEnv(
+              'test',
+              realm.realm,
+            )}">${generateMasterRealmLinksByEnv('test', realm.realm)}</a></code></p></li>
+            <li><p><code><a href="${generateMasterRealmLinksByEnv(
+              'prod',
+              realm.realm,
+            )}">${generateMasterRealmLinksByEnv('prod', realm.realm)}</a></code></p></li>
+            </ul>
+            </li>
+            </ul>
+            <div>&nbsp; &nbsp; &nbsp; e. Once you&rsquo;ve done this, you and your realm admins can access your realm via a more user friendly url</div>
+            <div>&nbsp;</div>
+            <div>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <span style="text-decoration: underline;"><span style="color: #ff0000;"><strong>PLEASE SAVE THIS USER FRIENDLY LINK</strong></span></span> as User Friendly Realm Admin Links</div>
+            <ul>
+            <li style="list-style-type: none;">
+            <ul>
+            <li><p><code><a href="${generateRealmLinksByEnv('dev', realm.realm)}">${generateRealmLinksByEnv(
+      'dev',
+      realm.realm,
+    )}</a></code></p></li>
+            <li><p><code><a href="${generateRealmLinksByEnv('test', realm.realm)}">${generateRealmLinksByEnv(
+      'test',
+      realm.realm,
+    )}</a></code></p></li>
+            <li><p><code><a href="${generateRealmLinksByEnv('prod', realm.realm)}">${generateRealmLinksByEnv(
+      'prod',
+      realm.realm,
+    )}</a></code></p></li>
+            </ul>
+            </li>
+            </ul>
+            <div>If you have any questions or require further assistance, feel free to reach out to us by Rocket.Chat or email at: <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a></div>
+            <div>&nbsp;</div>
+            <div>Thank you,<br />Pathfinder SSO Team</div>
+            </div>
+            </div>
+            </div>
+            </div>
+            </div>
+          </main>
+        ${emailFooter}
+        `,
+    subject: `${prefix}Custom Realm ${realm.realm} has been created. Please read this to complete Realm Admin configuration.`,
   });
 };

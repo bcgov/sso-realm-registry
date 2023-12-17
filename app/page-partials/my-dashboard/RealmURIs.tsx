@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import Link from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
+import { generateRealmLinksByEnv } from 'utils/helpers';
 
 const Title = styled.div`
   font-weight: 700;
@@ -17,24 +18,24 @@ function RealmURIs({ realm }: Props) {
   return (
     <>
       <Title>Development</Title>
-      <Link
-        href={`https://dev.loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}
-        external
-      >{`https://dev.loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}</Link>
+      <Link href={`${generateRealmLinksByEnv('dev', realm.realm)}`} external>{`${generateRealmLinksByEnv(
+        'dev',
+        realm.realm,
+      )}`}</Link>
       <br />
       <br />
       <Title>Test</Title>
-      <Link
-        href={`https://test.loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}
-        external
-      >{`https://test.loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}</Link>
+      <Link href={`${generateRealmLinksByEnv('test', realm.realm)}`} external>{`${generateRealmLinksByEnv(
+        'test',
+        realm.realm,
+      )}`}</Link>
       <br />
       <br />
       <Title>Production</Title>
-      <Link
-        href={`https://loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}
-        external
-      >{`https://loginproxy.gov.bc.ca/auth/admin/${realm.realm}/console`}</Link>
+      <Link href={`${generateRealmLinksByEnv('prod', realm.realm)}`} external>{`${generateRealmLinksByEnv(
+        'prod',
+        realm.realm,
+      )}`}</Link>
     </>
   );
 }

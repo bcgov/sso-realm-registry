@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import getConfig from 'next/config';
 import { createEvent, getUpdatedProperties } from 'utils/helpers';
 import { generateXML, getBceidAccounts, makeSoapRequest } from 'utils/idir';
+import { sendReadyToUseEmail } from 'utils/mailer';
 import prisma from 'utils/prisma';
 import { ActionEnum, EventEnum, StatusEnum, realmPlanAndApplySchema } from 'validators/create-realm';
 import { ValidationError } from 'yup';
@@ -106,6 +107,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.error(`No guid found for user ${String(idirUserId)}`);
               }
             },
+          );
+          sendReadyToUseEmail(currentRequest).catch((err) =>
+            console.error(`Error sending email for ${currentRequest?.realm}`, err),
           );
         } catch (err) {
           console.trace(err);
