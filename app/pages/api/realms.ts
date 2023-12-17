@@ -98,7 +98,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       });
 
-      if (existingRealm.length > 0) {
+      const kcCore = new KeycloakCore('prod');
+
+      const kcAdminClient = await kcCore.getAdminClient();
+
+      const existingKcRealms = await kcAdminClient.realms.find();
+
+      // the keycloak console may not show realm if the realm name was manually updated through console
+      // however the realm id does not change
+      if (existingRealm.length > 0 || existingKcRealms.find((realm) => realm.id === data.realm)) {
         return res.status(400).json({ success: false, error: 'Realm name already taken' });
       }
 
