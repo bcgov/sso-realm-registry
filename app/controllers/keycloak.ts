@@ -28,7 +28,7 @@ export const removeUserAsRealmAdmin = async (emails: (string | null)[], env: str
     return;
   }
 
-  const role = await kcAdminClient.roles.findOneByName({ realm: 'master', name: `${realm}-realm-admins` });
+  const role = await kcAdminClient.roles.findOneByName({ realm: 'master', name: `${realm}-realm-admin` });
 
   if (role === null) return;
 
