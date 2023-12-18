@@ -68,7 +68,6 @@ export const createRealmSchema = yup
     purpose: yup.string().min(2).required(),
     productName: yup.string().required(),
     primaryEndUsers: yup.array().required().min(1),
-    environments: yup.array().required().min(1),
     productOwnerEmail: yup.string().required().email(),
     productOwnerIdirUserId: yup.string().required().min(2),
   })

@@ -18,7 +18,6 @@ const defaultData: CustomRealmFormData = {
   realm: '',
   purpose: '',
   primaryEndUsers: [],
-  environments: [],
   productOwnerEmail: '',
   productOwnerIdirUserId: '',
   technicalContactEmail: '',

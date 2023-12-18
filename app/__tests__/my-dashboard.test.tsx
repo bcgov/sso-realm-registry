@@ -71,9 +71,6 @@ describe('Form Validation', () => {
     const primaryEndUserInput = (
       await screen.findByText('Who are the primary end users of your project', { exact: false })
     ).closest('fieldset') as HTMLFieldSetElement;
-    const environmentsInput = (await screen.findByText('Select all applicable environments', { exact: false })).closest(
-      'fieldset',
-    ) as HTMLFieldSetElement;
     //const poEmailInput = (await screen.findByLabelText("Product owner's email", { exact: false })) as HTMLInputElement;
     const poEmailInput = container.querySelector('input.product-owner-email__input') as HTMLInputElement;
     const poIdirInput = (await screen.findByLabelText("Product owner's IDIR", { exact: false })) as HTMLInputElement;
@@ -101,7 +98,6 @@ describe('Form Validation', () => {
       branchInput,
       realmPurposeInput,
       primaryEndUserInput,
-      environmentsInput,
       poEmailInput,
       poIdirInput,
       techContactEmailInput,
@@ -126,7 +122,6 @@ describe('Form Validation', () => {
     expect(inputs.branchInput.disabled).toBe(false);
     expect(inputs.realmPurposeInput.disabled).toBe(true);
     expect(inputs.primaryEndUserInput.disabled).toBe(true);
-    expect(inputs.environmentsInput.disabled).toBe(true);
     expect(inputs.poEmailInput!.disabled).toBe(true);
     expect(inputs.poIdirInput.disabled).toBe(true);
     expect(inputs.techContactEmailInput!.disabled).toBe(false);
@@ -161,7 +156,6 @@ describe('Form Validation', () => {
     expect(inputs.branchInput.disabled).toBe(false);
     expect(inputs.realmPurposeInput.disabled).toBe(false);
     expect(inputs.primaryEndUserInput.disabled).toBe(false);
-    expect(inputs.environmentsInput.disabled).toBe(true);
     expect(inputs.poEmailInput!.disabled).toBe(false);
     expect(inputs.poIdirInput.disabled).toBe(true);
     expect(inputs.techContactEmailInput!.disabled).toBe(false);
@@ -196,7 +190,6 @@ describe('Form Validation', () => {
     expect(inputs.branchInput.disabled).toBe(false);
     expect(inputs.realmPurposeInput.disabled).toBe(false);
     expect(inputs.primaryEndUserInput.disabled).toBe(false);
-    expect(inputs.environmentsInput.disabled).toBe(true);
     expect(inputs.poEmailInput!.disabled).toBe(false);
     expect(inputs.poIdirInput.disabled).toBe(true);
     expect(inputs.techContactEmailInput!.disabled).toBe(false);
