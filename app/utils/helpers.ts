@@ -1,5 +1,9 @@
 import prisma from './prisma';
 import { diff } from 'deep-diff';
+import getConfig from 'next/config';
+
+const { serverRuntimeConfig = {} } = getConfig() || {};
+const { dev_kc_url, test_kc_url, prod_kc_url } = serverRuntimeConfig;
 
 export enum RoleEnum {
   ADMIN = 'admin',
@@ -56,4 +60,14 @@ export const createEvent = async (data: any) => {
 
 export const getUpdatedProperties = (originalData: any, newData: any) => {
   return diff(originalData, newData);
+};
+
+export const generateRealmLinksByEnv = (env: string, realmName: string) => {
+  const domain = env === 'dev' ? dev_kc_url : env === 'test' ? test_kc_url : prod_kc_url;
+  return `${domain}/auth/admin/${realmName}/console/`;
+};
+
+export const generateMasterRealmLinksByEnv = (env: string, realmName: string) => {
+  const domain = env === 'dev' ? dev_kc_url : env === 'test' ? test_kc_url : prod_kc_url;
+  return `${domain}/auth/admin/master/console/#/realms/${realmName}`;
 };

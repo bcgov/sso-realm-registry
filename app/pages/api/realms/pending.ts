@@ -7,7 +7,7 @@ import prisma from 'utils/prisma';
 import { ActionEnum, EventEnum, StatusEnum, realmPlanAndApplySchema } from 'validators/create-realm';
 import { ValidationError } from 'yup';
 import { removeUserAsRealmAdmin } from 'controllers/keycloak';
-import { sendDeletionCompleteEmail } from 'utils/mailer';
+import { sendDeletionCompleteEmail, sendReadyToUseEmail } from 'utils/mailer';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { gh_api_token, idir_requestor_user_guid } = serverRuntimeConfig;
@@ -120,6 +120,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                   console.error(`No guid found for user ${String(idirUserId)}`);
                 }
               },
+            );
+            sendReadyToUseEmail(currentRequest!).catch((err) =>
+              console.error(`Error sending email for ${currentRequest?.realm}`, err),
             );
           } catch (err) {
             console.trace(err);
