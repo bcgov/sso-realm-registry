@@ -265,30 +265,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (!prResponse?.data.number) {
         console.info(`PR Failed for deletion of realm id ${id}`);
         // Intentionally not awaiting since 500 already, handling error async
-        failPR().catch((err) => console.error(err));
+        await failPR().catch((err) => console.error(err));
         return res.status(500).send('Unexpected error removing request. Please try again.');
       }
 
       const pr = await mergePullRequest(prResponse.data.number);
       if (!pr.data.merged) {
         console.info(`Failed to merge pull request for realm id ${id}`);
-        failPR().catch((err) => console.error(err));
+        await failPR().catch((err) => console.error(err));
         return res.status(500).send('Unexpected error removing request. Please try again.');
       }
 
       await deleteBranch(realm.realm!);
-
-      prisma.roster.update({
-        data: {
-          archived: true,
-          prNumber: prResponse.data.number,
-          status: StatusEnum.PRSUCCESS,
-        },
-        where: {
-          id: parseInt(id as string, 10),
-        },
-      });
-      sendDeleteEmail(realm, session);
+      await Promise.all([
+        prisma.roster.update({
+          data: {
+            archived: true,
+            prNumber: prResponse.data.number,
+            status: StatusEnum.PRSUCCESS,
+          },
+          where: {
+            id: parseInt(id as string, 10),
+          },
+        }),
+        sendDeleteEmail(realm, session),
+      ]);
       res.status(200).send('Success');
     } else {
       return res.status(404).json({ success: false, error: 'not found' });
