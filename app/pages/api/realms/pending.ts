@@ -121,9 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 }
               },
             );
-            sendReadyToUseEmail(currentRequest!).catch((err) =>
-              console.error(`Error sending email for ${currentRequest?.realm}`, err),
-            );
+            await sendReadyToUseEmail(currentRequest!);
           } catch (err) {
             console.trace(err);
             console.error(err);

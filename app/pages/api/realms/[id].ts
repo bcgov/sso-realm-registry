@@ -212,12 +212,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           details: getUpdatedProperties(currentRequest, updatedRealm),
         });
         updatedRealm = !isAdmin ? omit(updatedRealm, adminOnlyFields) : updatedRealm;
+
         sendUpdateEmail(updatedRealm, session, updatingApprovalStatus).catch((err) =>
           console.error(`Error sending email for ${updatedRealm.realm}`, err),
         );
-        sendReadyToUseEmail(updatedRealm).catch((err) =>
-          console.error(`Error sending email for ${updatedRealm.realm}`, err),
-        );
+
         return res.send(updatedRealm);
       } catch (err) {
         await createEvent({
