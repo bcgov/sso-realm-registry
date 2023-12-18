@@ -129,13 +129,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       await Promise.all(updateRosterPromises);
-      return res.status(200).json({ success: true });
+      res.status(200).json({ success: true });
     } else {
       return res.status(404).json({ success: false, error: 'not found' });
     }
   } catch (err) {
     console.error(`Exception: ${err}`);
     res.status(500).send('server error');
-    return res.status(200).json({ success: true });
   }
 }
