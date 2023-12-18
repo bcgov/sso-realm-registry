@@ -7,6 +7,7 @@ export interface RealmProfile extends CustomRealmFormData {
   idps: string[];
   createdAt: string;
   updatedAt: string;
+  environments: Environment[];
   [key: string]: any;
 }
 
@@ -37,7 +38,6 @@ export interface CustomRealmFormData {
   branch?: string;
   purpose: string;
   primaryEndUsers: PrimaryEndUser[];
-  environments: Environment[];
   preferredAdminLoginMethod?: string;
   productOwnerEmail: string;
   productOwnerIdirUserId: string;

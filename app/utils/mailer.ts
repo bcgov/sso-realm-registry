@@ -152,9 +152,9 @@ export const sendUpdateEmail = (realm: RealmProfile, session: Session, updatingA
   });
 };
 
-export const sendCreateEmail = (realm: RealmProfile) => {
+export const sendCreateEmail = (realm: Roster) => {
   return sendEmail({
-    to: [realm.technicalContactEmail, realm.productOwnerEmail],
+    to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
     body: `
     ${emailHeader}
       <main style="padding: 0 30px;">

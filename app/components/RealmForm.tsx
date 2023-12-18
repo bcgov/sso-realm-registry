@@ -240,10 +240,7 @@ export default function RealmForm({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFormCheckboxGroupChange = (
-    e: ChangeEvent<HTMLInputElement>,
-    groupName: 'environments' | 'primaryEndUsers',
-  ) => {
+  const handleFormCheckboxGroupChange = (e: ChangeEvent<HTMLInputElement>, groupName: 'primaryEndUsers') => {
     setFormErrors({ ...formErrors, [groupName]: false });
     let newData = { ...formData };
     if (e.target.checked && !formData[groupName].includes(e.target.value)) {
@@ -481,45 +478,6 @@ export default function RealmForm({
                 />
                 <p className="help-text">100 Characters max.</p>
               </div>
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset className="span-cols" disabled={!schemaFields.includes('environments')}>
-          <legend className="required">Select all applicable environments</legend>
-          {formErrors.environments && <p className="error-message">You must select one or more.</p>}
-          <div className="grid">
-            <div className="checkbox-wrapper">
-              <input
-                type="checkbox"
-                id="dev-env-checkbox"
-                name="dev"
-                onChange={(e) => handleFormCheckboxGroupChange(e, 'environments')}
-                checked={formData.environments.includes('dev')}
-              />
-              <label htmlFor="dev-env-checkbox">Development</label>
-            </div>
-
-            <div className="checkbox-wrapper">
-              <input
-                type="checkbox"
-                id="test-env-checkbox"
-                name="test"
-                onChange={(e) => handleFormCheckboxGroupChange(e, 'environments')}
-                checked={formData.environments.includes('test')}
-              />
-              <label htmlFor="test-env-checkbox">Test</label>
-            </div>
-
-            <div className="checkbox-wrapper">
-              <input
-                type="checkbox"
-                id="prod-env-checkbox"
-                name="prod"
-                onChange={(e) => handleFormCheckboxGroupChange(e, 'environments')}
-                checked={formData.environments.includes('prod')}
-              />
-              <label htmlFor="prod-env-checkbox">Prod</label>
             </div>
           </div>
         </fieldset>

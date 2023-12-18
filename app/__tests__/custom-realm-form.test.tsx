@@ -75,7 +75,7 @@ jest.mock('next-auth/react', () => {
 });
 
 describe('Form Validation', () => {
-  const requiredFieldCount = 9;
+  const requiredFieldCount = 8;
 
   const submitForm = () => {
     const submitButon = screen.getByText('Submit', { selector: 'button' });
@@ -130,20 +130,16 @@ describe('Form Validation', () => {
     clickInput('People living in BC');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 3);
 
-    // Environments section
-    clickInput('Development');
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 4);
-
     await fillSelectField('product-owner-email', container);
 
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 6);
+    expect(getErrorCount(container)).toBe(requiredFieldCount - 5);
 
     await fillSelectField('technical-contact-email', container);
 
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 8);
+    expect(getErrorCount(container)).toBe(requiredFieldCount - 7);
 
     fillTextInput('Product Name', 'aa', true);
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 9);
+    expect(getErrorCount(container)).toBe(requiredFieldCount - 8);
   });
 
   it('Sends off the expected form data when a proper submission is made', async () => {
@@ -152,7 +148,6 @@ describe('Form Validation', () => {
     fillTextInput('Purpose of Realm', 'purpose');
     fillTextInput('Product Name', 'name');
     clickInput('People living in BC');
-    clickInput('Development');
     await fillSelectField('product-owner-email', container);
     await fillSelectField('technical-contact-email', container);
     await fillSelectField('secondary-contact-email', container);
@@ -162,7 +157,6 @@ describe('Form Validation', () => {
     });
 
     expect(submitRealmRequest).toHaveBeenCalledWith({
-      environments: ['dev'],
       primaryEndUsers: ['livingInBC'],
       productName: 'name',
       productOwnerEmail: testAzureUser.mail,
