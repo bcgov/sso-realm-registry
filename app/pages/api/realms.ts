@@ -115,6 +115,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ...data,
           requestor: `${session.user.family_name}, ${session.user.given_name}`,
           preferredAdminLoginMethod: 'idir',
+          environments: ['dev', 'test', 'prod'],
           lastUpdatedBy: `${session.user.family_name}, ${session.user.given_name}`,
           status: StatusEnum.PENDING,
         },
