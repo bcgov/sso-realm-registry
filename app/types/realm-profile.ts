@@ -50,6 +50,7 @@ export interface CustomRealmFormData {
   rcChannelOwnedBy?: string;
   materialToSend?: string;
   status?: Status;
+  archived?: boolean;
 }
 
 export interface Ministry {

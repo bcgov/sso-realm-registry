@@ -1,6 +1,49 @@
 import { RoleMappingPayload } from 'keycloak-admin/lib/defs/roleRepresentation';
 import KeycloakCore from 'utils/keycloak-core';
 
+/**
+ * Function to remove access at the master realm level as administrator of a custom realm. Custom realm owners access control comes from the role <realmname>-realm-admin. Removes this role from supplied usernames if found.
+ * @param emails Usernames to remove
+ * @param env The environment to cleanup
+ * @param realm The realm name you want to remove access to
+ */
+export const removeUserAsRealmAdmin = async (emails: (string | null)[], env: string, realm: string) => {
+  const kcCore = new KeycloakCore(env);
+  const kcAdminClient = await kcCore.getAdminClient();
+  const definedEmails = emails.filter((name) => name) as string[];
+
+  const userPromises = definedEmails.map((email) =>
+    kcAdminClient.users.find({
+      realm: 'master',
+      email,
+    }),
+  );
+
+  const users = await Promise.all(userPromises);
+
+  const userIds = users.map((user) => user?.[0]?.id).filter((user) => user) as string[];
+
+  if (userIds.length === 0) {
+    console.info(`No users found as admin for realm ${realm}.`);
+    return;
+  }
+
+  const role = await kcAdminClient.roles.findOneByName({ realm: 'master', name: `${realm}-realm-admins` });
+
+  if (role === null) return;
+
+  const roleMapping: RoleMappingPayload = { id: role?.id as string, name: role?.name as string };
+
+  const delRoleMappingPromises = userIds.map((id) =>
+    kcAdminClient.users.delRealmRoleMappings({
+      realm: 'master',
+      id: id,
+      roles: [roleMapping],
+    }),
+  );
+  return Promise.all(delRoleMappingPromises);
+};
+
 export const addUserAsRealmAdmin = async (username: string, envs: string[], realmName: string) => {
   for (const env of envs) {
     const kcCore = new KeycloakCore(env);

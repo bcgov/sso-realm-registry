@@ -1,8 +1,12 @@
 import { sendEmail } from 'utils/ches';
 import getConfig from 'next/config';
+import { Session } from 'next-auth';
+import { RealmProfile } from 'types/realm-profile';
+import { Roster } from '@prisma/client';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { app_env } = serverRuntimeConfig;
+const subjectPrefix = app_env === 'development' ? '[DEV] ' : '';
 
 const emailHeader = `
 <header style="color: #0e3468; text-align: center; margin-bottom: 30px; background: #f2f2f2; padding: 20px; box-shadow: 0 12px 6px -6px rgb(224, 224, 224);">
@@ -45,6 +49,7 @@ const emailHeader = `
 `;
 
 const emailFooter = `
+<p>Thank you, <br /> Pathfinder SSO Team</p>
 <footer style="background: #f2f2f2; padding: 20px; box-shadow: 0px -12px 6px -6px rgb(224, 224, 224); margin-top: 30px;">
 <div style="display: flex; justify-content: space-between;">
     <div>
@@ -116,24 +121,23 @@ const emailFooter = `
 </footer>
 `;
 
-export const sendUpdateEmail = (realm: any, session: any, updatingApprovalStatus: boolean) => {
-  const prefix = app_env === 'development' ? '[DEV] ' : '';
+export const sendUpdateEmail = (realm: RealmProfile, session: Session, updatingApprovalStatus: boolean) => {
   let message: string = `<h2>Your Realm Registry has been updated.</h2>
     <p>
         <strong>Project name: </strong>${realm.realm}<br /><strong>Updated by: </strong>${session.user?.given_name} ${session.user?.family_name}
     </p>`;
-  let subject = `${prefix}Realm Registry has been updated`;
+  let subject = `${subjectPrefix}Realm Registry has been updated`;
 
   if (updatingApprovalStatus && realm.approved === true) {
     message = `
         <p>This custom realm request has been approved and is under processing. Please wait up to 24 hours to get an update from us.</p>
         `;
-    subject = `${prefix}Update: Custom Realm Request is in process`;
+    subject = `${subjectPrefix}Update: Custom Realm Request is in process`;
   } else if (updatingApprovalStatus && realm.approved === false) {
     message = `
         <p>An SSO team member will be in touch with you to explain why this was declined.</p>
         `;
-    subject = `${prefix}Update: Custom Realm Request has been declined`;
+    subject = `${subjectPrefix}Update: Custom Realm Request has been declined`;
   }
 
   return sendEmail({
@@ -147,8 +151,7 @@ export const sendUpdateEmail = (realm: any, session: any, updatingApprovalStatus
   });
 };
 
-export const sendCreateEmail = (realm: any) => {
-  const prefix = app_env === 'development' ? '[DEV] ' : '';
+export const sendCreateEmail = (realm: RealmProfile) => {
   return sendEmail({
     to: [realm.technicalContactEmail, realm.productOwnerEmail],
     body: `
@@ -160,10 +163,42 @@ export const sendCreateEmail = (realm: any) => {
               into
               your request and will reach out soon.</p>
           <br />
-          <p>Thank you, <br /> Pathfinder SSO Team</p>
       </main>
     ${emailFooter}
     `,
-    subject: `${prefix}Realm Registry request received`,
+    subject: `${subjectPrefix}Realm Registry request received`,
+  });
+};
+
+export const sendDeleteEmail = (realm: Roster, session: Session) => {
+  const githubActionTriggerHour = '4:00 AM';
+  const username = `${session.user.given_name} ${session.user.family_name}`;
+  const to = [realm.technicalContactEmail!, realm.productOwnerEmail!].filter((email) => email);
+  if (!to.length) return;
+
+  return sendEmail({
+    to,
+    body: `
+        ${emailHeader}
+        <p>Hello Pathfinder SSO friend,</p>
+        <p>We have received a request from ${username} for the deletion of ${realm.realm} Custom Realm. It will be deleted at approximately ${githubActionTriggerHour} as per our automated processes. Please contact the SSO team ASAP if you have any concerns.</p>
+        ${emailFooter}
+        `,
+    subject: `${subjectPrefix}Update: Custom realm ${realm.realm} is in the process of being disabled.`,
+  });
+};
+
+export const sendDeletionCompleteEmail = (realm: Roster) => {
+  const to = [realm.technicalContactEmail!, realm.productOwnerEmail!].filter((email) => email);
+  if (!to.length) return;
+  return sendEmail({
+    to,
+    body: `
+        ${emailHeader}
+        <p>Hello Pathfinder SSO friend,</p>
+        <p>This is to inform you that ${realm.realm} Custom Realm has now been deleted.</p>
+        ${emailFooter}
+        `,
+    subject: `${subjectPrefix}Update: Custom realm ${realm.realm} has now been disabled.`,
   });
 };

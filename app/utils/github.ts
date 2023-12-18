@@ -26,6 +26,7 @@ const getMainBranch = async () => {
 export async function createCustomRealmPullRequest(
   realmName: string,
   envs: string[],
+  enabled: boolean = true,
 ): Promise<CreatePullRequestResponseType> {
   const mainBranch = await getMainBranch();
 
@@ -35,7 +36,8 @@ export async function createCustomRealmPullRequest(
     ref: `refs/heads/custom/${realmName}`,
     sha: mainBranch.data.commit.sha,
   });
-  const tfContent = generateCustomRealmTf(realmName, tf_module_gh_ref);
+  const tfContent = generateCustomRealmTf(realmName, tf_module_gh_ref, enabled);
+  const verb = enabled ? 'create' : 'disable';
 
   const tfBase64Encoded = Base64.encode(tfContent);
 
@@ -67,7 +69,7 @@ export async function createCustomRealmPullRequest(
     owner: tf_gh_org,
     repo: tf_gh_repo,
     tree: ghTree.data.sha,
-    message: `feat: create custom realm ${realmName}`,
+    message: `feat: ${verb} custom realm ${realmName}`,
     committer: {
       name: 'Pathfinder SSO Team',
       email: '88675972+Pathfinder-SSO-Team@users.noreply.github.com',
@@ -90,8 +92,8 @@ export async function createCustomRealmPullRequest(
   const pr = await octokit.rest.pulls.create({
     owner: tf_gh_org,
     repo: tf_gh_repo,
-    title: `feat: create custom realm ${realmName}`,
-    body: `Created through request created at realm registry for a custom realm ${realmName}`,
+    title: `feat: ${verb} custom realm ${realmName}`,
+    body: `${verb}d through request ${verb}d at realm registry for a custom realm ${realmName}`,
     head: `custom/${realmName}`,
     base: 'main',
   });

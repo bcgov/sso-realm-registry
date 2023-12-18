@@ -59,6 +59,9 @@ ADD COLUMN IF NOT EXISTS last_updated_by VARCHAR(50);
 ALTER TABLE public.rosters
 ADD COLUMN IF NOT EXISTS pr_number INTEGER;
 
+ALTER TABLE public.rosters
+ADD COLUMN IF NOT EXISTS archived BOOLEAN default FALSE;
+
 CREATE TABLE IF NOT EXISTS
     public.events (
         id serial NOT NULL,

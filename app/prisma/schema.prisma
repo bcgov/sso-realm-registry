@@ -34,6 +34,7 @@ model Roster {
   prNumber                         Int?      @map("pr_number")
   approved                         Boolean?  @map("approved")
   requestor                        String?   @map("requestor") @db.VarChar(100)
+  archived                         Boolean?  @map("archived")
   events                           Event[]
 
   @@map("rosters")

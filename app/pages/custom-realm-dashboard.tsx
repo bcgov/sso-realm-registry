@@ -67,6 +67,18 @@ const Table = styled.table`
         font-weight: bold;
       }
 
+      .delete-icon {
+        padding: 0.2em;
+      }
+
+      .delete-icon.disabled {
+        cursor: not-allowed;
+        color: grey;
+        &:hover {
+          color: grey;
+        }
+      }
+
       .delete-icon:hover {
         color: red;
       }
@@ -89,35 +101,36 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   const { setModalConfig } = useContext(ModalContext);
 
   // To Add once api in place
-  // const handleDeleteRequest = (id: number) => {
-  //   const handleConfirm = async () => {
-  //     const [, err] = await deleteRealmRequest(id);
-  //     if (err) {
-  //       return alert.show({
-  //         variant: 'danger',
-  //         fadeOut: 3500,
-  //         closable: true,
-  //         content: `Network error when deleting request id ${id}. Please try again.`,
-  //       });
-  //     }
-  //     alert.show({
-  //       fadeOut: 3500,
-  //       closable: true,
-  //       content: `Deleted request id ${id} successfully.`,
-  //     });
-  //     const remainingRealms = realmRequests.filter((realm) => realm.id !== id);
-  //     setRealmRequests(remainingRealms);
-  //     setSelectedRow(remainingRealms[0]);
-  //   };
-  //   setModalConfig({
-  //     show: true,
-  //     title: 'Delete Realm Request',
-  //     body: `Are you sure you want to delete request ${id}?`,
-  //     showCancelButton: true,
-  //     showConfirmButton: true,
-  //     onConfirm: handleConfirm,
-  //   });
-  // };
+  const handleDeleteRequest = (id: number) => {
+    const handleConfirm = async () => {
+      const [, err] = await deleteRealmRequest(id);
+      if (err) {
+        return alert.show({
+          variant: 'danger',
+          fadeOut: 3500,
+          closable: true,
+          content: `Network error when deleting request id ${id}. Please try again.`,
+        });
+      }
+      alert.show({
+        fadeOut: 3500,
+        closable: true,
+        content: `Deleted request id ${id} successfully.`,
+      });
+      const remainingRealms = realmRequests.filter((realm) => realm.id !== id);
+      setRealmRequests(remainingRealms);
+      setSelectedRow(remainingRealms[0]);
+    };
+
+    setModalConfig({
+      show: true,
+      title: 'Delete Custom Realm',
+      body: `Are you sure you want to delete this custom realm? Once you delete it, this realm name cannot be used again.`,
+      showCancelButton: true,
+      showConfirmButton: true,
+      onConfirm: handleConfirm,
+    });
+  };
 
   const handleRequestStatusChange = (approval: 'approved' | 'declined', realm: CustomRealmFormData) => {
     const realmId = realm.id;
@@ -190,16 +203,21 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
     }),
     columnHelper.display({
       header: 'Actions',
-      cell: (props) => (
-        <FontAwesomeIcon
-          // Include when deletion implemented
-          // onClick={() => handleDeleteRequest(props.row.getValue('id'))}
-          icon={faTrash}
-          className="delete-icon"
-          role="button"
-          data-testid="delete-btn"
-        />
-      ),
+      cell: (props) => {
+        const disabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
+        return (
+          <FontAwesomeIcon
+            onClick={() => {
+              if (!disabled) handleDeleteRequest(props.row.getValue('id'));
+            }}
+            icon={faTrash}
+            className={`delete-icon ${disabled ? 'disabled' : ''}`}
+            role="button"
+            data-testid="delete-btn"
+            title={disabled ? 'Only applied realms can be disabled' : 'Disable this realm'}
+          />
+        );
+      },
     }),
   ];
 
