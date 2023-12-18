@@ -95,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               );
             }),
           );
-          sendDeletionCompleteEmail(currentRequest);
+          await sendDeletionCompleteEmail(currentRequest);
         } else if (success && action === ActionEnum.TF_APPLY) {
           const currentRequest = await prisma.roster.findUnique({
             where: {
