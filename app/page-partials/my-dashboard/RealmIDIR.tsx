@@ -32,7 +32,12 @@ const NeedHelp = () => {
     <BottomSection>
       <Italic>
         Need help? Message us on the{' '}
-        <a href="https://chat.developer.gov.bc.ca/channel/sso" target="_blank" title="Rocket Chat">
+        <a
+          href="https://chat.developer.gov.bc.ca/channel/sso"
+          target="_blank"
+          title="Rocket Chat"
+          rel="noreferrer noopener"
+        >
           #SSO channel
         </a>{' '}
         or{' '}
@@ -87,9 +92,7 @@ function RealmIDIR({ realm }: Props) {
 
     setOpenDelete(false);
   };
-
   let bottomSection = null;
-  console.log(result);
   if (result.result === 'notfound') {
     bottomSection = (
       <>
@@ -166,7 +169,7 @@ function RealmIDIR({ realm }: Props) {
           </p>
           <ul>
             {result.affected.map((realmName) => (
-              <li>
+              <li key={realmName}>
                 <Link
                   href={`https://dev.loginproxy.gov.bc.ca/auth/admin/${realmName}/console`}
                   external

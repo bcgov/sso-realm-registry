@@ -57,6 +57,9 @@ spec:
             export GH_API_TOKEN="{{ .Data.data.GH_API_TOKEN }}"
             export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?schema=public"
             export IDIR_REQUESTOR_USER_GUID="{{ .Data.data.IDIR_REQUESTOR_USER_GUID }}"
+            export MS_GRAPH_API_AUTHORITY="{{ .Data.data.MS_GRAPH_API_AUTHORITY }}"
+            export MS_GRAPH_API_CLIENT_ID="{{ .Data.data.MS_GRAPH_API_CLIENT_ID }}"
+            export MS_GRAPH_API_CLIENT_SECRET="{{ .Data.data.MS_GRAPH_API_CLIENT_SECRET }}"
           {{- end }}`}}
     spec:
       initContainers:

@@ -10,6 +10,8 @@ import InfoPopover from 'components/InfoPopover';
 import { Ministry } from 'types/realm-profile';
 import * as yup from 'yup';
 import kebabCase from 'lodash.kebabcase';
+import AsyncSelect from 'react-select/async';
+import { getIdirUserId, getIdirUsersByEmail } from 'services/azure';
 
 const SForm = styled.form<{ collapse: boolean }>`
   display: grid;
@@ -208,6 +210,30 @@ export default function RealmForm({
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [divisions, setDivisions] = useState<string[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
+
+  const fuzzySearchIdirUsersByEmail = async (email: string) => {
+    if (email.length > 2) {
+      const [data] = await getIdirUsersByEmail(email);
+      const options = data?.map((u) => {
+        return {
+          value: u.id,
+          label: u.mail,
+        };
+      });
+      return new Promise<any>((resolve) => {
+        resolve(options);
+      });
+    }
+  };
+
+  const handleFormSelectChange = async (e: any, selectorName: string, dependentInput: string) => {
+    let idirUserId: string | null = '';
+    if (e?.value) {
+      [idirUserId] = await getIdirUserId(e?.value);
+      if (idirUserId) setFormErrors({ ...formErrors, [selectorName]: false, [dependentInput]: false });
+    }
+    setFormData({ ...formData, [selectorName]: e?.label || '', [dependentInput]: idirUserId || '' });
+  };
 
   const handleFormInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormErrors({ ...formErrors, [e.target.name]: false });
@@ -502,14 +528,21 @@ export default function RealmForm({
           <label htmlFor="product-owner-email-input" className="required">
             Product owner&apos;s email
           </label>
-          <input
-            required
+          <AsyncSelect
             id="product-owner-email-input"
             name="productOwnerEmail"
-            value={formData.productOwnerEmail}
-            onChange={handleFormInputChange}
-            disabled={!schemaFields.includes('productOwnerEmail')}
+            loadOptions={fuzzySearchIdirUsersByEmail}
+            onChange={(e: any) => handleFormSelectChange(e, 'productOwnerEmail', 'productOwnerIdirUserId')}
+            isClearable
+            noOptionsMessage={() => 'Start typing email...'}
+            defaultValue={() => {
+              if (formData.productOwnerEmail) return { label: formData.productOwnerEmail };
+            }}
+            className="product-owner-email"
+            classNamePrefix="product-owner-email"
+            isDisabled={!schemaFields.includes('productOwnerEmail')}
           />
+
           {formErrors.productOwnerEmail && <p className="error-message">{requiredEmailMessage}</p>}
         </div>
 
@@ -523,7 +556,7 @@ export default function RealmForm({
             name="productOwnerIdirUserId"
             value={formData.productOwnerIdirUserId}
             onChange={handleFormInputChange}
-            disabled={!schemaFields.includes('productOwnerIdirUserId')}
+            disabled
           />
           {formErrors.productOwnerIdirUserId && <p className="error-message">{twoCharactersRequiredMessage}</p>}
         </div>
@@ -532,14 +565,20 @@ export default function RealmForm({
           <label htmlFor="technical-contact-email-input" className="required">
             Technical contact&apos;s email
           </label>
-          <input
-            required
-            data-testid="tech-contact-email"
+          <AsyncSelect
             id="technical-contact-email-input"
             name="technicalContactEmail"
-            value={formData.technicalContactEmail}
-            onChange={handleFormInputChange}
+            loadOptions={fuzzySearchIdirUsersByEmail}
+            onChange={(e: any) => handleFormSelectChange(e, 'technicalContactEmail', 'technicalContactIdirUserId')}
+            isClearable
+            noOptionsMessage={() => 'Start typing email...'}
+            defaultValue={() => {
+              if (formData.technicalContactEmail) return { label: formData.technicalContactEmail };
+            }}
+            className="technical-contact-email"
+            classNamePrefix="technical-contact-email"
           />
+
           {formErrors.technicalContactEmail && <p className="error-message">{requiredEmailMessage}</p>}
         </div>
 
@@ -554,19 +593,30 @@ export default function RealmForm({
             name="technicalContactIdirUserId"
             value={formData.technicalContactIdirUserId}
             onChange={handleFormInputChange}
+            disabled
           />
           {formErrors.technicalContactIdirUserId && <p className="error-message">{twoCharactersRequiredMessage}</p>}
         </div>
 
         <div className="input-wrapper first-col">
           <label htmlFor="secondary-contact-email-input">Secondary technical contact&apos;s email</label>
-          <input
-            required
+          <AsyncSelect
             id="secondary-contact-email-input"
             name="secondTechnicalContactEmail"
-            value={formData.secondTechnicalContactEmail}
-            onChange={handleFormInputChange}
+            loadOptions={fuzzySearchIdirUsersByEmail}
+            onChange={(e: any) =>
+              handleFormSelectChange(e, 'secondTechnicalContactEmail', 'secondTechnicalContactIdirUserId')
+            }
+            isMulti={false}
+            isClearable
+            noOptionsMessage={() => 'Start typing email...'}
+            defaultValue={() => {
+              if (formData.secondTechnicalContactEmail) return { label: formData.secondTechnicalContactEmail };
+            }}
+            className="secondary-contact-email"
+            classNamePrefix="secondary-contact-email"
           />
+
           {formErrors.secondTechnicalContactEmail && <p className="error-message">{requiredEmailMessage}</p>}
         </div>
 
@@ -575,9 +625,11 @@ export default function RealmForm({
           <input
             required
             id="secondary-contact-idir-input"
+            data-testid="secondary-contact-idir"
             name="secondTechnicalContactIdirUserId"
             value={formData.secondTechnicalContactIdirUserId}
             onChange={handleFormInputChange}
+            disabled
           />
           {formErrors.secondTechnicalContactIdirUserId && <p className="error-message">{requiredMessage}</p>}
         </div>

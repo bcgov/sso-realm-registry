@@ -61,7 +61,7 @@ describe('Form Validation', () => {
     jest.clearAllMocks();
   });
 
-  const getFormInputs = async () => {
+  const getFormInputs = async (container: HTMLElement) => {
     const realmNameInput = (await screen.findByLabelText('Custom Realm name', { exact: false })) as HTMLInputElement;
     const productNameInput = (await screen.findByLabelText('Product Name', { exact: false })) as HTMLInputElement;
     const ministryInput = (await screen.findByLabelText('Ministry', { exact: false })) as HTMLInputElement;
@@ -74,18 +74,23 @@ describe('Form Validation', () => {
     const environmentsInput = (await screen.findByText('Select all applicable environments', { exact: false })).closest(
       'fieldset',
     ) as HTMLFieldSetElement;
-    const poEmailInput = (await screen.findByLabelText("Product owner's email", { exact: false })) as HTMLInputElement;
+    //const poEmailInput = (await screen.findByLabelText("Product owner's email", { exact: false })) as HTMLInputElement;
+    const poEmailInput = container.querySelector('input.product-owner-email__input') as HTMLInputElement;
     const poIdirInput = (await screen.findByLabelText("Product owner's IDIR", { exact: false })) as HTMLInputElement;
-    const techContactEmailInput = (await screen.findByTestId('tech-contact-email', {
+    // const techContactEmailInput = (await screen.findByTestId('tech-contact-email', {
+    //   exact: false,
+    // })) as HTMLInputElement;
+    const techContactEmailInput = container.querySelector('input.technical-contact-email__input') as HTMLInputElement;
+    const techContactIdirInput = (await screen.findByTestId('tech-contact-idir', {
       exact: false,
     })) as HTMLInputElement;
-    const techContactIdirInput = (await screen.findByTestId('tech-contact-email', {
-      exact: false,
-    })) as HTMLInputElement;
-    const secondTechContactEmailInput = (await screen.findByLabelText("Secondary technical contact's email", {
-      exact: false,
-    })) as HTMLInputElement;
-    const secondTechContactIdirInput = (await screen.findByLabelText("Secondary technical contact's idir", {
+    // const secondTechContactEmailInput = (await screen.findByLabelText("Secondary technical contact's email", {
+    //   exact: false,
+    // })) as HTMLInputElement;
+    const secondTechContactEmailInput = container.querySelector(
+      'input.secondary-contact-email__input',
+    ) as HTMLInputElement;
+    const secondTechContactIdirInput = (await screen.findByTestId('secondary-contact-idir', {
       exact: false,
     })) as HTMLInputElement;
     return {
@@ -107,12 +112,12 @@ describe('Form Validation', () => {
   };
 
   it('Enables/disables expected fields for a technical contact', async () => {
-    render(<MyDashboard />);
+    const { container } = render(<MyDashboard />);
     const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
     const firstRowEditButton = within(firstRow).getByText('Edit');
     firstRowEditButton.click();
 
-    const inputs = await getFormInputs();
+    const inputs = await getFormInputs(container);
 
     expect(inputs.realmNameInput.disabled).toBe(true);
     expect(inputs.productNameInput.disabled).toBe(true);
@@ -122,12 +127,12 @@ describe('Form Validation', () => {
     expect(inputs.realmPurposeInput.disabled).toBe(true);
     expect(inputs.primaryEndUserInput.disabled).toBe(true);
     expect(inputs.environmentsInput.disabled).toBe(true);
-    expect(inputs.poEmailInput.disabled).toBe(true);
+    expect(inputs.poEmailInput!.disabled).toBe(true);
     expect(inputs.poIdirInput.disabled).toBe(true);
-    expect(inputs.techContactEmailInput.disabled).toBe(false);
-    expect(inputs.techContactIdirInput.disabled).toBe(false);
-    expect(inputs.secondTechContactEmailInput.disabled).toBe(false);
-    expect(inputs.secondTechContactIdirInput.disabled).toBe(false);
+    expect(inputs.techContactEmailInput!.disabled).toBe(false);
+    expect(inputs.techContactIdirInput.disabled).toBe(true);
+    expect(inputs.secondTechContactEmailInput!.disabled).toBe(false);
+    expect(inputs.secondTechContactIdirInput.disabled).toBe(true);
 
     expect(screen.queryByTestId('rc-channel-input', { exact: false })).toBeNull();
     expect(screen.queryByTestId('rc-channel-owner-input', { exact: false })).toBeNull();
@@ -142,12 +147,12 @@ describe('Form Validation', () => {
         user: { idir_username: PRODUCT_OWNER_IDIR_USERID },
       },
     }));
-    render(<MyDashboard />);
+    const { container } = render(<MyDashboard />);
     const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
     const firstRowEditButton = within(firstRow).getByText('Edit');
     firstRowEditButton.click();
 
-    const inputs = await getFormInputs();
+    const inputs = await getFormInputs(container);
 
     expect(inputs.realmNameInput.disabled).toBe(true);
     expect(inputs.productNameInput.disabled).toBe(false);
@@ -157,12 +162,12 @@ describe('Form Validation', () => {
     expect(inputs.realmPurposeInput.disabled).toBe(false);
     expect(inputs.primaryEndUserInput.disabled).toBe(false);
     expect(inputs.environmentsInput.disabled).toBe(true);
-    expect(inputs.poEmailInput.disabled).toBe(false);
-    expect(inputs.poIdirInput.disabled).toBe(false);
-    expect(inputs.techContactEmailInput.disabled).toBe(false);
-    expect(inputs.techContactIdirInput.disabled).toBe(false);
-    expect(inputs.secondTechContactEmailInput.disabled).toBe(false);
-    expect(inputs.secondTechContactIdirInput.disabled).toBe(false);
+    expect(inputs.poEmailInput!.disabled).toBe(false);
+    expect(inputs.poIdirInput.disabled).toBe(true);
+    expect(inputs.techContactEmailInput!.disabled).toBe(false);
+    expect(inputs.techContactIdirInput.disabled).toBe(true);
+    expect(inputs.secondTechContactEmailInput!.disabled).toBe(false);
+    expect(inputs.secondTechContactIdirInput.disabled).toBe(true);
 
     expect(screen.queryByTestId('rc-channel-input', { exact: false })).toBeNull();
     expect(screen.queryByTestId('rc-channel-owner-input', { exact: false })).toBeNull();
@@ -177,12 +182,12 @@ describe('Form Validation', () => {
         user: { idir_username: PRODUCT_OWNER_IDIR_USERID, client_roles: 'sso-admin' },
       },
     }));
-    render(<MyDashboard />);
+    const { container } = render(<MyDashboard />);
     const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
     const firstRowEditButton = within(firstRow).getByText('Edit');
     firstRowEditButton.click();
 
-    const inputs = await getFormInputs();
+    const inputs = await getFormInputs(container);
 
     expect(inputs.realmNameInput.disabled).toBe(true);
     expect(inputs.productNameInput.disabled).toBe(false);
@@ -192,12 +197,12 @@ describe('Form Validation', () => {
     expect(inputs.realmPurposeInput.disabled).toBe(false);
     expect(inputs.primaryEndUserInput.disabled).toBe(false);
     expect(inputs.environmentsInput.disabled).toBe(true);
-    expect(inputs.poEmailInput.disabled).toBe(false);
-    expect(inputs.poIdirInput.disabled).toBe(false);
-    expect(inputs.techContactEmailInput.disabled).toBe(false);
-    expect(inputs.techContactIdirInput.disabled).toBe(false);
-    expect(inputs.secondTechContactEmailInput.disabled).toBe(false);
-    expect(inputs.secondTechContactIdirInput.disabled).toBe(false);
+    expect(inputs.poEmailInput!.disabled).toBe(false);
+    expect(inputs.poIdirInput.disabled).toBe(true);
+    expect(inputs.techContactEmailInput!.disabled).toBe(false);
+    expect(inputs.techContactIdirInput.disabled).toBe(true);
+    expect(inputs.secondTechContactEmailInput!.disabled).toBe(false);
+    expect(inputs.secondTechContactIdirInput.disabled).toBe(true);
 
     expect(screen.queryByTestId('rc-channel-input', { exact: false })).not.toBeNull();
     expect(screen.queryByTestId('rc-channel-owner-input', { exact: false })).not.toBeNull();
