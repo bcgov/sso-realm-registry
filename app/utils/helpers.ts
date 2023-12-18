@@ -50,7 +50,7 @@ export const createEvent = async (data: any) => {
   try {
     await prisma.event.create({ data });
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
 };
 

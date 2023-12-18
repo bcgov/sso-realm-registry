@@ -14,7 +14,6 @@ interface Props {
 }
 
 function RealmURIs({ realm }: Props) {
-  console.log(realm);
   return (
     <>
       <Title>Development</Title>

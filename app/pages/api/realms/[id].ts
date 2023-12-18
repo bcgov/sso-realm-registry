@@ -77,6 +77,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       let updatedRealm: any;
       let updatingApprovalStatus = false;
 
+      const omitFieldsBeforeApplied = [
+        'productOwnerEmail',
+        'productOwnerIdirUserId',
+        'technicalContactIdirUserId',
+        'technicalContactEmail',
+        'secondTechnicalContactEmail',
+        'secondTechnicalContactIdirUserId',
+      ];
+
       try {
         const lastUpdatedBy = `${session.user.family_name}, ${session.user.given_name}`;
 
@@ -94,8 +103,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
         if (!currentRequest) {
           return res.status(400).json({ success: false, error: 'Invalid request' });
-        } else if (currentRequest.status !== StatusEnum.PENDING && updateRequest.approved) {
-          return res.status(400).json({ success: false, error: 'Request is in invalid stage' });
         }
 
         isPO = username.toLowerCase() === currentRequest.productOwnerIdirUserId?.toLowerCase();
@@ -113,6 +120,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         }
 
         if (isAdmin) {
+          // when request is pending and gets approved
           if (
             currentRequest.status === StatusEnum.PENDING &&
             String(updateRequest.approved) === 'true' &&
@@ -135,6 +143,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             updateRequest.prNumber = prResponse.data.number;
             updateRequest.status = updateRequest.prNumber ? StatusEnum.PRSUCCESS : StatusEnum.PRFAILED;
             updateRequest.approved = true;
+
+            // when request is pending and gets rejected
           } else if (
             currentRequest.status === StatusEnum.PENDING &&
             String(updateRequest.approved) === 'false' &&
@@ -148,6 +158,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               details: req.body,
             });
             updateRequest.approved = false;
+          }
+
+          if (currentRequest.status !== StatusEnum.PENDING) {
+            updateRequest = omit(updateRequest, ['approved']);
           }
 
           updatedRealm = await prisma.roster.update({
@@ -273,6 +287,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       });
       sendDeleteEmail(realm, session);
       res.status(200).send('Success');
+    } else {
+      return res.status(404).json({ success: false, error: 'not found' });
     }
   } catch (err: any) {
     console.error(err);

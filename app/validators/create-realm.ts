@@ -6,11 +6,6 @@ export enum ActionEnum {
   TF_APPLY = 'tf_apply',
 }
 
-export enum StatusEnum {
-  UNAPPROVED = 'unapproved',
-  DECLINED = 'declined',
-}
-
 export enum LoginIDPEnum {
   IDIR = 'idir',
   AZUREIDIR = 'azureidir',
