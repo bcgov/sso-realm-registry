@@ -1,12 +1,12 @@
 import styled from 'styled-components';
 import React, { useEffect, useState } from 'react';
-import { CustomRealmFormData } from 'types/realm-profile';
 import { faCircleCheck, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '@button-inc/bcgov-theme/Button';
 import { getRealmEvents } from 'services/events';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { Event } from 'types/event';
+import { RealmProfile } from 'types/realm-profile';
 
 const Tabs = styled.ul`
   display: flex;
@@ -79,7 +79,7 @@ const realmCreatingStatuses = ['pending', 'prSuccess', 'planned'];
 /**
  * Return an object with formatted key values to display the details
  */
-const formatRealmData = (realm?: CustomRealmFormData) => {
+const formatRealmData = (realm?: RealmProfile) => {
   if (!realm) return null;
 
   return {
@@ -97,7 +97,7 @@ const formatRealmData = (realm?: CustomRealmFormData) => {
 };
 
 interface Props {
-  selectedRow: CustomRealmFormData;
+  selectedRow: RealmProfile;
   lastUpdateTime: Date;
 }
 
@@ -136,7 +136,7 @@ function ApprovalList({ selectedRow, lastUpdateTime }: Props) {
 const tabs = ['Details', 'Access Request', 'Events'];
 
 interface CRTProps extends Props {
-  handleRequestStatusChange: (status: 'approved' | 'declined', row: CustomRealmFormData) => void;
+  handleRequestStatusChange: (status: 'approved' | 'declined', row: RealmProfile) => void;
   alert: BottomAlert;
 }
 
