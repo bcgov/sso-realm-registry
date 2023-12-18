@@ -196,7 +196,7 @@ describe('Github Actions Delete', () => {
 
     // PO email and technical contact email removed in each realm
     ['dev', 'test', 'prod'].forEach((env) => {
-      expect(removeUserAsRealmAdmin).toHaveBeenCalledWith(['po', 'd@e.com'], env, 'realm 1');
+      expect(removeUserAsRealmAdmin).toHaveBeenCalledWith(['a@b.com', 'b@c.com'], env, 'realm 1');
     });
     // No extra calls
     expect(removeUserAsRealmAdmin).toHaveBeenCalledTimes(3);
