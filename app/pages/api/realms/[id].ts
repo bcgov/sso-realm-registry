@@ -12,7 +12,7 @@ import {
   mergePullRequest,
 } from 'utils/github';
 import omit from 'lodash.omit';
-import { sendDeleteEmail, sendUpdateEmail } from 'utils/mailer';
+import { sendDeleteEmail, sendReadyToUseEmail, sendUpdateEmail } from 'utils/mailer';
 
 interface ErrorData {
   success: boolean;
@@ -212,9 +212,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           details: getUpdatedProperties(currentRequest, updatedRealm),
         });
         updatedRealm = !isAdmin ? omit(updatedRealm, adminOnlyFields) : updatedRealm;
+
         sendUpdateEmail(updatedRealm, session, updatingApprovalStatus).catch((err) =>
           console.error(`Error sending email for ${updatedRealm.realm}`, err),
         );
+
         return res.send(updatedRealm);
       } catch (err) {
         await createEvent({

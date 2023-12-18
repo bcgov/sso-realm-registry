@@ -3,6 +3,7 @@ import getConfig from 'next/config';
 import { Session } from 'next-auth';
 import { RealmProfile } from 'types/realm-profile';
 import { Roster } from '@prisma/client';
+import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv } from './helpers';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { app_env } = serverRuntimeConfig;
@@ -122,50 +123,53 @@ const emailFooter = `
 </footer>
 `;
 
-export const sendUpdateEmail = (realm: RealmProfile, session: Session, updatingApprovalStatus: boolean) => {
-  let message: string = `<h2>Your Realm Registry has been updated.</h2>
-    <p>
-        <strong>Project name: </strong>${realm.realm}<br /><strong>Updated by: </strong>${session.user?.given_name} ${session.user?.family_name}
-    </p>`;
-  let subject = `${subjectPrefix}Realm Registry has been updated`;
+export const sendUpdateEmail = (realm: any, session: any, updatingApprovalStatus: boolean) => {
+  const prefix = app_env === 'development' ? '[DEV] ' : '';
+  let message: string = `
+              <main>
+                  <p>The information for your Custom Realm has been successfully updated within our Realm Registry.</p>
+                  <p><strong>Realm: </strong>${realm.realm}<br /><strong>Updated by: </strong>${session.user?.given_name} ${session.user?.family_name}</p>
+              </main>`;
+  let subject = `${prefix}Notification: Realm ${realm.realm} Information Updated in Realm Registry`;
 
   if (updatingApprovalStatus && realm.approved === true) {
     message = `
-        <p>This custom realm request has been approved and is under processing. Please wait up to 24 hours to get an update from us.</p>
-        `;
-    subject = `${subjectPrefix}Update: Custom Realm Request is in process`;
+          <main>
+              <p>We're pleased to inform you that your request for the Custom Realm ${realm.realm} has been approved and is currently being processed. Kindly anticipate an update from us within the next 24 hours.</p>
+          </main>`;
+    subject = `${prefix}Important: Your request for Custom Realm ${realm.realm} has been Approved`;
   } else if (updatingApprovalStatus && realm.approved === false) {
     message = `
-        <p>An SSO team member will be in touch with you to explain why this was declined.</p>
-        `;
-    subject = `${subjectPrefix}Update: Custom Realm Request has been declined`;
+              <main>
+                  <p>We regret to inform you that your request for the Custom Realm ${realm.realm} has been declined. A member of our SSO team will reach out to you shortly to provide further details on the reasons behind this decision.</p>
+              </main>
+              `;
+    subject = `${prefix}Important: Your request for Custom Realm ${realm.realm} has been Declined`;
   }
 
   return sendEmail({
     to: [realm.technicalContactEmail, realm.productOwnerEmail],
     body: `
-        ${emailHeader}
-        ${message}
-        ${emailFooter}
-    `,
+          ${emailHeader}
+          ${message}
+          ${emailFooter}
+      `,
     subject,
   });
 };
 
 export const sendCreateEmail = (realm: Roster) => {
+  const prefix = app_env === 'development' ? '[DEV] ' : '';
   return sendEmail({
     to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
     body: `
-    ${emailHeader}
-      <main style="padding: 0 30px;">
-          <p>We have received your request for a Custom Realm. Please be assured that someone from our team is looking
-              into
-              your request and will reach out soon.</p>
-          <br />
-      </main>
-    ${emailFooter}
-    `,
-    subject: `${subjectPrefix}Realm Registry request received`,
+      ${emailHeader}
+        <main style="padding: 0 30px;">
+            <p>We've received a request for the Custom Realm <strong>${realm.realm}</strong>, submitted by ${realm.requestor}. Rest assured, our team is actively reviewing your request and will be in touch shortly.</p>
+        </main>
+      ${emailFooter}
+      `,
+    subject: `${prefix}Confirmation: Your Request for Custom Realm ${realm.realm} Has Been Received`,
   });
 };
 
@@ -197,5 +201,113 @@ export const sendDeletionCompleteEmail = (realm: Roster) => {
         ${emailFooter}
         `,
     subject: `${subjectPrefix}Notification: Custom Realm ${realm.realm} has now been Deleted.`,
+  });
+};
+
+export const sendReadyToUseEmail = (realm: Roster) => {
+  const prefix = app_env === 'development' ? '[DEV] ' : '';
+  const realmName = realm.realm!;
+  return sendEmail({
+    to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
+    body: `
+          ${emailHeader}
+            <main>
+            <p>Your custom realm <strong>${realm.realm}</strong> is ready to be accessed.</p>
+            <p>Please follow the instructions below to add Realm Admins:</p>
+            <ol>
+              <li>
+                <p>You are a Realm Admin: Please save these links URLs of your custom realm</p>
+                <ul>
+                  <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
+      'dev',
+      realmName,
+    )}</a></p></code></li>
+                  <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}"></a>${generateRealmLinksByEnv(
+      'test',
+      realmName,
+    )}</p></code></li>
+                  <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
+      'prod',
+      realmName,
+    )}</a></p></code></li>
+                </ul>
+              </li>
+              <li>
+                <p>You must have your identity provider configured. Please follow these <a href="https://stackoverflow.developer.gov.bc.ca/questions/864">instructions</a></strong></p>
+              </li>
+              <li>
+                <p> User friendly URLS and configure additional realm admins. To add yourself and others as realm admins via a user friendly url:</p>
+                <ol type="a">
+                  <li>
+                    <p>Log into your custom realm using below links so that you and other admins can be imported into the custom realm</p>
+                    <ul>
+                      <li>
+                      <p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
+      'dev',
+      realmName,
+    )}</a></code></p>
+                      </li>
+                      <li>
+                      <p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
+      'test',
+      realmName,
+    )}</a></code></p>
+                      </li>
+                      <li>
+                      <p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
+      'prod',
+      realmName,
+    )}</a></code></p>
+                      </li>
+                      </ul>
+                  </li>
+                  <li>
+                    <p>At this point you will see a <code>forbidden</code> message</p>
+                  </li>
+                  <li>
+                    <p>One of the existing Realm Admins will need to add the user that logged in to #1 above to the custom realm admin group via the <strong>master</strong> links</p>
+                    <ul>
+                      <li>
+                        <p><code><a href="${generateMasterRealmLinksByEnv(
+                          'dev',
+                          realmName,
+                        )}">${generateMasterRealmLinksByEnv('dev', realmName)}</a></code></p>
+                      </li>
+                      <li><p><code><a href="${generateMasterRealmLinksByEnv(
+                        'test',
+                        realmName,
+                      )}">${generateMasterRealmLinksByEnv('test', realmName)}</a></code></p></li>
+                      <li><p><code><a href="${generateMasterRealmLinksByEnv(
+                        'prod',
+                        realmName,
+                      )}">${generateMasterRealmLinksByEnv('prod', realmName)}</a></code></p></li>
+                    </ul>
+                  </li>
+                  <li>
+                    <p>Once you&rsquo;ve done this, you and your realm admins can access your realm via a more user friendly url</p>
+                    <p><span style="color: #ff0000;"><strong>PLEASE SAVE THIS USER FRIENDLY LINK</strong></span> as User Friendly Realm Admin Links</p>
+                    <ul>
+                      <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
+      'dev',
+      realmName,
+    )}</a></code></p></li>
+                      <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
+      'test',
+      realmName,
+    )}</a></code></p></li>
+                      <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
+      'prod',
+      realmName,
+    )}</a></code></p></li>
+                      </ul>
+                  </li>
+                </ol>
+              </li>
+            </ol>
+            <p>If you have any questions or require further assistance, feel free to reach out to us by Rocket.Chat or email at: <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a></p>
+            </main>
+          ${emailFooter}
+          `,
+    subject: `${prefix}Important: Custom Realm ${realmName} Created and Action Required for Realm Admin Configuration`,
   });
 };
