@@ -12,7 +12,7 @@ import {
   mergePullRequest,
 } from 'utils/github';
 import omit from 'lodash.omit';
-import { sendUpdateEmail } from 'utils/mailer';
+import { sendDeleteEmail, sendUpdateEmail } from 'utils/mailer';
 
 interface ErrorData {
   success: boolean;
@@ -22,7 +22,7 @@ interface ErrorData {
 type Data = ErrorData | string;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
-  let username;
+  let username: string;
   let currentRequest;
   try {
     const session = await getServerSession(req, res, authOptions);
@@ -226,6 +226,67 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         console.error(err);
         return res.status(500).json({ success: false, error: 'update failed' });
       }
+    } else if (req.method === 'DELETE') {
+      const { id } = req.query;
+      if (!isAdmin) return res.status(401).send('Unauthorized');
+
+      const realm = await prisma.roster.findUnique({
+        where: {
+          id: parseInt(id as string, 10),
+          archived: false,
+        },
+      });
+
+      if (!realm) return res.status(404).send('Not found');
+
+      const prResponse: CreatePullRequestResponseType | null = await createCustomRealmPullRequest(
+        realm.realm!,
+        realm.environments,
+        false,
+      ).catch((err) => {
+        console.error(`Error creating pr for realm id ${id}: ${err}`);
+        return null;
+      });
+
+      const failPR = () => {
+        return Promise.all([
+          prisma.roster.update({ data: { status: StatusEnum.PRFAILED }, where: { id: parseInt(id as string, 10) } }),
+          createEvent({
+            realmId: parseInt(req.query.id as string, 10),
+            eventCode: EventEnum.REQUEST_DELETE_FAILED,
+            idirUserId: username,
+          }),
+        ]);
+      };
+
+      if (!prResponse?.data.number) {
+        console.info(`PR Failed for deletion of realm id ${id}`);
+        // Intentionally not awaiting since 500 already, handling error async
+        failPR().catch((err) => console.error(err));
+        return res.status(500).send('Unexpected error removing request. Please try again.');
+      }
+
+      const pr = await mergePullRequest(prResponse.data.number);
+      if (!pr.data.merged) {
+        console.info(`Failed to merge pull request for realm id ${id}`);
+        failPR().catch((err) => console.error(err));
+        return res.status(500).send('Unexpected error removing request. Please try again.');
+      }
+
+      await deleteBranch(realm.realm!);
+
+      prisma.roster.update({
+        data: {
+          archived: true,
+          prNumber: prResponse.data.number,
+          status: StatusEnum.PRSUCCESS,
+        },
+        where: {
+          id: parseInt(id as string, 10),
+        },
+      });
+      sendDeleteEmail(realm, session);
+      res.status(200).send('Success');
     } else {
       return res.status(404).json({ success: false, error: 'not found' });
     }

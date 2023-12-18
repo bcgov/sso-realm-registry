@@ -44,7 +44,7 @@ export const submitRealmRequest = async (realmInfo: CustomRealmFormData) => {
 
 export const deleteRealmRequest = async (realmId: number) => {
   try {
-    const result = await instance.delete(`realms/request/${realmId}`).then((res) => res.data);
+    const result = await instance.delete(`realms/${realmId}`).then((res) => res.data);
     return [result, null];
   } catch (err: any) {
     console.error(err);
