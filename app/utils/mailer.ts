@@ -46,6 +46,7 @@ const emailHeader = `
     </svg>
 </div>
 </header>
+<p>Hello Pathfinder SSO friend,</p>
 `;
 
 const emailFooter = `
@@ -157,8 +158,6 @@ export const sendCreateEmail = (realm: RealmProfile) => {
     body: `
     ${emailHeader}
       <main style="padding: 0 30px;">
-          <p>Hello Pathfinder SSO friend,</p>
-          <br />
           <p>We have received your request for a Custom Realm. Please be assured that someone from our team is looking
               into
               your request and will reach out soon.</p>
@@ -180,7 +179,6 @@ export const sendDeleteEmail = (realm: Roster, session: Session) => {
     to,
     body: `
         ${emailHeader}
-        <p>Hello Pathfinder SSO friend,</p>
         <p>We have received a request from ${username} for the deletion of ${realm.realm} Custom Realm. It will be deleted at approximately ${githubActionTriggerHour} as per our automated processes. Please contact the SSO team ASAP if you have any concerns.</p>
         ${emailFooter}
         `,
@@ -195,7 +193,6 @@ export const sendDeletionCompleteEmail = (realm: Roster) => {
     to,
     body: `
         ${emailHeader}
-        <p>Hello Pathfinder SSO friend,</p>
         <p>This is to inform you that ${realm.realm} Custom Realm has now been deleted.</p>
         ${emailFooter}
         `,

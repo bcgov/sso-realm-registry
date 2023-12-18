@@ -113,6 +113,7 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
         });
       }
       alert.show({
+        variant: 'success',
         fadeOut: 3500,
         closable: true,
         content: `Deleted request id ${id} successfully.`,
