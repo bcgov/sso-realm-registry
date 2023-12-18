@@ -184,7 +184,7 @@ export const sendDeleteEmail = (realm: Roster, session: Session) => {
         <p>We have received a request from ${username} for the deletion of ${realm.realm} Custom Realm. It will be deleted at approximately ${githubActionTriggerHour} as per our automated processes. Please contact the SSO team ASAP if you have any concerns.</p>
         ${emailFooter}
         `,
-    subject: `${subjectPrefix}Update: Custom realm ${realm.realm} is in the process of being disabled.`,
+    subject: `${subjectPrefix}Important: Custom Realm ${realm.realm} is in the process of being Deleted.`,
   });
 };
 
@@ -199,6 +199,6 @@ export const sendDeletionCompleteEmail = (realm: Roster) => {
         <p>This is to inform you that ${realm.realm} Custom Realm has now been deleted.</p>
         ${emailFooter}
         `,
-    subject: `${subjectPrefix}Update: Custom realm ${realm.realm} has now been disabled.`,
+    subject: `${subjectPrefix}Notification: Custom Realm ${realm.realm} has now been Deleted.`,
   });
 };
