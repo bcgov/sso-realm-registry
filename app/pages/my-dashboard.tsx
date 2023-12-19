@@ -59,7 +59,7 @@ function MyDashboard() {
 
     async function fetchData() {
       setLoading(true);
-      const [data, err] = await getRealmProfiles();
+      const [data, err] = await getRealmProfiles(true);
       if (err) {
         setHasError(true);
       } else {
