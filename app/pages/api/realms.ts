@@ -18,14 +18,18 @@ interface ErrorData {
 
 type Data = ErrorData | string;
 
-export const getAllRealms = async (username: string, isAdmin: boolean) => {
+export const getAllRealms = async (username: string, isAdmin: boolean, excludeArchived: boolean = false) => {
   let rosters: any = null;
+  let baseWhereClause: { archived?: boolean } = {};
+  if (excludeArchived) baseWhereClause.archived = false;
 
   if (isAdmin) {
-    rosters = await prisma.roster.findMany();
+    rosters = await prisma.roster.findMany({ where: baseWhereClause, orderBy: { id: 'desc' } });
   } else {
     rosters = await prisma.roster.findMany({
+      orderBy: { id: 'desc' },
       where: {
+        ...baseWhereClause,
         OR: [
           {
             technicalContactIdirUserId: {
@@ -79,7 +83,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const isAdmin = checkAdminRole(session?.user);
 
     if (req.method === 'GET') {
-      const rosters = await getAllRealms(username, isAdmin);
+      const excludeArchived = req.query.excludeArchived === 'true';
+      const rosters = await getAllRealms(username, isAdmin, excludeArchived);
       res.send(rosters);
       return;
     } else if (req.method === 'POST') {

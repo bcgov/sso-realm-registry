@@ -1,8 +1,19 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { ChangeEvent, useContext, useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { getCoreRowModel, useReactTable, flexRender, createColumnHelper } from '@tanstack/react-table';
+import {
+  createColumnHelper,
+  SortingState,
+  useReactTable,
+  ColumnFiltersState,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  FilterFn,
+  flexRender,
+  Column,
+} from '@tanstack/react-table';
 import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faSort, faSortUp, faSortDown, faTrash, faFilter, faClose } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ModalContext } from 'context/modal';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
@@ -13,6 +24,7 @@ import { GetServerSidePropsContext } from 'next';
 import { checkAdminRole } from 'utils/helpers';
 import { getAllRealms } from 'pages/api/realms';
 import CustomRealmTabs from 'page-partials/custom-realm-dashboard/CustomRealmTabs';
+import { StatusEnum } from 'validators/create-realm';
 
 const Container = styled.div`
   padding: 2em;
@@ -33,6 +45,13 @@ const Table = styled.table`
       td,
       th {
         border-bottom: none;
+        vertical-align: top;
+      }
+      th > div.sortable {
+        svg {
+          padding-left: 0.2em;
+        }
+        cursor: pointer;
       }
     }
   }
@@ -86,21 +105,210 @@ const Table = styled.table`
   }
 `;
 
+const FilterBox = styled.div`
+  font-weight: normal;
+  box-sizing: border-box;
+  position: relative;
+  transition: max-height 0.3s;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  max-height: 0;
+  overflow: hidden;
+  background: white;
+  padding: 0 0.3em;
+  border-radius: 0.2em;
+  border-color: ${bgGrey};
+
+  &.show {
+    max-height: 300px;
+  }
+
+  .flex-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-box {
+    margin: 0.2em 0.1em;
+  }
+
+  .exit-icon {
+    padding: 0.2em;
+    cursor: pointer;
+  }
+`;
+
+// Filter Functions
+const listFilter: FilterFn<any> = (row, columnId, value) => {
+  return value.includes(row.getValue(columnId));
+};
+const searchFilter: FilterFn<any> = (row, columnId, value) => {
+  return (row.getValue(columnId) as string).includes(value);
+};
+
+// Filter Components
+function ApprovalFilter(props: { in: boolean; column: Column<any, any> }) {
+  const [showApproved, setShowApproved] = useState(true);
+  const [showDeclined, setShowDeclined] = useState(true);
+  const [showUndecided, setShowUndecided] = useState(true);
+
+  const updateFilters = (approve: boolean, decline: boolean, undecided: boolean) => {
+    const filters: (null | boolean)[] = [];
+    if (approve) filters.push(true);
+    if (decline) filters.push(false);
+    if (undecided) filters.push(null);
+    props.column.setFilterValue(filters);
+  };
+
+  return (
+    <FilterBox className={props.in ? 'show' : ''}>
+      <label className="flex-row" htmlFor="declined-checkbox">
+        <span>Declined</span>
+        <input
+          id="declined-checkbox"
+          type="checkbox"
+          name="declined"
+          checked={showDeclined}
+          onChange={() => {
+            updateFilters(showApproved, !showDeclined, showUndecided);
+            setShowDeclined(!showDeclined);
+          }}
+        />
+      </label>
+      <label className="flex-row" htmlFor="approved-checkbox">
+        <span>Approved</span>
+        <input
+          id="approved-checkbox"
+          type="checkbox"
+          name="approved"
+          checked={showApproved}
+          onChange={() => {
+            updateFilters(!showApproved, showDeclined, showUndecided);
+            setShowApproved(!showApproved);
+          }}
+        />
+      </label>
+      <label className="flex-row" htmlFor="undecided-checkbox">
+        <span>Undecided</span>
+        <input
+          id="undecided-checkbox"
+          type="checkbox"
+          name="undecided"
+          checked={showUndecided}
+          onChange={() => {
+            updateFilters(showApproved, showDeclined, !showUndecided);
+            setShowUndecided(!showUndecided);
+          }}
+        />
+      </label>
+    </FilterBox>
+  );
+}
+
+function StatusFilter(props: { in: boolean; column: Column<any, any> }) {
+  const allValues = Object.values(StatusEnum) as string[];
+  const [statusFilters, setStatusFilters] = useState(allValues);
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const newFilter = (event.target as HTMLInputElement).value;
+    if (statusFilters.includes(newFilter)) {
+      setStatusFilters(statusFilters.filter((value) => value !== newFilter));
+      props.column.setFilterValue(statusFilters.filter((value) => value !== newFilter));
+    } else {
+      setStatusFilters([...statusFilters, newFilter]);
+      props.column.setFilterValue([...statusFilters, newFilter]);
+    }
+  };
+
+  return (
+    <FilterBox className={props.in ? 'show' : ''}>
+      {allValues.map((val) => (
+        <label className="flex-row" key={val}>
+          <span>{val}</span>
+          <input type="checkbox" onChange={handleChange} checked={statusFilters.includes(val)} value={val} />
+        </label>
+      ))}
+    </FilterBox>
+  );
+}
+
+function RealmNameFilter(props: { in: boolean; column: Column<any, any> }) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const newVal = event.target.value;
+    props.column.setFilterValue(newVal);
+    setSearchTerm(newVal);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    props.column.setFilterValue('');
+  };
+
+  useEffect(() => {
+    if (props.in) document.getElementById('realm-name-search-box')?.focus();
+  }, [props.in]);
+
+  return (
+    <FilterBox className={props.in ? 'show' : ''}>
+      <label className="flex-col search-box">
+        <span>Search Realms:</span>
+        <div className="flex-row">
+          <input id="realm-name-search-box" onChange={handleChange} value={searchTerm} />
+          <FontAwesomeIcon icon={faClose} size="lg" className="exit-icon" onClick={clearSearch} title="Clear Search" />
+        </div>
+      </label>
+    </FilterBox>
+  );
+}
+
+function Filter(props: { column: Column<any, any> }) {
+  const [showFilters, setShowFilters] = useState(false);
+  let FilterComponent;
+  switch (props.column.id) {
+    case 'status':
+      FilterComponent = StatusFilter;
+      break;
+    case 'approved':
+      FilterComponent = ApprovalFilter;
+      break;
+    default:
+      FilterComponent = RealmNameFilter;
+  }
+  return (
+    <span>
+      <FontAwesomeIcon
+        icon={faFilter}
+        onClick={() => setShowFilters(!showFilters)}
+        title="Toggle Filter Display"
+        style={{ cursor: 'pointer' }}
+      />
+      <FilterComponent in={showFilters} column={props.column} />
+    </span>
+  );
+}
+
 const columnHelper = createColumnHelper<CustomRealmFormData>();
 interface Props {
   defaultRealmRequests: CustomRealmFormData[];
   alert: BottomAlert;
 }
-
 const realmCreatingStatuses = ['pending', 'prSuccess', 'planned'];
 
 function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>(defaultRealmRequests || []);
   const [selectedRow, setSelectedRow] = useState<CustomRealmFormData | undefined>(defaultRealmRequests[0]);
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const { setModalConfig } = useContext(ModalContext);
 
-  // To Add once api in place
   const handleDeleteRequest = (id: number) => {
     const handleConfirm = async () => {
       const [, err] = await deleteRealmRequest(id);
@@ -177,25 +385,37 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
     columnHelper.accessor('id', {
       header: () => 'Custom Realm ID',
       cell: (info) => info.getValue(),
+      enableColumnFilter: false,
     }),
     columnHelper.accessor('realm', {
       header: () => 'Custom Realm Name',
       cell: (info) => info.getValue(),
+      filterFn: searchFilter,
+      enableColumnFilter: true,
+      enableSorting: false,
     }),
     columnHelper.accessor('productOwnerEmail', {
       header: () => 'Product Owner',
+      enableColumnFilter: false,
       cell: (info) => info.renderValue(),
     }),
     columnHelper.accessor('technicalContactEmail', {
       header: () => 'Technical Contact',
+      enableColumnFilter: false,
       cell: (info) => info.renderValue(),
     }),
     columnHelper.accessor('status', {
       header: 'Request Status',
+      enableSorting: false,
       cell: (info) => info.renderValue(),
+      enableColumnFilter: true,
+      filterFn: listFilter,
     }),
     columnHelper.accessor('approved', {
       header: 'Approval Status',
+      enableSorting: false,
+      enableColumnFilter: true,
+      filterFn: listFilter,
       cell: (info) => {
         const approved = info.renderValue();
         if (approved === null) return 'Undecided';
@@ -204,6 +424,7 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
     }),
     columnHelper.display({
       header: 'Actions',
+      enableSorting: false,
       cell: (props) => {
         const disabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
         return (
@@ -225,12 +446,22 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   const table = useReactTable({
     data: realmRequests,
     columns,
+    onSortingChange: setSorting,
+    enableColumnFilters: true,
+    state: {
+      sorting,
+      columnFilters,
+    },
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    enableFilters: true,
+    getFilteredRowModel: getFilteredRowModel(),
   });
 
   const fetchRealms = async () => {
     // Intentionally not flashing error since this is a background fetch.
-    const [profiles, err] = await getRealmProfiles();
+    const [profiles, err] = await getRealmProfiles(true);
     if (profiles) {
       setLastUpdateTime(new Date());
       setRealmRequests(profiles);
@@ -265,7 +496,20 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th key={header.id}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  <div
+                    {...{
+                      className: header.column.getCanSort() ? 'sortable' : '',
+                      onClick: () => header.column.toggleSorting(),
+                    }}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.column.getCanSort() &&
+                      ({
+                        asc: <FontAwesomeIcon icon={faSortDown} />,
+                        desc: <FontAwesomeIcon icon={faSortUp} />,
+                      }[header.column.getIsSorted() as string] ?? <FontAwesomeIcon icon={faSort} />)}
+                    {header.column.getCanFilter() ? <Filter column={header.column} /> : null}
+                  </div>
                 </th>
               ))}
             </tr>
@@ -316,7 +560,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
   const isAdmin = checkAdminRole(session?.user);
 
   try {
-    const realms = await getAllRealms(username, isAdmin);
+    const realms = await getAllRealms(username, isAdmin, true);
     // Strip non-serializable dates
     const formattedRealms = realms.map((realm: ExtendedForm) => {
       const { createdAt, updatedAt, ...rest } = realm;
