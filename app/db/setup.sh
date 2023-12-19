@@ -6,6 +6,8 @@ else
     db="realm_registry"
 fi
 
-echo "SELECT 'CREATE DATABASE $db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$db')\gexec" | psql -U postgres -d postgres
+postgres_username=<<postgres_username>>
 
-psql -U postgres -d $db -f "../../helm/webapp/migration.sql" -qtA --set ON_ERROR_STOP=1
+echo "SELECT 'CREATE DATABASE $db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$db')\gexec" | psql -U $postgres_username -d postgres
+
+psql -U $postgres_username -d $db -f "../../helm/webapp/migration.sql" -qtA --set ON_ERROR_STOP=1

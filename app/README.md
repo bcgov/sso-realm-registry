@@ -6,16 +6,18 @@ In the app folder run:
 
 Run `make local-setup`
 
-In the folder `app/db/` run:
+Create the `.env` file from the `.env.example` file in the app folder.
+
+The values can be found in the project's non-prod vault file. The local database creds are username "postgres", password is the local password for your database.
+
+The CHES config can be changed. If you need to connect to the production CHES the config can be copied from the AWS dev environment variables for the sso-request lambda function.
+
+Update the '<postgres_username>' value with a local postgres username in the `app/db/setup.sh` file. In the folder `app/db/` run:
 
 ```
 pg_ctl start
 ./setup.sh
 ```
-
-Create the `.env` file from the `.env.example` file in the app folder.
-
-The values can be found in the project's non-prod vault file. The local database creds are username "postgres", password is the local password for your database.
 
 Then run the development server:
 
