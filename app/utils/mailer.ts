@@ -164,7 +164,7 @@ export const sendCreateEmail = (realm: Roster) => {
     to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
     body: `
       ${emailHeader}
-        <main style="padding: 0 30px;">
+        <main>
             <p>We've received a request for the Custom Realm <strong>${realm.realm}</strong>, submitted by ${realm.requestor}. Rest assured, our team is actively reviewing your request and will be in touch shortly.</p>
         </main>
       ${emailFooter}

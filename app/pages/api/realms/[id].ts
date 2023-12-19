@@ -12,7 +12,7 @@ import {
   mergePullRequest,
 } from 'utils/github';
 import omit from 'lodash.omit';
-import { sendDeleteEmail, sendReadyToUseEmail, sendUpdateEmail } from 'utils/mailer';
+import { sendDeleteEmail, sendUpdateEmail } from 'utils/mailer';
 
 interface ErrorData {
   success: boolean;
