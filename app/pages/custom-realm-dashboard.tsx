@@ -105,16 +105,6 @@ const Table = styled.table`
   }
 `;
 
-const columnHelper = createColumnHelper<CustomRealmFormData>();
-interface Props {
-  defaultRealmRequests: CustomRealmFormData[];
-  alert: BottomAlert;
-}
-
-const listFilter: FilterFn<any> = (row, columnId, value) => {
-  return value.includes(row.getValue(columnId));
-};
-
 const FilterBox = styled.div`
   font-weight: normal;
   box-sizing: border-box;
@@ -153,6 +143,15 @@ const FilterBox = styled.div`
   }
 `;
 
+// Filter Functions
+const listFilter: FilterFn<any> = (row, columnId, value) => {
+  return value.includes(row.getValue(columnId));
+};
+const searchFilter: FilterFn<any> = (row, columnId, value) => {
+  return (row.getValue(columnId) as string).includes(value);
+};
+
+// Filter Components
 function ApprovalFilter(props: { in: boolean; column: Column<any, any> }) {
   const [showApproved, setShowApproved] = useState(true);
   const [showDeclined, setShowDeclined] = useState(true);
@@ -295,10 +294,11 @@ function Filter(props: { column: Column<any, any> }) {
   );
 }
 
-const searchFilter: FilterFn<any> = (row, columnId, value) => {
-  return (row.getValue(columnId) as string).includes(value);
-};
-
+const columnHelper = createColumnHelper<CustomRealmFormData>();
+interface Props {
+  defaultRealmRequests: CustomRealmFormData[];
+  alert: BottomAlert;
+}
 const realmCreatingStatuses = ['pending', 'prSuccess', 'planned'];
 
 function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
