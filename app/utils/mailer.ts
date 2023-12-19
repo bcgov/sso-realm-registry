@@ -158,14 +158,15 @@ export const sendUpdateEmail = (realm: any, session: any, updatingApprovalStatus
   });
 };
 
-export const sendCreateEmail = (realm: Roster) => {
+export const sendCreateEmail = (realm: Roster, session: Session) => {
   const prefix = app_env === 'development' ? '[DEV] ' : '';
+  const username = `${session.user.given_name} ${session.user.family_name}`;
   return sendEmail({
     to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
     body: `
       ${emailHeader}
         <main>
-            <p>We've received a request for the Custom Realm <strong>${realm.realm}</strong>, submitted by ${realm.requestor}. Rest assured, our team is actively reviewing your request and will be in touch shortly.</p>
+            <p>We've received a request for the Custom Realm ${realm.realm}, submitted by ${username}. Rest assured, our team is actively reviewing your request and will be in touch shortly.</p>
         </main>
       ${emailFooter}
       `,
@@ -183,7 +184,7 @@ export const sendDeleteEmail = (realm: Roster, session: Session) => {
     to,
     body: `
         ${emailHeader}
-        <p>We have received a request from ${username} for the deletion of ${realm.realm} Custom Realm. It will be deleted at approximately ${githubActionTriggerHour} as per our automated processes. Please contact the SSO team ASAP if you have any concerns.</p>
+        <p>We have received a request from ${username} for the deletion of Custom Realm ${realm.realm} . It will be deleted at approximately ${githubActionTriggerHour} as per our automated processes. Please contact the SSO team ASAP if you have any concerns.</p>
         ${emailFooter}
         `,
     subject: `${subjectPrefix}Important: Custom Realm ${realm.realm} is in the process of being Deleted.`,
@@ -197,7 +198,7 @@ export const sendDeletionCompleteEmail = (realm: Roster) => {
     to,
     body: `
         ${emailHeader}
-        <p>This is to inform you that ${realm.realm} Custom Realm has now been deleted.</p>
+        <p>This is to inform you that Custom Realm ${realm.realm} has now been deleted.</p>
         ${emailFooter}
         `,
     subject: `${subjectPrefix}Notification: Custom Realm ${realm.realm} has now been Deleted.`,
@@ -212,7 +213,7 @@ export const sendReadyToUseEmail = (realm: Roster) => {
     body: `
           ${emailHeader}
             <main>
-            <p>Your custom realm <strong>${realm.realm}</strong> is ready to be accessed.</p>
+            <p>Your custom realm ${realm.realm} is ready to be accessed.</p>
             <p>Please follow the instructions below to add Realm Admins:</p>
             <ol>
               <li>
