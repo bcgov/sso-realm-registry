@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext } from 'react';
 import Head from 'next/head';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import styled from 'styled-components';
@@ -15,6 +15,8 @@ import { getRealmProfiles } from 'services/realm';
 import { getSurvey } from 'services/survey';
 import { useSession } from 'next-auth/react';
 import { User } from 'next-auth';
+import getConfig from 'next/config';
+import { InferGetServerSidePropsType } from 'next';
 
 const AlignCenter = styled.div`
   text-align: center;
@@ -38,7 +40,9 @@ const mediaRules: MediaRule[] = [
   },
 ];
 
-function MyDashboard() {
+export const DomainsContext = createContext({ dev: '', test: '', prod: '' });
+
+function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { data } = useSession();
   const currentUser: Partial<User> = data?.user!;
   const [loading, setLoading] = useState<boolean>(false);
@@ -132,13 +136,15 @@ function MyDashboard() {
               </Grid.Col>
               {selectedId && (
                 <Grid.Col span={4}>
-                  <RealmRightPanel
-                    key={new Date().getTime()}
-                    realm={realms.find((v) => String(v.id) === selectedId) as RealmProfile}
-                    currentUser={currentUser}
-                    onUpdate={handleUpdate}
-                    onCancel={handleCancel}
-                  />
+                  <DomainsContext.Provider value={props.domains}>
+                    <RealmRightPanel
+                      key={new Date().getTime()}
+                      realm={realms.find((v) => String(v.id) === selectedId) as RealmProfile}
+                      currentUser={currentUser}
+                      onUpdate={handleUpdate}
+                      onCancel={handleCancel}
+                    />
+                  </DomainsContext.Provider>
                 </Grid.Col>
               )}
             </Grid.Row>
@@ -151,3 +157,19 @@ function MyDashboard() {
 }
 
 export default MyDashboard;
+
+export const getServerSideProps = async () => {
+  const { serverRuntimeConfig } = getConfig();
+
+  const domains = {
+    dev: serverRuntimeConfig.dev_kc_url,
+    test: serverRuntimeConfig.test_kc_url,
+    prod: serverRuntimeConfig.prod_kc_url,
+  };
+
+  return {
+    props: {
+      domains,
+    },
+  };
+};
