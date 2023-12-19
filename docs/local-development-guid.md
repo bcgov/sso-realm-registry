@@ -6,7 +6,7 @@ Run through the steps in [developer guide](./developer-guide.md)
 
 ## How to run the project locally
 
-**TO DO**
+The local development commands can be found in the [app README](../app/README.md)
 
 ## Building and deploying test images.
 

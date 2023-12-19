@@ -2,7 +2,22 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-First, run the development server:
+In the app folder run:
+
+Run `make local-setup`
+
+In the folder `app/db/` run:
+
+```
+pg_ctl start
+./setup.sh
+```
+
+Create the `.env` file from the `.env.example` file in the app folder.
+
+The values can be found in the project's non-prod vault file. The local database creds are username "postgres", password is the local password for your database.
+
+Then run the development server:
 
 ```bash
 npm run dev
