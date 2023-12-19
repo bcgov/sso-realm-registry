@@ -184,7 +184,7 @@ export const sendDeleteEmail = (realm: Roster, session: Session) => {
     to,
     body: `
         ${emailHeader}
-        <p>We have received a request from ${username} for the deletion of Custom Realm ${realm.realm} . It will be deleted at approximately ${githubActionTriggerHour} as per our automated processes. Please contact the SSO team ASAP if you have any concerns.</p>
+        <p>We have received a request from ${username} for the deletion of Custom Realm ${realm.realm}. It will be deleted at approximately ${githubActionTriggerHour} as per our automated processes. Please contact the SSO team ASAP if you have any concerns.</p>
         ${emailFooter}
         `,
     subject: `${subjectPrefix}Important: Custom Realm ${realm.realm} is in the process of being Deleted.`,
