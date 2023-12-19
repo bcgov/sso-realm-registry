@@ -1,11 +1,9 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import styled from 'styled-components';
 import Link from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
 import getConfig from 'next/config';
-
-const { publicRuntimeConfig = {} } = getConfig() || {};
-const { dev_kc_url, test_kc_url, prod_kc_url } = publicRuntimeConfig;
+import { DomainsContext } from 'pages/my-dashboard';
 
 const Title = styled.div`
   font-weight: 700;
@@ -17,14 +15,12 @@ interface Props {
   realm: RealmProfile;
 }
 
-const getDomainByEnv = (env: string) => {
-  return env === 'dev' ? dev_kc_url : env === 'test' ? test_kc_url : prod_kc_url;
-};
+export default function RealmURIs({ realm }: Props) {
+  let { dev, test, prod } = useContext(DomainsContext);
 
-function RealmURIs({ realm }: Props) {
-  const devURL = `${getDomainByEnv('dev')}/auth/admin/${realm.realm}/console/`;
-  const testURL = `${getDomainByEnv('test')}/auth/admin/${realm.realm}/console/`;
-  const prodURL = `${getDomainByEnv('prod')}/auth/admin/${realm.realm}/console/`;
+  const devURL = `${dev}/auth/admin/${realm.realm}/console/`;
+  const testURL = `${test}/auth/admin/${realm.realm}/console/`;
+  const prodURL = `${prod}/auth/admin/${realm.realm}/console/`;
 
   return (
     <>
@@ -47,5 +43,3 @@ function RealmURIs({ realm }: Props) {
     </>
   );
 }
-
-export default RealmURIs;
