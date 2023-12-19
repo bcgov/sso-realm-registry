@@ -58,7 +58,11 @@ module.exports = {
     ms_graph_api_client_id: process.env.MS_GRAPH_API_CLIENT_ID,
     ms_graph_api_client_secret: process.env.MS_GRAPH_API_CLIENT_SECRET,
   },
-  publicRuntimeConfig: {},
+  publicRuntimeConfig: {
+    dev_kc_url: process.env.DEV_KC_URL || 'https://dev.loginproxy.gov.bc.ca',
+    test_kc_url: process.env.TEST_KC_URL || 'https://test.loginproxy.gov.bc.ca',
+    prod_kc_url: process.env.PROD_KC_URL || 'https://loginproxy.gov.bc.ca',
+  },
   async headers() {
     if (process.env.SECURE_HEADERS === 'false') return [];
 
