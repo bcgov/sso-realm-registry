@@ -10,6 +10,8 @@ import RealmForm from 'components/RealmForm';
 import styled from 'styled-components';
 import { createRealmSchema } from 'validators/create-realm';
 
+export const realmTakenError = 'name taken';
+
 const Container = styled.div`
   padding: 0 2em;
 `;
@@ -17,6 +19,7 @@ const Container = styled.div`
 const defaultData: CustomRealmFormData = {
   realm: '',
   purpose: '',
+  productName: '',
   primaryEndUsers: [],
   productOwnerEmail: '',
   productOwnerIdirUserId: '',
@@ -47,13 +50,16 @@ function NewRealmForm({ alert }: Props) {
   const handleSubmit = async (data: CustomRealmFormData) => {
     const [response, err] = await submitRealmRequest(data);
     if (err) {
-      const content = err?.response?.data?.error || 'Network request failure. Please try again.';
-      alert.show({
-        variant: 'danger',
-        fadeOut: 10000,
-        closable: true,
-        content,
-      });
+      if (err.response.status === 409) {
+        throw new Error(realmTakenError);
+      } else {
+        alert.show({
+          variant: 'danger',
+          fadeOut: 10000,
+          closable: true,
+          content: 'Network request failure. Please try again.',
+        });
+      }
     } else {
       router.push('/').then(() => {
         setModalConfig({

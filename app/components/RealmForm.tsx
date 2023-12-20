@@ -12,7 +12,7 @@ import * as yup from 'yup';
 import kebabCase from 'lodash.kebabcase';
 import AsyncSelect from 'react-select/async';
 import { getIdirUserId, getIdirUsersByEmail } from 'services/azure';
-
+import { realmTakenError } from 'pages/custom-realm-form';
 const SForm = styled.form<{ collapse: boolean }>`
   display: grid;
   grid-template-columns: ${(props) => (props.collapse ? '1fr' : '1fr 1fr')};
@@ -199,7 +199,7 @@ export default function RealmForm({
   updatedMessage,
   collapse = false,
 }: Props) {
-  const [formErrors, setFormErrors] = useState<{ [key in keyof CustomRealmFormData]?: boolean }>({});
+  const [formErrors, setFormErrors] = useState<{ [key in keyof CustomRealmFormData]?: boolean | string }>({});
   const [otherPrimaryEndUsersSelected, setOtherPrimaryEndUsersSelected] = useState(
     hasOtherPrimaryEndUsers(formData.primaryEndUsers),
   );
@@ -264,7 +264,14 @@ export default function RealmForm({
       return;
     }
     setSubmittingForm(true);
-    onSubmit(submission).then(() => setSubmittingForm(false));
+    onSubmit(submission)
+      .catch((err) => {
+        if (err.message === realmTakenError) {
+          setFormErrors({ realm: 'Realm Name taken.' });
+          document.getElementById('realm-input')?.scrollIntoView();
+        }
+      })
+      .then(() => setSubmittingForm(false));
   };
 
   const loadBranches = async (division: string = 'Other') => {
@@ -323,7 +330,11 @@ export default function RealmForm({
             disabled={!schemaFields.includes('realm')}
           />
           {formErrors.realm && (
-            <p className="error-message">Realm name should contain only letters, underscores and hypens</p>
+            <p className="error-message">
+              {typeof formErrors.realm === 'string'
+                ? formErrors.realm
+                : 'Realm name should contain only letters, underscores and hypens'}
+            </p>
           )}
         </div>
 
