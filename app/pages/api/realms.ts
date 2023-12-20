@@ -112,7 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // the keycloak console may not show realm if the realm name was manually updated through console
       // however the realm id does not change
       if (existingRealm.length > 0 || existingKcRealms.find((realm) => realm.id === data.realm)) {
-        return res.status(400).json({ success: false, error: 'Realm name already taken' });
+        return res.status(409).json({ success: false, error: 'Realm name already taken' });
       }
 
       let newRealm = await prisma.roster.create({
