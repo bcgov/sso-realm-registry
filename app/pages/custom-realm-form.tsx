@@ -50,7 +50,6 @@ function NewRealmForm({ alert }: Props) {
   const handleSubmit = async (data: CustomRealmFormData) => {
     const [response, err] = await submitRealmRequest(data);
     if (err) {
-      //
       if (err.response.status === 409) {
         throw new Error(realmTakenError);
       } else {
