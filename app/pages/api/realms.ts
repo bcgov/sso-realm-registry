@@ -126,7 +126,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         idirUserId: username,
         details: pick(newRealm, allowedFormFields),
       });
-      sendCreateEmail(newRealm, session).catch((err) => console.error(`Error sending email for ${data.realm}`, err));
+      await sendCreateEmail(newRealm, session);
       return res.status(201).json(newRealm);
     } else {
       return res.status(404).json({ success: false, error: 'not found' });
