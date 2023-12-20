@@ -198,7 +198,7 @@ describe('Status update', () => {
 
     // Still pending
     const firstRow = screen.getByTestId('custom-realm-row-1');
-    within(firstRow).getByText('pending');
+    within(firstRow).getByText('Pending');
 
     // Successful request
     (updateRealmProfile as jest.MockedFunction<any>).mockImplementationOnce(() => Promise.resolve([true, null]));
@@ -225,7 +225,7 @@ describe('Status update', () => {
 
     // Still pending
     const firstRow = screen.getByTestId('custom-realm-row-1');
-    within(firstRow).getByText('pending');
+    within(firstRow).getByText('Pending');
 
     // Successful request
     (updateRealmProfile as jest.MockedFunction<any>).mockImplementationOnce(() => Promise.resolve([true, null]));
