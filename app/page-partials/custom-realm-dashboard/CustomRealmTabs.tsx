@@ -1,12 +1,11 @@
 import styled from 'styled-components';
 import React, { useEffect, useState } from 'react';
-import { faCircleCheck, faSpinner } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Button from '@button-inc/bcgov-theme/Button';
 import { getRealmEvents } from 'services/events';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { Event } from 'types/event';
 import { RealmProfile } from 'types/realm-profile';
+import Badge from 'components/Badge';
 
 const Tabs = styled.ul`
   display: flex;
@@ -114,15 +113,11 @@ function ApprovalList({ selectedRow, lastUpdateTime }: Props) {
           </p>
           <li>
             <span>SSO Approval</span>
-            <FontAwesomeIcon icon={faCircleCheck} color="green" />
+            <Badge variant="complete" />
           </li>
           <li>
             <span>Access Custom Realm</span>
-            {selectedRow.status === 'applied' ? (
-              <FontAwesomeIcon icon={faCircleCheck} color="green" />
-            ) : (
-              <FontAwesomeIcon icon={faSpinner} className="fa-pulse" />
-            )}
+            {selectedRow.status === 'applied' ? <Badge variant="complete" /> : <Badge variant="pending" />}
           </li>
         </SApprovalList>
       )}
