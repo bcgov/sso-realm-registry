@@ -12,7 +12,7 @@ import {
   mergePullRequest,
 } from 'utils/github';
 import omit from 'lodash.omit';
-import { sendDeleteEmail, sendUpdateEmail } from 'utils/mailer';
+import { offboardRealmAdmin, onboardNewRealmAdmin, sendDeleteEmail, sendUpdateEmail } from 'utils/mailer';
 
 interface ErrorData {
   success: boolean;
@@ -213,9 +213,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         });
         updatedRealm = !isAdmin ? omit(updatedRealm, adminOnlyFields) : updatedRealm;
 
-        sendUpdateEmail(updatedRealm, session, updatingApprovalStatus).catch((err) =>
-          console.error(`Error sending email for ${updatedRealm.realm}`, err),
-        );
+        await sendUpdateEmail(updatedRealm, session, updatingApprovalStatus);
+
+        let typeOfContactUpdate = '';
+
+        if (
+          currentRequest.approved &&
+          currentRequest.status === StatusEnum.APPLIED &&
+          currentRequest.productOwnerEmail !== updateRequest.productOwnerEmail
+        ) {
+          typeOfContactUpdate = 'Product Owner';
+          await onboardNewRealmAdmin(
+            session,
+            updatedRealm,
+            currentRequest.productOwnerEmail!,
+            updatedRealm.productOwnerEmail,
+            typeOfContactUpdate,
+          );
+          await offboardRealmAdmin(session, updatedRealm, currentRequest.productOwnerEmail!, typeOfContactUpdate);
+        }
+
+        if (
+          currentRequest.approved &&
+          currentRequest.status === StatusEnum.APPLIED &&
+          currentRequest.technicalContactEmail !== updateRequest.technicalContactEmail
+        ) {
+          typeOfContactUpdate = 'Technical Contact';
+          await onboardNewRealmAdmin(
+            session,
+            updatedRealm,
+            currentRequest.technicalContactEmail!,
+            updatedRealm.technicalContactEmail,
+            typeOfContactUpdate,
+          );
+          await offboardRealmAdmin(session, updatedRealm, currentRequest.technicalContactEmail!, typeOfContactUpdate);
+        }
 
         return res.send(updatedRealm);
       } catch (err) {
@@ -287,7 +319,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             id: parseInt(id as string, 10),
           },
         }),
-        sendDeleteEmail(realm, session),
+        await sendDeleteEmail(realm, session),
       ]);
       res.status(200).send('Success');
     } else {

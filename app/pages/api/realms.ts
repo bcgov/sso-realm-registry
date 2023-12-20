@@ -112,7 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // the keycloak console may not show realm if the realm name was manually updated through console
       // however the realm id does not change
       if (existingRealm.length > 0 || existingKcRealms.find((realm) => realm.id === data.realm)) {
-        return res.status(400).json({ success: false, error: 'Realm name already taken' });
+        return res.status(409).json({ success: false, error: 'Realm name already taken' });
       }
 
       let newRealm = await prisma.roster.create({
@@ -131,7 +131,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         idirUserId: username,
         details: pick(newRealm, allowedFormFields),
       });
-      sendCreateEmail(newRealm, session).catch((err) => console.error(`Error sending email for ${data.realm}`, err));
+      await sendCreateEmail(newRealm, session);
       return res.status(201).json(newRealm);
     } else {
       return res.status(404).json({ success: false, error: 'not found' });
