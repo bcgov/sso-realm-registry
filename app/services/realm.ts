@@ -2,10 +2,14 @@ import { instance } from './axios';
 import { RealmProfile, ModalData } from 'types/realm-profile';
 import { CustomRealmFormData } from 'types/realm-profile';
 
-export const getRealmProfiles = async (): Promise<[CustomRealmFormData[], null] | [null, any]> => {
+export const getRealmProfiles = async (
+  excludeArchived: boolean,
+): Promise<[CustomRealmFormData[], null] | [null, any]> => {
   try {
-    const result = await instance.get('realms').then((res) => res.data);
-    return [result as CustomRealmFormData[], null];
+    const result = (await instance
+      .get('realms', { params: { excludeArchived } })
+      .then((res) => res.data)) as CustomRealmFormData[];
+    return [result, null];
   } catch (err: any) {
     console.error(err);
     return [null, err];
