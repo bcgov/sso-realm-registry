@@ -12,7 +12,7 @@ import {
   mergePullRequest,
 } from 'utils/github';
 import omit from 'lodash.omit';
-import { sendDeleteEmail, sendUpdateEmail } from 'utils/mailer';
+import { offboardRealmAdmin, onboardNewRealmAdmin, sendDeleteEmail, sendUpdateEmail } from 'utils/mailer';
 
 interface ErrorData {
   success: boolean;
@@ -216,6 +216,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         sendUpdateEmail(updatedRealm, session, updatingApprovalStatus).catch((err) =>
           console.error(`Error sending email for ${updatedRealm.realm}`, err),
         );
+
+        let typeOfContactUpdate = '';
+
+        if (
+          currentRequest.approved &&
+          currentRequest.status === StatusEnum.APPLIED &&
+          currentRequest.productOwnerEmail !== updateRequest.productOwnerEmail
+        ) {
+          typeOfContactUpdate = 'Product Owner';
+          onboardNewRealmAdmin(
+            session,
+            updatedRealm,
+            currentRequest.productOwnerEmail!,
+            updatedRealm.productOwnerEmail,
+            typeOfContactUpdate,
+          );
+          offboardRealmAdmin(session, updatedRealm, currentRequest.productOwnerEmail!, typeOfContactUpdate);
+        }
+
+        if (
+          currentRequest.approved &&
+          currentRequest.status === StatusEnum.APPLIED &&
+          currentRequest.technicalContactEmail !== updateRequest.technicalContactEmail
+        ) {
+          typeOfContactUpdate = 'Technical Contact';
+          onboardNewRealmAdmin(
+            session,
+            updatedRealm,
+            currentRequest.technicalContactEmail!,
+            updatedRealm.technicalContactEmail,
+            typeOfContactUpdate,
+          );
+          offboardRealmAdmin(session, updatedRealm, currentRequest.technicalContactEmail!, typeOfContactUpdate);
+        }
 
         return res.send(updatedRealm);
       } catch (err) {

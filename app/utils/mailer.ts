@@ -6,7 +6,7 @@ import { Roster } from '@prisma/client';
 import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv } from './helpers';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
-const { app_env } = serverRuntimeConfig;
+const { app_env, sso_logout_redirect_uri } = serverRuntimeConfig;
 const subjectPrefix = app_env === 'development' ? '[DEV] ' : '';
 
 const emailHeader = `
@@ -310,5 +310,144 @@ export const sendReadyToUseEmail = (realm: Roster) => {
           ${emailFooter}
           `,
     subject: `${prefix}Important: Custom Realm ${realmName} Created and Action Required for Realm Admin Configuration`,
+  });
+};
+
+export const onboardNewRealmAdmin = (
+  session: Session,
+  realm: Roster,
+  oldContact: string,
+  newContact: string,
+  contactType: string,
+) => {
+  const nonUpdatedTeamMemberEmail = contactType.startsWith('Product')
+    ? realm.technicalContactEmail
+    : realm.productOwnerEmail;
+  const username = `${session.user.given_name} ${session.user.family_name}`;
+  const realmName = realm.realm!;
+  const to = [newContact!, nonUpdatedTeamMemberEmail!].filter((email) => email);
+  if (!to.length) return;
+  return sendEmail({
+    to,
+    body: `
+        ${emailHeader}
+        <p>
+          We're reaching out to update you on changes to the ${contactType} details within the ${
+      realm.realm
+    } Custom realm. As of
+          ${new Date().toLocaleDateString()}, ${username} has modified the contact information in the Realm Registry, replacing ${oldContact} with the
+          updated information for the ${realm.realm}. We want to ensure you're informed about these recent updates.
+        </p>
+        <p>To ensure a smooth transition, please follow instructions below to make ${newContact} the Realm Admin</p>
+        <strong>Grant Realm Admin Access to the new team members</strong>
+        <p>To add others as realm admins via a user friendly URL:</p>
+        <ol type="a">
+          <li>
+            <p>Ask your new team member to login at</p>
+            <ul>
+            <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
+      'dev',
+      realmName,
+    )}</a></code></p></li>
+            <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
+      'test',
+      realmName,
+    )}</a></code></p></li>
+            <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
+      'prod',
+      realmName,
+    )}</a></code></p></li>
+            </ul>
+          </li>
+          <li>
+            <p>They will see a forbidden message <code>Forbidden: You don't have access to the requested resource</code></p>
+          </li>
+          <li>
+            <p>You or one of the existing Realm Admins will need to add the user that logged in. See image below.</p>
+            <img src="${sso_logout_redirect_uri}/onboard-realm-admin.png" alt="OnBoardNewRealmAdmin" style="width:650px">
+          </li>
+          <li>
+            <p>Once you&rsquo;ve done this, you and your realm admins can access your realm via a more user friendly url</p>
+            <p>
+              <span style="color: #ff0000"><strong>PLEASE SAVE THIS USER FRIENDLY LINK</strong></span> as User Friendly Realm
+              Admin Links
+            </p>
+            <ul>
+              <li>
+                <p>
+                  <code
+                    ><a href="${generateRealmLinksByEnv('dev', realmName)}"
+                      >${generateRealmLinksByEnv('dev', realmName)}</a
+                    ></code
+                  >
+                </p>
+              </li>
+              <li>
+                <p>
+                  <code
+                    ><a href="${generateRealmLinksByEnv('test', realmName)}"
+                      >${generateRealmLinksByEnv('test', realmName)}</a
+                    ></code
+                  >
+                </p>
+              </li>
+              <li>
+                <p>
+                  <code
+                    ><a href="${generateRealmLinksByEnv('prod', realmName)}"
+                      >${generateRealmLinksByEnv('prod', realmName)}</a
+                    ></code
+                  >
+                </p>
+              </li>
+            </ul>
+          </li>
+        </ol>
+        <p>
+          If you have any questions or require further assistance, feel free to reach out to us by Rocket.Chat or email at:
+          <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
+        </p>
+        ${emailFooter}
+        `,
+    subject: `${subjectPrefix}Important: Custom Realm ${realm.realm} contact information has been updated. Action required to Onboard New Realm Admin.`,
+  });
+};
+
+export const offboardRealmAdmin = (session: Session, realm: Roster, oldContact: string, contactType: string) => {
+  const nonUpdatedTeamMemberEmail = contactType.startsWith('Product')
+    ? realm.technicalContactEmail
+    : realm.productOwnerEmail;
+  const username = `${session.user.given_name} ${session.user.family_name}`;
+  const to = [oldContact!, nonUpdatedTeamMemberEmail!].filter((email) => email);
+  if (!to.length) return;
+  return sendEmail({
+    to,
+    body: `
+        ${emailHeader}
+        <p>
+          We're reaching out to update you on changes to the ${contactType} details within the ${
+      realm.realm
+    } Custom realm. As of
+          ${new Date().toLocaleDateString()}, ${username} has modified the contact information in the Realm Registry, replacing ${oldContact} with the
+          updated information for the ${realm.realm}. We want to ensure you're informed about these recent updates.
+        </p>
+        <p>Please follow instructions below to remove ${oldContact} as the Realm Admin</p>
+        <strong>Offboarding instructions to remove an existing realm admin</strong>
+        <ol type="a">
+          <li>
+            <p>We recommend deleting the offboarded team member from your custom realm. See image below.</p>
+            <img src="${sso_logout_redirect_uri}/offboard-realm-admin.png" alt="OffBoardRealmAdmin" style="width:650px">
+          </li>
+          <li>
+            <p>As you and your realm admins may have configured the user to a realm level role or realm level group, please remove the user accordingly.</p>
+          </li>
+        </ol>
+        <p>
+          If you have any questions or require further assistance, feel free to reach out to us by Rocket.Chat or email at:
+          <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
+        </p>
+        ${emailFooter}
+        `,
+    subject: `${subjectPrefix}Important: Custom Realm ${realm.realm} contact information has been updated. Action required to Offboard existing Realm Admin.`,
   });
 };
