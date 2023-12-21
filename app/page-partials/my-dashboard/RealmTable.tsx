@@ -3,6 +3,7 @@ import Button from '@button-inc/bcgov-theme/Button';
 import { RealmProfile } from 'types/realm-profile';
 import Table from 'components/Table';
 import Link from '@button-inc/bcgov-theme/Link';
+import { StatusEnum } from 'validators/create-realm';
 
 interface Props {
   realms: RealmProfile[];
@@ -10,6 +11,20 @@ interface Props {
 }
 
 function RealmTable({ realms, onEditClick }: Props) {
+  /** Get a readable realm status. Currently treating only an applied state as active.
+   * In the future if edits ever trigger the terraform process this will need to change,
+   * since there will still be an active integration while updating. Archived requests
+   * are not shown in this view so don't need to check the archived flag.
+   */
+  const getStatus = (status?: string) => {
+    switch (status) {
+      case StatusEnum.APPLIED:
+        return 'Ready';
+      default:
+        return 'In Progress';
+    }
+  };
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <Table
@@ -25,6 +40,7 @@ function RealmTable({ realms, onEditClick }: Props) {
             technicalContactIdirUserId: r.technicalContactIdirUserId,
             secondTechnicalContactEmail: r.secondTechnicalContactEmail,
             secondTechnicalContactIdirUserId: r.secondTechnicalContactIdirUserId,
+            status: getStatus(r.status),
             rcChannel: r.rcChannel,
             rcChannelOwnedBy: r.rcChannelOwnedBy,
             actions: (
@@ -103,6 +119,11 @@ function RealmTable({ realms, onEditClick }: Props) {
             header: 'Rocket Chat Channel Owner',
             cell: (row) => row.renderValue(),
             accessorKey: 'rcChannelOwnedBy',
+          },
+          {
+            header: 'Status',
+            cell: (row) => row.renderValue(),
+            accessorKey: 'status',
           },
           {
             header: 'Actions',
