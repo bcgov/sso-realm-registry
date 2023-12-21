@@ -217,20 +217,20 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
             <p>Please follow the instructions below to add Realm Admins:</p>
             <ol>
               <li>
-                <p>You are a Realm Admin: Please save these links URLs of your custom realm</p>
+                <p>You are a Realm Admin: Please save these links below for logging in via the master realm:</p>
                 <ul>
-                  <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
-      'dev',
-      realmName,
-    )}</a></p></code></li>
-                  <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}"></a>${generateRealmLinksByEnv(
-      'test',
-      realmName,
-    )}</p></code></li>
-                  <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
-      'prod',
-      realmName,
-    )}</a></p></code></li>
+                  <li><p><code><a href="${generateMasterRealmLinksByEnv(
+                    'dev',
+                    realmName,
+                  )}">${generateMasterRealmLinksByEnv('dev', realmName)}</a></p></code></li>
+                  <li><p><code><a href="${generateMasterRealmLinksByEnv(
+                    'test',
+                    realmName,
+                  )}"></a>${generateMasterRealmLinksByEnv('test', realmName)}</p></code></li>
+                  <li><p><code><a href="${generateMasterRealmLinksByEnv(
+                    'prod',
+                    realmName,
+                  )}">${generateMasterRealmLinksByEnv('prod', realmName)}</a></p></code></li>
                 </ul>
               </li>
               <li>
