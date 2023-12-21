@@ -24,6 +24,7 @@ import { GetServerSidePropsContext } from 'next';
 import { checkAdminRole } from 'utils/helpers';
 import { getAllRealms } from 'pages/api/realms';
 import CustomRealmTabs from 'page-partials/custom-realm-dashboard/CustomRealmTabs';
+import Select, { MultiValue } from 'react-select';
 import { StatusEnum } from 'validators/create-realm';
 
 const Container = styled.div`
@@ -37,7 +38,7 @@ const hoverRowBg = '#fdb913';
 const Table = styled.table`
   background-color: ${bgGrey};
   border-collapse: separate;
-  padding: 1em;
+  padding: 0 1em;
   border-spacing: 0 0.5em;
 
   thead {
@@ -105,194 +106,14 @@ const Table = styled.table`
   }
 `;
 
-const FilterBox = styled.div`
-  font-weight: normal;
-  box-sizing: border-box;
-  position: relative;
-  transition: max-height 0.3s;
-  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-  max-height: 0;
-  overflow: hidden;
-  background: white;
-  padding: 0 0.3em;
-  border-radius: 0.2em;
-  border-color: ${bgGrey};
-
-  &.show {
-    max-height: 300px;
-  }
-
-  .flex-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .flex-col {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .search-box {
-    margin: 0.2em 0.1em;
-  }
-
-  .exit-icon {
-    padding: 0.2em;
-    cursor: pointer;
-  }
-`;
-
 // Filter Functions
 const listFilter: FilterFn<any> = (row, columnId, value) => {
+  if (value.length === 0) return true;
   return value.includes(row.getValue(columnId));
 };
 const searchFilter: FilterFn<any> = (row, columnId, value) => {
   return (row.getValue(columnId) as string).includes(value);
 };
-
-// Filter Components
-function ApprovalFilter(props: { in: boolean; column: Column<any, any> }) {
-  const [showApproved, setShowApproved] = useState(true);
-  const [showDeclined, setShowDeclined] = useState(true);
-  const [showUndecided, setShowUndecided] = useState(true);
-
-  const updateFilters = (approve: boolean, decline: boolean, undecided: boolean) => {
-    const filters: (null | boolean)[] = [];
-    if (approve) filters.push(true);
-    if (decline) filters.push(false);
-    if (undecided) filters.push(null);
-    props.column.setFilterValue(filters);
-  };
-
-  return (
-    <FilterBox className={props.in ? 'show' : ''}>
-      <label className="flex-row" htmlFor="declined-checkbox">
-        <span>Declined</span>
-        <input
-          id="declined-checkbox"
-          type="checkbox"
-          name="declined"
-          checked={showDeclined}
-          onChange={() => {
-            updateFilters(showApproved, !showDeclined, showUndecided);
-            setShowDeclined(!showDeclined);
-          }}
-        />
-      </label>
-      <label className="flex-row" htmlFor="approved-checkbox">
-        <span>Approved</span>
-        <input
-          id="approved-checkbox"
-          type="checkbox"
-          name="approved"
-          checked={showApproved}
-          onChange={() => {
-            updateFilters(!showApproved, showDeclined, showUndecided);
-            setShowApproved(!showApproved);
-          }}
-        />
-      </label>
-      <label className="flex-row" htmlFor="undecided-checkbox">
-        <span>Undecided</span>
-        <input
-          id="undecided-checkbox"
-          type="checkbox"
-          name="undecided"
-          checked={showUndecided}
-          onChange={() => {
-            updateFilters(showApproved, showDeclined, !showUndecided);
-            setShowUndecided(!showUndecided);
-          }}
-        />
-      </label>
-    </FilterBox>
-  );
-}
-
-function StatusFilter(props: { in: boolean; column: Column<any, any> }) {
-  const allValues = Object.values(StatusEnum) as string[];
-  const [statusFilters, setStatusFilters] = useState(allValues);
-
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const newFilter = (event.target as HTMLInputElement).value;
-    if (statusFilters.includes(newFilter)) {
-      setStatusFilters(statusFilters.filter((value) => value !== newFilter));
-      props.column.setFilterValue(statusFilters.filter((value) => value !== newFilter));
-    } else {
-      setStatusFilters([...statusFilters, newFilter]);
-      props.column.setFilterValue([...statusFilters, newFilter]);
-    }
-  };
-
-  return (
-    <FilterBox className={props.in ? 'show' : ''}>
-      {allValues.map((val) => (
-        <label className="flex-row" key={val}>
-          <span>{val}</span>
-          <input type="checkbox" onChange={handleChange} checked={statusFilters.includes(val)} value={val} />
-        </label>
-      ))}
-    </FilterBox>
-  );
-}
-
-function RealmNameFilter(props: { in: boolean; column: Column<any, any> }) {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const newVal = event.target.value;
-    props.column.setFilterValue(newVal);
-    setSearchTerm(newVal);
-  };
-
-  const clearSearch = () => {
-    setSearchTerm('');
-    props.column.setFilterValue('');
-  };
-
-  useEffect(() => {
-    if (props.in) document.getElementById('realm-name-search-box')?.focus();
-  }, [props.in]);
-
-  return (
-    <FilterBox className={props.in ? 'show' : ''}>
-      <label className="flex-col search-box">
-        <span>Search Realms:</span>
-        <div className="flex-row">
-          <input id="realm-name-search-box" onChange={handleChange} value={searchTerm} />
-          <FontAwesomeIcon icon={faClose} size="lg" className="exit-icon" onClick={clearSearch} title="Clear Search" />
-        </div>
-      </label>
-    </FilterBox>
-  );
-}
-
-function Filter(props: { column: Column<any, any> }) {
-  const [showFilters, setShowFilters] = useState(false);
-  let FilterComponent;
-  switch (props.column.id) {
-    case 'status':
-      FilterComponent = StatusFilter;
-      break;
-    case 'approved':
-      FilterComponent = ApprovalFilter;
-      break;
-    default:
-      FilterComponent = RealmNameFilter;
-  }
-  return (
-    <span>
-      <FontAwesomeIcon
-        icon={faFilter}
-        onClick={() => setShowFilters(!showFilters)}
-        title="Toggle Filter Display"
-        style={{ cursor: 'pointer' }}
-      />
-      <FilterComponent in={showFilters} column={props.column} />
-    </span>
-  );
-}
 
 const columnHelper = createColumnHelper<CustomRealmFormData>();
 interface Props {
@@ -301,12 +122,84 @@ interface Props {
 }
 const realmCreatingStatuses = ['pending', 'prSuccess', 'planned'];
 
+const FiltersContainer = styled.div`
+  display: flex;
+  column-gap: 1em;
+  margin-bottom: 0.5em;
+
+  .input-container {
+    display: flex;
+    width: 17em;
+    flex-direction: column;
+    label {
+      font-weight: bold;
+    }
+
+    .react-select-input {
+      height: 41px;
+      border: 1px solid rgb(204, 204, 204);
+      border-radius: 4px;
+      outline: #2684ff;
+      &:focus-visible {
+        outline: #2684ff auto 2px;
+      }
+      &:hover {
+        border: 1px solid rgb(180, 180, 180);
+      }
+    }
+
+    .flex-row {
+      display: flex;
+      align-items: center;
+      input {
+        flex-grow: 1;
+      }
+    }
+
+    .clear-input-icon {
+      margin-left: 0.1em;
+      color: rgb(204, 204, 204);
+      &:hover {
+        color: rgb(180, 180, 180);
+      }
+    }
+  }
+`;
+
+const statusLabelMap: { [key: string]: string } = {
+  [StatusEnum.PENDING]: 'Pending',
+  [StatusEnum.APPLIED]: 'Applied',
+  [StatusEnum.APPLYFAILED]: 'Apply Failed',
+  [StatusEnum.PLANFAILED]: 'Plan Failed',
+  [StatusEnum.PLANNED]: 'Planned',
+  [StatusEnum.PRFAILED]: 'PR Failed',
+  [StatusEnum.PRSUCCESS]: 'PR Succeeded',
+};
+const statusOptions = Object.entries(statusLabelMap).map(([value, label]) => ({ value, label }));
+
+const approvalOptions: { value: null | boolean; label: string }[] = [
+  { value: null, label: 'Undecided' },
+  { value: true, label: 'Approved' },
+  { value: false, label: 'Declined' },
+];
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
 function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>(defaultRealmRequests || []);
   const [selectedRow, setSelectedRow] = useState<CustomRealmFormData | undefined>(defaultRealmRequests[0]);
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [requestStatusFilter, setRequestStatusFilter] = useState<null | MultiValue<SelectOption>>(null);
+  const [approvalStatusFilter, setApprovalStatusFilter] = useState<null | MultiValue<{
+    value: null | boolean;
+    label: string;
+  }>>(null);
+  const [realmNameFilter, setRealmNameFilter] = useState<string>('');
   const { setModalConfig } = useContext(ModalContext);
 
   const handleDeleteRequest = (id: number) => {
@@ -407,7 +300,14 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
     columnHelper.accessor('status', {
       header: 'Request Status',
       enableSorting: false,
-      cell: (info) => info.renderValue(),
+      cell: (info) => {
+        const val = info.renderValue();
+        if (val && statusLabelMap[val]) {
+          return statusLabelMap[val];
+        } else {
+          return val;
+        }
+      },
       enableColumnFilter: true,
       filterFn: listFilter,
     }),
@@ -490,6 +390,61 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   return (
     <Container>
       <h1>Custom Realm Dashboard</h1>
+      <FiltersContainer>
+        <div className="input-container">
+          <label htmlFor="realm-name-filter-input">Request Name Filter:</label>
+          <div className="flex-row">
+            <input
+              className="react-select-input"
+              value={realmNameFilter}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setRealmNameFilter(newValue);
+                table.getColumn('realm')?.setFilterValue(newValue);
+              }}
+              id="realm-name-filter-input"
+            />
+            <FontAwesomeIcon
+              icon={faClose}
+              title="Clear filter"
+              size="lg"
+              className="clear-input-icon"
+              onClick={() => {
+                setRealmNameFilter('');
+                table.getColumn('realm')?.setFilterValue('');
+              }}
+            />
+          </div>
+        </div>
+        <div className="input-container">
+          <label htmlFor="status-filter-select">Request Status Filters:</label>
+          <Select
+            value={requestStatusFilter}
+            onChange={(selected) => {
+              setRequestStatusFilter(selected);
+              const newFilter = Array.from(selected.values()).map((selection) => selection.value);
+              table.getColumn('status')?.setFilterValue(newFilter);
+            }}
+            options={statusOptions}
+            inputId="status-filter-select"
+            isMulti={true}
+          />
+        </div>
+        <div className="input-container">
+          <label htmlFor="approval-filter-select">Request Approval Filters:</label>
+          <Select
+            value={approvalStatusFilter}
+            onChange={(selected) => {
+              setApprovalStatusFilter(selected);
+              const newFilter = Array.from(selected.values()).map((selection) => selection.value);
+              table.getColumn('approved')?.setFilterValue(newFilter);
+            }}
+            options={approvalOptions}
+            inputId="approval-filter-select"
+            isMulti={true}
+          />
+        </div>
+      </FiltersContainer>
       <Table data-testid="custom-realm-table">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -508,7 +463,6 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
                         asc: <FontAwesomeIcon icon={faSortDown} />,
                         desc: <FontAwesomeIcon icon={faSortUp} />,
                       }[header.column.getIsSorted() as string] ?? <FontAwesomeIcon icon={faSort} />)}
-                    {header.column.getCanFilter() ? <Filter column={header.column} /> : null}
                   </div>
                 </th>
               ))}
