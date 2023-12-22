@@ -190,8 +190,13 @@ const approvalOptions: { value: null | boolean; label: string }[] = [
   { value: false, label: 'Declined' },
 ];
 
+const archivedOptions: { value: null | boolean; label: string }[] = [
+  { value: true, label: 'True' },
+  { value: false, label: 'False' },
+];
+
 interface SelectOption {
-  value: string;
+  value: any;
   label: string;
 }
 
@@ -202,10 +207,8 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [requestStatusFilter, setRequestStatusFilter] = useState<null | MultiValue<SelectOption>>(null);
-  const [approvalStatusFilter, setApprovalStatusFilter] = useState<null | MultiValue<{
-    value: null | boolean;
-    label: string;
-  }>>(null);
+  const [archivedStatusFilter, setArchivedStatusFilter] = useState<null | MultiValue<SelectOption>>(null);
+  const [approvalStatusFilter, setApprovalStatusFilter] = useState<null | MultiValue<SelectOption>>(null);
   const [realmNameFilter, setRealmNameFilter] = useState<string>('');
   const { setModalConfig } = useContext(ModalContext);
 
@@ -329,6 +332,13 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
         return approved ? 'Approved' : 'Declined';
       },
     }),
+    columnHelper.accessor('archived', {
+      header: 'Archived',
+      enableSorting: false,
+      enableColumnFilter: true,
+      filterFn: listFilter,
+      cell: (info) => (info.renderValue() ? 'True' : 'False'),
+    }),
     columnHelper.display({
       header: 'Actions',
       enableSorting: false,
@@ -368,7 +378,7 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
 
   const fetchRealms = async () => {
     // Intentionally not flashing error since this is a background fetch.
-    const [profiles, err] = await getRealmProfiles(true);
+    const [profiles, err] = await getRealmProfiles(false);
     if (profiles) {
       setLastUpdateTime(new Date());
       setRealmRequests(profiles);
@@ -455,6 +465,20 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
             isMulti={true}
           />
         </div>
+        <div className="input-container">
+          <label htmlFor="archived-filter-select">Request Archived Filters:</label>
+          <Select
+            value={archivedStatusFilter}
+            onChange={(selected) => {
+              setArchivedStatusFilter(selected);
+              const newFilter = Array.from(selected.values()).map((selection) => selection.value);
+              table.getColumn('archived')?.setFilterValue(newFilter);
+            }}
+            options={archivedOptions}
+            inputId="approval-filter-select"
+            isMulti={true}
+          />
+        </div>
       </FiltersContainer>
       <Table data-testid="custom-realm-table">
         <thead>
@@ -525,7 +549,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
   const isAdmin = checkAdminRole(session?.user);
 
   try {
-    const realms = await getAllRealms(username, isAdmin, true);
+    const realms = await getAllRealms(username, isAdmin);
     // Strip non-serializable dates
     const formattedRealms = realms.map((realm: ExtendedForm) => {
       const { createdAt, updatedAt, ...rest } = realm;
