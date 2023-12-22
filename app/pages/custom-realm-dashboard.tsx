@@ -135,17 +135,23 @@ const FiltersContainer = styled.div`
       font-weight: bold;
     }
 
-    .react-select-input {
-      height: 41px;
+    .focus-box {
       border: 1px solid rgb(204, 204, 204);
       border-radius: 4px;
-      outline: #2684ff;
-      &:focus-visible {
-        outline: #2684ff auto 2px;
-      }
+      height: 41px;
       &:hover {
         border: 1px solid rgb(180, 180, 180);
       }
+      &:focus-within {
+        outline: #2684ff auto 2px;
+      }
+    }
+
+    .react-select-input {
+      height: 37px;
+      margin-top: 1px;
+      outline: none;
+      border: none;
     }
 
     .flex-row {
@@ -157,11 +163,12 @@ const FiltersContainer = styled.div`
     }
 
     .clear-input-icon {
-      margin-left: 0.1em;
+      padding: 0 0.3em;
       color: rgb(204, 204, 204);
       &:hover {
         color: rgb(180, 180, 180);
       }
+      border-left: 1px solid rgb(204, 204, 204);
     }
   }
 `;
@@ -393,27 +400,31 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
       <FiltersContainer>
         <div className="input-container">
           <label htmlFor="realm-name-filter-input">Request Name Filter:</label>
-          <div className="flex-row">
-            <input
-              className="react-select-input"
-              value={realmNameFilter}
-              onChange={(e) => {
-                const newValue = e.target.value;
-                setRealmNameFilter(newValue);
-                table.getColumn('realm')?.setFilterValue(newValue);
-              }}
-              id="realm-name-filter-input"
-            />
-            <FontAwesomeIcon
-              icon={faClose}
-              title="Clear filter"
-              size="lg"
-              className="clear-input-icon"
-              onClick={() => {
-                setRealmNameFilter('');
-                table.getColumn('realm')?.setFilterValue('');
-              }}
-            />
+          <div className="focus-box">
+            <div className="flex-row">
+              <input
+                className="react-select-input"
+                value={realmNameFilter}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setRealmNameFilter(newValue);
+                  table.getColumn('realm')?.setFilterValue(newValue);
+                }}
+                id="realm-name-filter-input"
+              />
+              {realmNameFilter.length > 0 && (
+                <FontAwesomeIcon
+                  icon={faClose}
+                  title="Clear filter"
+                  size="lg"
+                  className="clear-input-icon"
+                  onClick={() => {
+                    setRealmNameFilter('');
+                    table.getColumn('realm')?.setFilterValue('');
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
         <div className="input-container">
