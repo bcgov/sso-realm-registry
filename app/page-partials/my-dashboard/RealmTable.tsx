@@ -3,6 +3,7 @@ import Button from '@button-inc/bcgov-theme/Button';
 import { RealmProfile } from 'types/realm-profile';
 import Table from 'components/Table';
 import Link from '@button-inc/bcgov-theme/Link';
+import { StatusEnum } from 'validators/create-realm';
 
 interface Props {
   realms: RealmProfile[];
@@ -10,29 +11,44 @@ interface Props {
 }
 
 function RealmTable({ realms, onEditClick }: Props) {
+  /** Get a readable realm status. Currently treating only an applied state as active.
+   * In the future if edits ever trigger the terraform process this will need to change,
+   * since there will still be an active integration while updating. Archived requests
+   * are not shown in this view so don't need to check the archived flag.
+   */
+  const getStatus = (status?: string) => {
+    switch (status) {
+      case StatusEnum.APPLIED:
+        return 'Ready';
+      default:
+        return 'In Progress';
+    }
+  };
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <Table
         data={realms.map((r) => {
           return {
             realm: r.realm,
-            productName: r.product_name,
+            productName: r.productName,
             idps: r.idps.join(', '),
             protocol: r.protocol.join(', '),
-            productOwnerEmail: r.product_owner_email,
-            productOwnerIdirUserId: r.product_owner_idir_userid,
-            technicalContactEmail: r.technical_contact_email,
-            technicalContactIdirUserId: r.technical_contact_idir_userid,
-            secondTechnicalContactEmail: r.second_technical_contact_email,
-            secondTechnicalContactIdirUserId: r.second_technical_contact_idir_userid,
-            rcChannel: r.rc_channel,
-            rcChannelOwnedBy: r.rc_channel_owned_by,
+            productOwnerEmail: r.productOwnerEmail,
+            productOwnerIdirUserId: r.productOwnerIdirUserId,
+            technicalContactEmail: r.technicalContactEmail,
+            technicalContactIdirUserId: r.technicalContactIdirUserId,
+            secondTechnicalContactEmail: r.secondTechnicalContactEmail,
+            secondTechnicalContactIdirUserId: r.secondTechnicalContactIdirUserId,
+            status: getStatus(r.status),
+            rcChannel: r.rcChannel,
+            rcChannelOwnedBy: r.rcChannelOwnedBy,
             actions: (
               <Button
                 size="small"
                 variant="secondary"
                 style={{ position: 'relative' }}
-                onClick={() => onEditClick(r.id)}
+                onClick={() => onEditClick(String(r.id))}
               >
                 Edit{' '}
               </Button>
@@ -103,6 +119,11 @@ function RealmTable({ realms, onEditClick }: Props) {
             header: 'Rocket Chat Channel Owner',
             cell: (row) => row.renderValue(),
             accessorKey: 'rcChannelOwnedBy',
+          },
+          {
+            header: 'Status',
+            cell: (row) => row.renderValue(),
+            accessorKey: 'status',
           },
           {
             header: 'Actions',

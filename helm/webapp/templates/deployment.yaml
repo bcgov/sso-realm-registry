@@ -53,6 +53,13 @@ spec:
             export CHES_PASSWORD="{{ .Data.data.CHES_PASSWORD }}"
             export CHES_TOKEN_ENDPOINT="{{ .Data.data.CHES_TOKEN_ENDPOINT }}"
             export CHES_USERNAME="{{ .Data.data.CHES_USERNAME }}"
+            export GH_ACCESS_TOKEN="{{ .Data.data.GH_ACCESS_TOKEN }}"
+            export GH_API_TOKEN="{{ .Data.data.GH_API_TOKEN }}"
+            export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?schema=public"
+            export IDIR_REQUESTOR_USER_GUID="{{ .Data.data.IDIR_REQUESTOR_USER_GUID }}"
+            export MS_GRAPH_API_AUTHORITY="{{ .Data.data.MS_GRAPH_API_AUTHORITY }}"
+            export MS_GRAPH_API_CLIENT_ID="{{ .Data.data.MS_GRAPH_API_CLIENT_ID }}"
+            export MS_GRAPH_API_CLIENT_SECRET="{{ .Data.data.MS_GRAPH_API_CLIENT_SECRET }}"
           {{- end }}`}}
     spec:
       initContainers:

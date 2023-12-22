@@ -1,30 +1,74 @@
-export interface RealmProfile {
-  id: string;
-  realm: string;
+export interface RealmProfile extends CustomRealmFormData {
   displayName: string;
-  product_name: string;
-  openshift_namespace: string;
-  ministry: string;
-  division: string;
-  branch: string;
-  product_owner_email: string;
-  product_owner_idir_userid: string;
-  product_owner_name: string;
-  technical_contact_email: string;
-  technical_contact_idir_userid: string;
-  technical_contact_name: string;
-  second_technical_contact_name: string;
-  second_technical_contact_email: string;
-  second_technical_contact_idir_userid: string;
-  willing_to_move: string;
-  when_to_move: string;
+  openshiftNamespace: string;
+  productOwnerName: string;
+  willingToMove: string;
+  whenToMove: string;
   idps: string[];
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
+  environments: Environment[];
   [key: string]: any;
 }
 
 export interface ModalData {
   willing_to_move?: string;
   when_to_move?: string;
+}
+
+export type PrimaryEndUser = 'livingInBc' | 'businessInBC' | 'govEmployees' | string;
+type Environment = 'dev' | 'test' | 'prod' | string;
+type Status =
+  | 'unapproved'
+  | 'declined'
+  | 'pending'
+  | 'prSuccess'
+  | 'PrFailed'
+  | 'planned'
+  | 'planFailed'
+  | 'applied'
+  | 'applyFailed';
+
+export interface CustomRealmFormData {
+  id?: number | string;
+  realm: string;
+  productName?: string;
+  ministry?: string;
+  division?: string;
+  branch?: string;
+  purpose: string;
+  primaryEndUsers: PrimaryEndUser[];
+  preferredAdminLoginMethod?: string;
+  productOwnerEmail: string;
+  productOwnerIdirUserId: string;
+  technicalContactEmail: string;
+  technicalContactIdirUserId: string;
+  secondTechnicalContactIdirUserId: string;
+  secondTechnicalContactEmail: string;
+  approved?: boolean | null;
+  rcChannel?: string;
+  rcChannelOwnedBy?: string;
+  materialToSend?: string;
+  status?: Status;
+  archived?: boolean;
+}
+
+export interface Ministry {
+  title: string;
+  id: string;
+  name: string;
+}
+
+export interface AzureUser {
+  businessPhones: string[];
+  displayName: string;
+  givenName: string;
+  jobTitle: string;
+  mail: string;
+  mobilePhone: string;
+  officeLocation: string;
+  preferredLanguage: string;
+  surname: string;
+  userPrincipalName: string;
+  id: string;
 }
