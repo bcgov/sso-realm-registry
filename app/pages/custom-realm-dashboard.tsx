@@ -143,7 +143,6 @@ const FiltersContainer = styled.div`
         border: 1px solid rgb(180, 180, 180);
       }
       &:focus-within {
-        border: 1px solid red;
         outline: #2684ff auto 2px;
       }
     }
