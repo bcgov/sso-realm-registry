@@ -8,6 +8,7 @@ import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv } from './helper
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { app_env, sso_logout_redirect_uri } = serverRuntimeConfig;
 const subjectPrefix = app_env === 'development' ? '[DEV] ' : '';
+const ssoTeamEmail = 'bcgov.sso@gov.bc.ca';
 
 const emailHeader = `
 <header style="color: #0e3468; text-align: center; margin-bottom: 30px; background: #f2f2f2; padding: 20px; box-shadow: 0 12px 6px -6px rgb(224, 224, 224);">
@@ -163,6 +164,7 @@ export const sendCreateEmail = async (realm: Roster, session: Session) => {
   const username = `${session.user.given_name} ${session.user.family_name}`;
   return await sendEmail({
     to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
+    cc: [ssoTeamEmail],
     body: `
       ${emailHeader}
         <main>
