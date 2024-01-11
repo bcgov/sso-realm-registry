@@ -3,7 +3,7 @@ import getConfig from 'next/config';
 import { Session } from 'next-auth';
 import { RealmProfile } from 'types/realm-profile';
 import { Roster } from '@prisma/client';
-import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv } from './helpers';
+import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv, wikiURL } from './helpers';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { app_env, sso_logout_redirect_uri } = serverRuntimeConfig;
@@ -109,7 +109,7 @@ const emailFooter = `
                         stroke="#0e3468" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </g>
             </svg>
-            <a href="https://github.com/bcgov/sso-keycloak/wiki" style="padding-left: 4px; color: #0e3468;">Knowledge Base</a>
+            <a href="${wikiURL}" style="padding-left: 4px; color: #0e3468;">Knowledge Base</a>
         </div>
         <div style="display: flex; align-items: center;">
             <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
