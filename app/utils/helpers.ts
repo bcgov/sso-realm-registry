@@ -5,6 +5,8 @@ import getConfig from 'next/config';
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { dev_kc_url, test_kc_url, prod_kc_url } = serverRuntimeConfig;
 
+export const wikiURL = 'https://mvp.developer.gov.bc.ca/docs/default/component/css-docs';
+
 export enum RoleEnum {
   ADMIN = 'admin',
   PRODUCT_OWNER = 'po',
