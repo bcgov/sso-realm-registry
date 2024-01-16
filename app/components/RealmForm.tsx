@@ -328,6 +328,7 @@ export default function RealmForm({
             onChange={handleFormInputChange}
             value={formData.realm}
             disabled={!schemaFields.includes('realm')}
+            maxLength={36}
           />
           {formErrors.realm && (
             <p className="error-message">

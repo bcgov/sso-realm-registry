@@ -64,7 +64,11 @@ export const createRealmSchema = yup
       .string()
       .required()
       .min(2)
-      .matches(/^[A-Za-z][A-Za-z0-9_-]*$/, 'realm name should contain only letters, underscores and hypens'),
+      .max(36)
+      .matches(
+        /^[A-Za-z][A-Za-z0-9_-]*$/,
+        'realm name must be of length between 2 and 36 and may contain only letters, underscores and hypens',
+      ),
     purpose: yup.string().min(2).required(),
     productName: yup.string().required(),
     primaryEndUsers: yup.array().required().min(1),
