@@ -25,16 +25,16 @@ module.exports = {
     pg_ssl: process.env.PGSSL === 'true',
 
     dev_kc_url: process.env.DEV_KC_URL || 'https://dev.loginproxy.gov.bc.ca',
-    dev_kc_client_id: process.env.DEV_KC_CLIENT_ID || 'script-cli',
-    dev_kc_client_secret: process.env.DEV_KC_CLIENT_SECRET,
+    dev_kc_username: process.env.DEV_KC_USERNAME || '',
+    dev_kc_password: process.env.DEV_KC_PASSWORD,
 
     test_kc_url: process.env.TEST_KC_URL || 'https://dev.loginproxy.gov.bc.ca',
-    test_kc_client_id: process.env.TEST_KC_CLIENT_ID || 'script-cli',
-    test_kc_client_secret: process.env.TEST_KC_CLIENT_SECRET,
+    test_kc_username: process.env.TEST_KC_USERNAME || '',
+    test_kc_password: process.env.TEST_KC_PASSWORD,
 
     prod_kc_url: process.env.PROD_KC_URL || 'https://dev.loginproxy.gov.bc.ca',
-    prod_kc_client_id: process.env.PROD_KC_CLIENT_ID || 'script-cli',
-    prod_kc_client_secret: process.env.PROD_KC_CLIENT_SECRET,
+    prod_kc_username: process.env.PROD_KC_USERNAME || '',
+    prod_kc_password: process.env.PROD_KC_PASSWORD,
 
     ches_api_endpoint: process.env.CHES_API_ENDPOINT || 'https://ches.api.gov.bc.ca/api/v1/email',
     ches_token_endpoint:
