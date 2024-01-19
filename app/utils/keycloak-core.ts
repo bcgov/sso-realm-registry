@@ -7,20 +7,20 @@ import validator from 'validator';
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const {
   dev_kc_url,
-  dev_kc_client_id,
-  dev_kc_client_secret,
+  dev_kc_username,
+  dev_kc_password,
   test_kc_url,
-  test_kc_client_id,
-  test_kc_client_secret,
+  test_kc_username,
+  test_kc_password,
   prod_kc_url,
-  prod_kc_client_id,
-  prod_kc_client_secret,
+  prod_kc_username,
+  prod_kc_password,
 } = serverRuntimeConfig;
 
 class KeycloakCore {
   private _url: string = '';
-  private _clientId: string = '';
-  private _clientSecret: string = '';
+  private _username: string = '';
+  private _password: string = '';
 
   private _cachedRealmNames: any[] = [];
   private _cachedNames: any = {};
@@ -30,16 +30,16 @@ class KeycloakCore {
   constructor(env: string) {
     if (env === 'dev') {
       this._url = dev_kc_url;
-      this._clientId = dev_kc_client_id;
-      this._clientSecret = dev_kc_client_secret;
+      this._username = dev_kc_username;
+      this._password = dev_kc_password;
     } else if (env === 'test') {
       this._url = test_kc_url;
-      this._clientId = test_kc_client_id;
-      this._clientSecret = test_kc_client_secret;
+      this._username = test_kc_username;
+      this._password = test_kc_password;
     } else if (env === 'prod') {
       this._url = prod_kc_url;
-      this._clientId = prod_kc_client_id;
-      this._clientSecret = prod_kc_client_secret;
+      this._username = prod_kc_username;
+      this._password = prod_kc_password;
     }
   }
 
@@ -56,9 +56,10 @@ class KeycloakCore {
     });
 
     await kcAdminClient.auth({
-      grantType: 'client_credentials',
-      clientId: this._clientId,
-      clientSecret: this._clientSecret,
+      grantType: 'password',
+      clientId: 'admin-cli',
+      username: this._username,
+      password: this._password,
     });
 
     this._adminClient = kcAdminClient;
