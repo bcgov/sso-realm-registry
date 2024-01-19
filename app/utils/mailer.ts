@@ -3,11 +3,12 @@ import getConfig from 'next/config';
 import { Session } from 'next-auth';
 import { RealmProfile } from 'types/realm-profile';
 import { Roster } from '@prisma/client';
-import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv } from './helpers';
+import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv, wikiURL } from './helpers';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { app_env, sso_logout_redirect_uri } = serverRuntimeConfig;
 const subjectPrefix = app_env === 'development' ? '[DEV] ' : '';
+const ssoTeamEmail = 'bcgov.sso@gov.bc.ca';
 
 const emailHeader = `
 <header style="color: #0e3468; text-align: center; margin-bottom: 30px; background: #f2f2f2; padding: 20px; box-shadow: 0 12px 6px -6px rgb(224, 224, 224);">
@@ -108,7 +109,7 @@ const emailFooter = `
                         stroke="#0e3468" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </g>
             </svg>
-            <a href="https://github.com/bcgov/sso-keycloak/wiki" style="padding-left: 4px; color: #0e3468;">Knowledge Base</a>
+            <a href="${wikiURL}" style="padding-left: 4px; color: #0e3468;">Knowledge Base</a>
         </div>
         <div style="display: flex; align-items: center;">
             <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -163,6 +164,7 @@ export const sendCreateEmail = async (realm: Roster, session: Session) => {
   const username = `${session.user.given_name} ${session.user.family_name}`;
   return await sendEmail({
     to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
+    cc: [ssoTeamEmail],
     body: `
       ${emailHeader}
         <main>
