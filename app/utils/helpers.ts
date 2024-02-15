@@ -5,7 +5,10 @@ import getConfig from 'next/config';
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { dev_kc_url, test_kc_url, prod_kc_url } = serverRuntimeConfig;
 
-export const wikiURL = 'https://mvp.developer.gov.bc.ca/docs/default/component/css-docs';
+export const formatWikiURL = (page?: string) =>
+  `https://mvp.developer.gov.bc.ca/docs/default/component/css-docs/${
+    page ?? ''
+  }?utm_source=sso-wiki&utm_medium=web&utm_campaign=retirement-notice-sso`;
 
 export enum RoleEnum {
   ADMIN = 'admin',

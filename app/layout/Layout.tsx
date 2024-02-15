@@ -11,7 +11,7 @@ import BottomAlertProvider from './BottomAlert';
 import { getSession, useSession } from 'next-auth/react';
 import { useEffect } from 'react';
 import { User } from 'next-auth';
-import { wikiURL } from 'utils/helpers';
+import { formatWikiURL } from 'utils/helpers';
 
 const headerPlusFooterHeight = '152px';
 
@@ -150,7 +150,7 @@ const RightMenuItems = () => (
       </a>
     </HoverItem>
     <HoverItem>
-      <a href={wikiURL} target="_blank" title="Documentation" rel="noreferrer">
+      <a href={formatWikiURL()} target="_blank" title="Documentation" rel="noreferrer">
         <FontAwesomeIcon size="2x" icon={faFileAlt} />
       </a>
     </HoverItem>
@@ -207,7 +207,7 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
           <FontAwesomeIcon size="2x" icon={faEnvelope} />
         </a>
         &nbsp;&nbsp;
-        <a href={wikiURL} target="_blank" title="Wiki" rel="noreferrer">
+        <a href={formatWikiURL()} target="_blank" title="Wiki" rel="noreferrer">
           <FontAwesomeIcon size="2x" icon={faFileAlt} />
         </a>
       </li>
