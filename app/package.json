@@ -49,6 +49,7 @@
     "react-bootstrap": "^2.4.0",
     "react-dom": "18.1.0",
     "react-hook-form": "^7.31.3",
+    "react-idle-timer": "^5.7.2",
     "react-loader-spinner": "^6.0.0-0",
     "react-select": "^5.8.0",
     "react-typography": "^0.16.20",

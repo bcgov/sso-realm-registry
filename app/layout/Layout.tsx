@@ -8,10 +8,12 @@ import styled from 'styled-components';
 import BCSans from './BCSans';
 import Navigation from './Navigation';
 import BottomAlertProvider from './BottomAlert';
-import { getSession, useSession } from 'next-auth/react';
-import { useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useEffect, useContext } from 'react';
 import { User } from 'next-auth';
 import { formatWikiURL } from 'utils/helpers';
+import { useIdleTimer } from 'react-idle-timer';
+import { ModalContext } from 'context/modal';
 
 const headerPlusFooterHeight = '152px';
 
@@ -156,17 +158,26 @@ const RightMenuItems = () => (
     </HoverItem>
   </>
 );
+
+const modalContent = {
+  title: `Session Expiring`,
+  body: `Your session will expire soon and you will be signed out automatically. Do you want to stay signed in?`,
+  showCancelButton: false,
+  showConfirmButton: true,
+};
+
 // identity_provider, idir_userid, client_roles, family_name, given_name
 function Layout({ children, onLoginClick, onLogoutClick }: any) {
   const router = useRouter();
   const session = useSession();
   const currentUser: Partial<User> = session?.data?.user!;
   const pathname = router.pathname;
+  const { setModalConfig } = useContext(ModalContext);
 
   const checkSession = async () => {
-    if (Date.now() > session?.data?.accessTokenExpiry) {
-      const session = await getSession();
-      if (session?.error === 'RefreshAccessTokenError') {
+    if (Date.now() > session?.data?.accessTokenExpiry * 1000) {
+      const updatedSession = await session.update();
+      if (updatedSession?.error === 'RefreshAccessTokenError') {
         onLogoutClick();
       }
     }
@@ -177,6 +188,30 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
       const interval = setInterval(checkSession, 1000 * 1);
       return () => clearInterval(interval);
     }
+  });
+
+  useIdleTimer({
+    onPrompt: (_event, timer) => {
+      console.log('running');
+      setModalConfig({
+        ...modalContent,
+        show: true,
+        onConfirm: async () => {
+          await session.update();
+          timer?.reset();
+        },
+      });
+    },
+    onIdle: () => {
+      setModalConfig({
+        ...modalContent,
+        show: false,
+      });
+      onLogoutClick();
+    },
+    timeout: 30 * 60 * 1000,
+    promptBeforeIdle: 25 * 60 * 1000,
+    disabled: session?.status !== 'authenticated',
   });
 
   const rightSide = currentUser ? (
