@@ -192,7 +192,6 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
 
   useIdleTimer({
     onPrompt: (_event, timer) => {
-      console.log('running');
       setModalConfig({
         ...modalContent,
         show: true,
