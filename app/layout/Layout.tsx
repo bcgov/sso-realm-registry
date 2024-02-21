@@ -209,8 +209,8 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
       onLogoutClick();
     },
     timeout: 30 * 60 * 1000,
-    promptBeforeIdle: 25 * 60 * 1000,
-    disabled: session?.status !== 'authenticated',
+    promptBeforeIdle: 5 * 60 * 1000,
+    disabled: !['authenticated', 'loading'].includes(session?.status),
   });
 
   const rightSide = currentUser ? (
