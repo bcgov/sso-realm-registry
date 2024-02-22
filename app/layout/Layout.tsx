@@ -199,6 +199,9 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
           await session.update();
           timer?.reset();
         },
+        onClose: () => {
+          onLogoutClick();
+        },
       });
     },
     onIdle: () => {

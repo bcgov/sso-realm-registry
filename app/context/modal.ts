@@ -6,6 +6,7 @@ export interface ModalConfig {
   body: string;
   showConfirmButton?: boolean;
   showCancelButton?: boolean;
+  onClose?: () => void;
   onConfirm?: () => Promise<void>;
 }
 
