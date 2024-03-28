@@ -15,8 +15,8 @@ jobs:
       contents: read
 
     steps:
-      - uses: hmarr/debug-action@v2
-      - uses: actions/checkout@v2
+      - uses: hmarr/debug-action@v3
+      - uses: actions/checkout@v4
 
       - name: Authenticate and set context
         uses: redhat-actions/oc-login@v1
