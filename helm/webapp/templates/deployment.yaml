@@ -37,6 +37,7 @@ spec:
           {{`{{ with secret "`}}{{ .Values.vault.vaultSecretEngine }}/{{ .Values.vault.realmRegistrySecret }}{{`" -}}
             export BCEID_SERVICE_BASIC_AUTH="{{ .Data.data.BCEID_SERVICE_BASIC_AUTH }}"
             export BCEID_SERVICE_ID="{{ .Data.data.BCEID_SERVICE_ID}}"
+            export BCEID_WEB_SERVICE_URL="{{ .Data.data.BCEID_WEB_SERVICE_URL}}"
             export DEV_KC_USERNAME="{{ .Data.data.DEV_KC_USERNAME}}"
             export DEV_KC_PASSWORD="{{ .Data.data.DEV_KC_PASSWORD}}"
             export DEV_KC_URL="{{ .Data.data.DEV_KC_URL}}"
