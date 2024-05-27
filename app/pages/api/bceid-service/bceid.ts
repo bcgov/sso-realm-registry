@@ -7,11 +7,10 @@ import get from 'lodash.get';
 import { getIdirUserGuid } from 'utils/jwt';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
-const { bceid_service_id, bceid_service_basic_auth } = serverRuntimeConfig;
+const { bceid_service_id, bceid_service_basic_auth, bceid_web_service_url } = serverRuntimeConfig;
 
 const parseStringSync = promisify(parseString);
 
-const serviceUrl = 'https://gws2.test.bceid.ca/webservices/client/V10/BCeIDService.asmx?WSDL';
 const defaultHeaders = {
   'Content-Type': 'text/xml;charset=UTF-8',
   authorization: `Basic ${bceid_service_basic_auth}`,
@@ -52,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const idirUserGuid = await getIdirUserGuid(token);
     const xml = generateXML(property, accountType, matchKey, idirUserGuid);
     const { response }: any = await soapRequest({
-      url: serviceUrl,
+      url: bceid_web_service_url,
       headers: defaultHeaders,
       xml,
       timeout: 10000,

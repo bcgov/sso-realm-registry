@@ -85,6 +85,13 @@ export default function GlobalModal({ setModalConfig, modalConfig }: Props) {
   const { showCancelButton, showConfirmButton, onConfirm } = modalConfig;
   const hasButtons = showCancelButton || showConfirmButton;
 
+  const closeModal = () => {
+    if (modalConfig.onClose) {
+      modalConfig.onClose();
+    }
+    clearModal();
+  };
+
   const onConfirmClick = async () => {
     if (!onConfirm) return;
     setWaiting(true);
@@ -99,14 +106,14 @@ export default function GlobalModal({ setModalConfig, modalConfig }: Props) {
 
   return (
     <Modal>
-      <div className="background" onClick={clearModal} />
+      <div className="background" onClick={closeModal} />
       <div className="content">
         <div className="header">
           <div>
             <FontAwesomeIcon icon={faCheckCircle} size="lg" />
             <span className="header-text">{modalConfig.title}</span>
           </div>
-          <FontAwesomeIcon icon={faClose} className="exit" size="lg" onClick={clearModal} />
+          <FontAwesomeIcon icon={faClose} className="exit" size="lg" onClick={closeModal} />
         </div>
         <div className="body">
           {modalConfig.body}

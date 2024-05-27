@@ -6,11 +6,10 @@ import get from 'lodash.get';
 import map from 'lodash.map';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
-const { bceid_service_id, bceid_service_basic_auth } = serverRuntimeConfig;
+const { bceid_service_id, bceid_service_basic_auth, bceid_web_service_url } = serverRuntimeConfig;
 
 export const parseStringSync = promisify(parseString);
 
-export const serviceUrl = 'https://gws2.test.bceid.ca/webservices/client/V10/BCeIDService.asmx?WSDL';
 export const defaultHeaders = {
   'Content-Type': 'text/xml;charset=UTF-8',
   authorization: `Basic ${bceid_service_basic_auth}`,
@@ -101,7 +100,7 @@ export function parseAccount(data: any) {
 
 export const makeSoapRequest = async (xmlPayload: string) => {
   return await soapRequest({
-    url: serviceUrl,
+    url: bceid_web_service_url,
     headers: defaultHeaders,
     xml: xmlPayload,
     timeout: 10000,
