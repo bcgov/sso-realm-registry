@@ -4,7 +4,7 @@ import githubResponseHandler from '../../pages/api/realms/pending';
 import prisma from 'utils/prisma';
 import { CustomRealmProfiles } from '../fixtures';
 import { getServerSession } from 'next-auth';
-import { createCustomRealmPullRequest, mergePullRequest, deleteBranch } from 'utils/github';
+import { createCustomRealmPullRequest, mergePullRequest } from 'utils/github';
 import { EventEnum, StatusEnum } from 'validators/create-realm';
 import { removeUserAsRealmAdmin } from 'controllers/keycloak';
 import { sendDeletionCompleteEmail } from 'utils/mailer';
@@ -97,14 +97,12 @@ describe('Realm Delete Request', () => {
     expect(res.statusCode).toBe(401);
     expect(createCustomRealmPullRequest).not.toHaveBeenCalled();
     expect(mergePullRequest).not.toHaveBeenCalled();
-    expect(deleteBranch).not.toHaveBeenCalled();
 
     mockAdminSession();
     await deleteHandler(req, res);
     expect(res.statusCode).toBe(200);
     expect(createCustomRealmPullRequest).toHaveBeenCalled();
     expect(mergePullRequest).toHaveBeenCalled();
-    expect(deleteBranch).toHaveBeenCalled();
   });
 
   it('Updates the status, archived, and prNumber when deleted successfully', async () => {
