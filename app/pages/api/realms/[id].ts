@@ -307,7 +307,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         return res.status(500).send('Unexpected error removing request. Please try again.');
       }
 
-      await deleteBranch(realm.realm!);
+      // handled by github repo settings
+      //await deleteBranch(realm.realm!);
       await Promise.all([
         prisma.roster.update({
           data: {
