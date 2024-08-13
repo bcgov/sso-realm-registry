@@ -4,6 +4,14 @@ image:
 route:
   host: realm-registry-sandbox.apps.gold.devops.gov.bc.ca
 
+resources:
+  limits:
+    cpu: 0.5
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 128Mi
+
 sso:
   url: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
   redirectUri: http://realm-registry-sandbox.apps.gold.devops.gov.bc.ca/oidc/keycloak
@@ -34,4 +42,10 @@ patroni:
     tag: 2.1-p5
 
   walG:
+    enabled: false
+
+patroni:
+  replicaCount: 1
+
+  podDisruptionBudget:
     enabled: false
