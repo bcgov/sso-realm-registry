@@ -11,7 +11,7 @@ export default (
     role="img"
   >
     <title id="homepageImage">
-      Visual of a school of fish for standard service and an octopus and moving legs for custom service
+      Visual of a school of fish for standard service and an octopus with moving legs for custom service
     </title>
     <g filter="url(#filter0_d_427_5921)">
       <rect x="429" width="425" height="750" fill="white" />
