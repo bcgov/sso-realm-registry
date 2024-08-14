@@ -1,7 +1,18 @@
 import React from 'react';
 
 export default (
-  <svg width="858" height="758" viewBox="0 0 858 758" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    width="858"
+    height="758"
+    viewBox="0 0 858 758"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-labelledby="homepageImage"
+    role="img"
+  >
+    <title id="homepageImage">
+      Visual of a school of fish for standard service and an octopus with moving legs for custom service
+    </title>
     <g filter="url(#filter0_d_427_5921)">
       <rect x="429" width="425" height="750" fill="white" />
       <path
