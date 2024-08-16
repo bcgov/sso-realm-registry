@@ -18,7 +18,7 @@ export const getRealmProfiles = async (
 
 export const getRealmProfile = async (id: string): Promise<[RealmProfile, null] | [null, any]> => {
   try {
-    const result = await instance.get(`realms/${id}`).then((res) => res.data);
+    const result = await instance.get(`realms/one?id=${id}`).then((res) => res.data);
     return [result as RealmProfile, null];
   } catch (err: any) {
     console.error(err);
