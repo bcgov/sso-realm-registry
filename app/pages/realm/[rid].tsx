@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
-import { useForm } from 'react-hook-form';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
-import Button from '@button-inc/bcgov-theme/Button';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { getRealmProfile, updateRealmProfile } from 'services/realm';
-import { RealmProfile } from 'types/realm-profile';
-import { UserSession } from 'types/user-session';
+import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import styled from 'styled-components';
+import RealmForm from 'components/RealmForm';
+import { getUpdateRealmSchemaByRole } from 'validators/create-realm';
+import { Grid as SpinnerGrid } from 'react-loader-spinner';
+import { useSession } from 'next-auth/react';
+import { User } from 'next-auth';
+import { RoleEnum } from 'utils/helpers';
+import { ModalContext } from 'context/modal';
 
 const Container = styled(ResponsiveContainer)`
   font-size: 1rem;
@@ -53,7 +57,7 @@ const mediaRules: MediaRule[] = [
     marginTop: 10,
   },
   {
-    width: 850,
+    width: 1150,
     marginTop: 10,
   },
 ];
@@ -63,45 +67,52 @@ interface Props {
 }
 
 function EditRealm({ alert }: Props) {
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { rid } = router.query;
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm();
-  const [realm, setRealm] = useState<RealmProfile | null>(null);
+  const [realm, setRealm] = useState<CustomRealmFormData | null>(null);
+  const { data } = useSession();
+  const { setModalConfig } = useContext(ModalContext);
+  const currentUser: Partial<User> = data?.user!;
 
   const updateRealm = (realm: RealmProfile) => {
     setRealm(realm);
-    const keys = Object.keys(realm);
-    for (let x = 0; x < keys.length; x++) {
-      const key = keys[x];
-      setValue(key, realm[key]);
-    }
   };
 
   const onSubmit = async (formData: any) => {
-    const [data, err] = await updateRealmProfile(rid as string, formData as RealmProfile);
-    if (!err) {
-      updateRealm(data as RealmProfile);
-
-      alert.show({
-        variant: 'success',
-        fadeOut: 2500,
-        closable: true,
-        content: 'Realm profile hass been updated successfully',
-      });
-    }
+    setModalConfig({
+      show: true,
+      title: `Update Realm Request`,
+      body: `Are you sure you want to update request ${realm?.id}?`,
+      showCancelButton: true,
+      showConfirmButton: true,
+      onConfirm: async () => {
+        await new Promise((res, rej) => {
+          setTimeout(() => {
+            res(true);
+          }, 5000);
+        });
+        const [, err] = await updateRealmProfile(rid as string, formData as RealmProfile);
+        if (!err) {
+          router.push('/my-dashboard').then(() => {
+            alert.show({
+              variant: 'success',
+              fadeOut: 2500,
+              closable: true,
+              content: 'Realm profile has been updated successfully',
+            });
+          });
+        }
+      },
+    });
   };
 
   useEffect(() => {
     async function fetchRealm() {
       if (!rid) return;
-
+      setLoading(true);
       const [data, err] = await getRealmProfile(rid as string);
+      setLoading(false);
       if (!err) {
         updateRealm(data as RealmProfile);
       }
@@ -110,93 +121,39 @@ function EditRealm({ alert }: Props) {
     fetchRealm();
   }, [rid]);
 
+  const showForm = !loading && realm;
+  const notFound = !loading && !realm;
+
+  const isAdmin = currentUser?.client_roles?.includes('sso-admin');
+  const isPO = currentUser?.idir_username?.toLowerCase() === realm?.productOwnerIdirUserId.toLowerCase();
+  let role = RoleEnum.TECHNICAL_LEAD;
+  if (isAdmin) role = RoleEnum.ADMIN;
+  else if (isPO) role = RoleEnum.PRODUCT_OWNER;
+
   return (
     <Container rules={mediaRules}>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <label htmlFor="product_name">
-          Product Name<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Product Name"
-          {...register('product_name', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
-        <label htmlFor="product_owner_email">
-          Product Owner Email<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Product Owner Email"
-          {...register('product_owner_email', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        <label htmlFor="product_owner_idir_userid">Product Owner Idir</label>
-        <input
-          type="text"
-          placeholder="Product Owner Idir"
-          disabled
-          {...register('product_owner_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
-        <label htmlFor="technical_contact_email">
-          Technical Contact Email<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Technical Contact Email"
-          {...register('technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        <label htmlFor="technical_contact_idir_userid">Technical Contact Idir</label>
-        <input
-          type="text"
-          placeholder="Technical Contact Idir"
-          disabled
-          {...register('technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
-        <label htmlFor="second_technical_contact_email">
-          Second Technical Contact Email<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Second Technical Contact Email"
-          {...register('second_technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        <label htmlFor="second_technical_contact_idir_userid">Second Technical Contact Idir</label>
-        <input
-          type="text"
-          placeholder="Second Technical Contact Idir"
-          disabled
-          {...register('second_technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
-        <label htmlFor="rc_channel">
-          Rocket.Chat Channel<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Rocket.Chat Channel"
-          {...register('rc_channel', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        <label htmlFor="rc_channel_owned_by">
-          Rocket.Chat Channel Owner<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Rocket.Chat Channel Owner"
-          {...register('rc_channel_owned_by', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        {realm && <p>Last Updated: {new Date(realm.updated_at).toLocaleString()}</p>}
-
-        <Button type="submit" variant="primary">
-          Save
-        </Button>
-      </form>
+      {loading && (
+        <div
+          style={{ display: 'flex', alignItems: 'center', flexDirection: 'column', rowGap: '1em', marginTop: '2em' }}
+        >
+          <SpinnerGrid color="#000" height={50} width={50} />
+          <p>loading content...</p>
+        </div>
+      )}
+      {showForm && (
+        <>
+          <h1>Edit Realm Information</h1>
+          <RealmForm
+            formData={realm}
+            setFormData={setRealm}
+            onSubmit={onSubmit}
+            onCancel={() => router.push('/my-dashboard')}
+            validationSchema={getUpdateRealmSchemaByRole(role)}
+            collapse={false}
+          />
+        </>
+      )}
+      {notFound && <h1>Realm Not Found.</h1>}
     </Container>
   );
 }

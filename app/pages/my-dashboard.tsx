@@ -7,7 +7,6 @@ import Alert from '@button-inc/bcgov-theme/Alert';
 import StyledLink from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
 import RealmLeftPanel from 'page-partials/my-dashboard/RealmLeftPanel';
-import RealmRightPanel from 'page-partials/my-dashboard/RealmRightPanel';
 import PopupModal from 'page-partials/my-dashboard/PopupModal';
 import TopAlertWrapper from 'components/TopAlertWrapper';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
@@ -17,6 +16,7 @@ import { useSession } from 'next-auth/react';
 import { User } from 'next-auth';
 import getConfig from 'next/config';
 import { InferGetServerSidePropsType } from 'next';
+import { useRouter } from 'next/router';
 
 const AlignCenter = styled.div`
   text-align: center;
@@ -50,6 +50,7 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasError, setHasError] = useState<boolean>(false);
   const [realms, setRealms] = useState<RealmProfile[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchSurvey() {
@@ -78,9 +79,7 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
   }, []);
 
   const handleEditClick = (id: string) => {
-    // router.push(`/realm/${id}`);
-    window.scrollTo(0, 0);
-    setSelectedId(id);
+    router.push(`/realm/${id}`);
   };
 
   const handleUpdate = (realm: RealmProfile) => {
@@ -131,22 +130,9 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
         ) : (
           <Grid cols={10} style={{ overflowX: 'hidden' }}>
             <Grid.Row collapse="800" gutter={[15, 2]}>
-              <Grid.Col span={selectedId ? 6 : 10} style={{ overflowX: 'auto' }}>
+              <Grid.Col span={10} style={{ overflowX: 'auto' }}>
                 <RealmLeftPanel realms={realms} onEditClick={handleEditClick} onCancel={handleCancel}></RealmLeftPanel>
               </Grid.Col>
-              {selectedId && (
-                <Grid.Col span={4}>
-                  <DomainsContext.Provider value={props.domains}>
-                    <RealmRightPanel
-                      key={new Date().getTime()}
-                      realm={realms.find((v) => String(v.id) === selectedId) as RealmProfile}
-                      currentUser={currentUser}
-                      onUpdate={handleUpdate}
-                      onCancel={handleCancel}
-                    />
-                  </DomainsContext.Provider>
-                </Grid.Col>
-              )}
             </Grid.Row>
           </Grid>
         )}
