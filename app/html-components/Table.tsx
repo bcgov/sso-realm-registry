@@ -3,6 +3,7 @@ import styled from 'styled-components';
 
 const Table = styled.table`
   width: 100%;
+  min-width: 80rem;
   -webkit-box-shadow: none;
   box-shadow: none;
   text-align: left;
@@ -39,7 +40,6 @@ const Table = styled.table`
   & th,
   & td {
     border: none;
-    word-wrap: break-word;
   }
 `;
 
