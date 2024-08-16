@@ -1,17 +1,19 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { useRouter } from 'next/router';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
-import { getRealmProfile, updateRealmProfile } from 'services/realm';
+import { updateRealmProfile } from 'services/realm';
 import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import styled from 'styled-components';
 import RealmForm from 'components/RealmForm';
 import { getUpdateRealmSchemaByRole } from 'validators/create-realm';
-import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import { useSession } from 'next-auth/react';
-import { User } from 'next-auth';
+import { getServerSession, User } from 'next-auth';
 import { RoleEnum } from 'utils/helpers';
 import { ModalContext } from 'context/modal';
+import { GetServerSidePropsContext } from 'next';
+import { authOptions } from 'pages/api/auth/[...nextauth]';
+import prisma from 'utils/prisma';
 
 const Container = styled(ResponsiveContainer)`
   font-size: 1rem;
@@ -63,21 +65,28 @@ const mediaRules: MediaRule[] = [
 ];
 
 interface Props {
+  realm: CustomRealmFormData | null;
   alert: BottomAlert;
 }
 
-function EditRealm({ alert }: Props) {
-  const [loading, setLoading] = useState(true);
+function EditPage({ realm, alert }: Props) {
+  if (!realm) {
+    return (
+      <Container rules={mediaRules}>
+        <h1>Not Found</h1>
+      </Container>
+    );
+  }
+  return <EditRealm realm={realm!} alert={alert} />;
+}
+
+function EditRealm({ realm: initialRealm, alert }: { realm: CustomRealmFormData; alert: BottomAlert }) {
   const router = useRouter();
   const { rid } = router.query;
-  const [realm, setRealm] = useState<CustomRealmFormData | null>(null);
+  const [realm, setRealm] = useState<CustomRealmFormData>(initialRealm);
   const { data } = useSession();
   const { setModalConfig } = useContext(ModalContext);
   const currentUser: Partial<User> = data?.user!;
-
-  const updateRealm = (realm: RealmProfile) => {
-    setRealm(realm);
-  };
 
   const onSubmit = async (formData: any) => {
     setModalConfig({
@@ -107,23 +116,6 @@ function EditRealm({ alert }: Props) {
     });
   };
 
-  useEffect(() => {
-    async function fetchRealm() {
-      if (!rid) return;
-      setLoading(true);
-      const [data, err] = await getRealmProfile(rid as string);
-      setLoading(false);
-      if (!err) {
-        updateRealm(data as RealmProfile);
-      }
-    }
-
-    fetchRealm();
-  }, [rid]);
-
-  const showForm = !loading && realm;
-  const notFound = !loading && !realm;
-
   const isAdmin = currentUser?.client_roles?.includes('sso-admin');
   const isPO = currentUser?.idir_username?.toLowerCase() === realm?.productOwnerIdirUserId.toLowerCase();
   let role = RoleEnum.TECHNICAL_LEAD;
@@ -132,30 +124,76 @@ function EditRealm({ alert }: Props) {
 
   return (
     <Container rules={mediaRules}>
-      {loading && (
-        <div
-          style={{ display: 'flex', alignItems: 'center', flexDirection: 'column', rowGap: '1em', marginTop: '2em' }}
-        >
-          <SpinnerGrid color="#000" height={50} width={50} />
-          <p>loading content...</p>
-        </div>
-      )}
-      {showForm && (
-        <>
-          <h1>Edit Realm Information</h1>
-          <RealmForm
-            formData={realm}
-            setFormData={setRealm}
-            onSubmit={onSubmit}
-            onCancel={() => router.push('/my-dashboard')}
-            validationSchema={getUpdateRealmSchemaByRole(role)}
-            collapse={false}
-          />
-        </>
-      )}
-      {notFound && <h1>Realm Not Found.</h1>}
+      <h1>Edit Realm Information</h1>
+      <RealmForm
+        formData={realm}
+        setFormData={setRealm}
+        onSubmit={onSubmit}
+        onCancel={() => router.push('/my-dashboard')}
+        validationSchema={getUpdateRealmSchemaByRole(role)}
+        collapse={false}
+      />
     </Container>
   );
 }
 
-export default withBottomAlert(EditRealm);
+export default withBottomAlert(EditPage);
+
+export const getServerSideProps = async (context: GetServerSidePropsContext) => {
+  const session = await getServerSession(context.req, context.res, authOptions);
+  if (!session) return;
+
+  const username = session?.user?.idir_username || '';
+
+  try {
+    const realm = await prisma.roster.findFirst({
+      where: {
+        id: Number(context.params?.rid),
+        OR: [
+          {
+            technicalContactIdirUserId: {
+              equals: username,
+              mode: 'insensitive',
+            },
+          },
+          {
+            secondTechnicalContactIdirUserId: {
+              equals: username,
+              mode: 'insensitive',
+            },
+          },
+          {
+            productOwnerIdirUserId: {
+              equals: username,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      },
+    });
+
+    if (!realm) {
+      return {
+        props: {
+          realm,
+        },
+      };
+    }
+
+    const realmSerialized = {
+      ...realm,
+      createdAt: realm?.createdAt?.toISOString(),
+      updatedAt: realm?.updatedAt?.toISOString(),
+    };
+    return {
+      props: {
+        realm: realmSerialized,
+      },
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      props: {},
+    };
+  }
+};
