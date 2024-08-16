@@ -264,7 +264,7 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
         variant: 'success',
         fadeOut: 3500,
         closable: true,
-        content: `Request id ${realmId} ${approval}.`,
+        content: `Realm request for ${realm?.realm} ${approval}.`,
       });
       const updatedRealms = realmRequests.map((realm) => {
         if (realm.id === realmId) return { ...realm, approved: approving } as CustomRealmFormData;
