@@ -89,14 +89,6 @@ const HeaderTitle = styled.div`
   margin-top: 15px;
 `;
 
-const Beta = styled.span`
-  vertical-align: text-top;
-  color: #fcba19;
-  text-transform: uppercase;
-  font-weight: 600;
-  font-size: 16px;
-`;
-
 interface Route {
   path: string;
   label: string;
@@ -266,11 +258,7 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
     <>
       <BCSans />
       <Navigation
-        title={() => (
-          <HeaderTitle>
-            Keycloak Realm Registry<Beta>Beta</Beta>
-          </HeaderTitle>
-        )}
+        title={() => <HeaderTitle>Keycloak Realm Registry</HeaderTitle>}
         rightSide={rightSide}
         mobileMenu={MobileMenu}
         onBannerClick={console.log}
