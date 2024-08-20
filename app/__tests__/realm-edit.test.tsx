@@ -1,11 +1,9 @@
 import React from 'react';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import EditPage from 'pages/realm/[rid]';
-import MyDashboard from 'pages/my-dashboard';
 import { CustomRealmFormData } from 'types/realm-profile';
 import { CustomRealmProfiles } from './fixtures';
 import { useSession } from 'next-auth/react';
-import { debug } from 'jest-preview';
 
 const PRODUCT_OWNER_IDIR_USERID = 'po';
 
@@ -136,10 +134,7 @@ describe('Form Validation', () => {
   });
 
   it('Enables/disables expected fields for a technical contact', async () => {
-    const { container } = render(<MyDashboard domains={undefined as any} />);
-    const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    const firstRowEditButton = within(firstRow).getByRole('img', { name: 'Edit' });
-    fireEvent.click(firstRowEditButton);
+    const { container } = render(<EditPage realm={testRealm} />);
 
     const inputs = await getFormInputs(container);
 
@@ -170,10 +165,8 @@ describe('Form Validation', () => {
         user: { idir_username: PRODUCT_OWNER_IDIR_USERID },
       },
     }));
-    const { container } = render(<MyDashboard domains={undefined as any} />);
-    const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    const firstRowEditButton = within(firstRow).getByRole('img', { name: 'Edit' });
-    fireEvent.click(firstRowEditButton);
+    const { container } = render(<EditPage realm={testRealm} />);
+
     const inputs = await getFormInputs(container);
 
     expect(inputs.realmNameInput.disabled).toBe(true);
@@ -203,10 +196,7 @@ describe('Form Validation', () => {
         user: { idir_username: PRODUCT_OWNER_IDIR_USERID, client_roles: 'sso-admin' },
       },
     }));
-    const { container } = render(<MyDashboard domains={undefined as any} />);
-    const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    const firstRowEditButton = within(firstRow).getByRole('img', { name: 'Edit' });
-    fireEvent.click(firstRowEditButton);
+    const { container } = render(<EditPage realm={testRealm} />);
 
     const inputs = await getFormInputs(container);
 
