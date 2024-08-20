@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import Head from 'next/head';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import styled from 'styled-components';
@@ -17,6 +17,8 @@ import { User } from 'next-auth';
 import getConfig from 'next/config';
 import { InferGetServerSidePropsType } from 'next';
 import { useRouter } from 'next/router';
+import { ModalContext } from 'context/modal';
+import RealmURIs from 'page-partials/my-dashboard/RealmURIs';
 
 const AlignCenter = styled.div`
   text-align: center;
@@ -51,6 +53,7 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
   const [hasError, setHasError] = useState<boolean>(false);
   const [realms, setRealms] = useState<RealmProfile[]>([]);
   const router = useRouter();
+  const { setModalConfig } = useContext(ModalContext);
 
   useEffect(() => {
     async function fetchSurvey() {
@@ -80,6 +83,21 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
 
   const handleEditClick = (id: string) => {
     router.push(`/realm/${id}`);
+  };
+
+  const handleViewClick = (id: string) => {
+    const realm = realms.find((realm) => String(realm.id) === id);
+    if (!realm) return;
+
+    setModalConfig({
+      show: true,
+      title: 'Environment Links',
+      body: (
+        <DomainsContext.Provider value={props.domains}>
+          <RealmURIs realm={realm}></RealmURIs>
+        </DomainsContext.Provider>
+      ),
+    });
   };
 
   const handleUpdate = (realm: RealmProfile) => {
@@ -131,7 +149,12 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
           <Grid cols={10} style={{ overflowX: 'hidden' }}>
             <Grid.Row collapse="800" gutter={[15, 2]}>
               <Grid.Col span={10} style={{ overflowX: 'auto' }}>
-                <RealmLeftPanel realms={realms} onEditClick={handleEditClick} onCancel={handleCancel}></RealmLeftPanel>
+                <RealmLeftPanel
+                  realms={realms}
+                  onEditClick={handleEditClick}
+                  onCancel={handleCancel}
+                  onViewClick={handleViewClick}
+                />
               </Grid.Col>
             </Grid.Row>
           </Grid>
