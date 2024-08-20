@@ -111,7 +111,6 @@ describe('Form Validation', () => {
   it('Enables/disables expected fields for a technical contact', async () => {
     const { container } = render(<MyDashboard domains={undefined as any} />);
     const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    debug();
     const firstRowEditButton = within(firstRow).getByRole('img', { name: 'Edit' });
     fireEvent.click(firstRowEditButton);
 
