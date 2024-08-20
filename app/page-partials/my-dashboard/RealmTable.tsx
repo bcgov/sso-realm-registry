@@ -38,21 +38,25 @@ function RealmTable({ realms, onEditClick }: Props) {
       header: 'IDP(s)',
       accessorKey: 'idps',
       enableColumnFilter: false,
+      enableSorting: false,
     },
     {
       header: 'Product Owner',
       accessorKey: 'productOwner',
       enableColumnFilter: false,
+      enableSorting: false,
     },
     {
       header: 'Technical Contact',
       accessorKey: 'technicalContact',
       enableColumnFilter: false,
+      enableSorting: false,
     },
     {
       header: 'Second Technical Contact',
       accessorKey: 'secondTechnicalContact',
       enableColumnFilter: false,
+      enableSorting: false,
     },
     {
       header: 'Rocket Chat Channel',
@@ -63,16 +67,19 @@ function RealmTable({ realms, onEditClick }: Props) {
       ),
       accessorKey: 'rcChannel',
       enableColumnFilter: false,
+      enableSorting: false,
     },
     {
       header: 'Status',
       accessorKey: 'status',
       enableColumnFilter: false,
+      enableSorting: false,
     },
     {
       header: 'Actions',
       accessorKey: 'actions',
       enableColumnFilter: false,
+      enableSorting: false,
       cell: (props: any) => (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ActionButton
@@ -118,7 +125,7 @@ function RealmTable({ realms, onEditClick }: Props) {
           };
         })}
         columns={columns}
-        enablePagination={false}
+        enablePagination
         enableGlobalSearch={true}
         variant="mini"
       />

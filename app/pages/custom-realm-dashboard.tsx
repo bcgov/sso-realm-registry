@@ -150,16 +150,19 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
       header: 'Product Owner',
       accessorKey: 'productOwnerEmail',
       enableColumnFilter: false,
+      enableSorting: false,
     },
     {
       header: 'Technical Contact',
       accessorKey: 'technicalContactEmail',
       enableColumnFilter: false,
+      enableSorting: false,
     },
     {
       header: 'Status',
       accessorKey: 'status',
       filterFn: listFilter,
+      enableSorting: false,
       meta: {
         filterLabel: 'Request Status',
         filterOptions: statusOptions,
@@ -169,6 +172,7 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
     {
       header: 'Approval Status',
       accessorKey: 'approved',
+      enableSorting: false,
       meta: {
         filterLabel: 'Approved',
         filterOptions: approvalOptions,
@@ -184,6 +188,7 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
       header: 'Archived',
       accessorKey: 'archived',
       filterFn: listFilter,
+      enableSorting: false,
       meta: {
         filterLabel: 'Archived',
         filterOptions: archivedOptions,
@@ -250,13 +255,7 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   return (
     <Container>
       <h1>Custom Realm Dashboard</h1>
-      <Table
-        columns={columns}
-        data={realmRequests}
-        variant="mini"
-        enablePagination={false}
-        onRowSelect={handleRowSelect}
-      />
+      <Table columns={columns} data={realmRequests} variant="mini" enablePagination onRowSelect={handleRowSelect} />
       {selectedRow && (
         <CustomRealmTabs
           lastUpdateTime={lastUpdateTime}
