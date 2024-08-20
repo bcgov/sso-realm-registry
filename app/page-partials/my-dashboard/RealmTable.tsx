@@ -1,9 +1,10 @@
 import React from 'react';
-import Button from '@button-inc/bcgov-theme/Button';
 import { RealmProfile } from 'types/realm-profile';
-import Table from 'components/Table';
 import Link from '@button-inc/bcgov-theme/Link';
 import { StatusEnum } from 'validators/create-realm';
+import { ActionButton } from 'components/ActionButton';
+import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import { Table } from '@bcgov-sso/common-react-components';
 
 interface Props {
   realms: RealmProfile[];
@@ -17,6 +18,82 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
    * since there will still be an active integration while updating. Archived requests
    * are not shown in this view so don't need to check the archived flag.
    */
+
+  const columns = [
+    {
+      header: 'ID',
+      accessorKey: 'id',
+      enableColumnFilter: false,
+    },
+    {
+      header: 'Realm',
+      accessorKey: 'realm',
+      enableColumnFilter: false,
+    },
+    {
+      header: 'Product',
+      accessorKey: 'productName',
+      enableColumnFilter: false,
+    },
+    {
+      header: 'IDP(s)',
+      accessorKey: 'idps',
+      enableColumnFilter: false,
+      enableSorting: false,
+    },
+    {
+      header: 'Product Owner',
+      accessorKey: 'productOwner',
+      enableColumnFilter: false,
+      enableSorting: false,
+    },
+    {
+      header: 'Technical Contact',
+      accessorKey: 'technicalContact',
+      enableColumnFilter: false,
+      enableSorting: false,
+    },
+    {
+      header: 'Second Technical Contact',
+      accessorKey: 'secondTechnicalContact',
+      enableColumnFilter: false,
+      enableSorting: false,
+    },
+    {
+      header: 'Rocket Chat Channel',
+      cell: (row: any) => (
+        <Link href={row.renderValue() as string} external>
+          Link
+        </Link>
+      ),
+      accessorKey: 'rcChannel',
+      enableColumnFilter: false,
+      enableSorting: false,
+    },
+    {
+      header: 'Status',
+      accessorKey: 'status',
+      enableColumnFilter: false,
+      enableSorting: false,
+    },
+    {
+      header: 'Actions',
+      accessorKey: 'actions',
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (props: any) => (
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <ActionButton
+            title="Edit"
+            icon={faEdit}
+            onClick={() => {
+              onEditClick(String(props.row.getValue('id')));
+            }}
+          ></ActionButton>
+        </div>
+      ),
+    },
+  ];
   const getStatus = (status?: string) => {
     switch (status) {
       case StatusEnum.APPLIED:
@@ -27,122 +104,31 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
   };
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div style={{ height: '100%' }}>
       <Table
         data={realms.map((r) => {
           return {
+            id: r.id,
             realm: r.realm,
             productName: r.productName,
             idps: r.idps.join(', '),
             protocol: r.protocol.join(', '),
-            productOwnerEmail: r.productOwnerEmail,
-            productOwnerIdirUserId: r.productOwnerIdirUserId,
-            technicalContactEmail: r.technicalContactEmail,
-            technicalContactIdirUserId: r.technicalContactIdirUserId,
-            secondTechnicalContactEmail: r.secondTechnicalContactEmail,
-            secondTechnicalContactIdirUserId: r.secondTechnicalContactIdirUserId,
+            productOwner: r.productOwnerEmail ? `${r.productOwnerEmail} (${r.productOwnerIdirUserId})` : '',
+            technicalContact: r.technicalContactEmail
+              ? `${r.technicalContactEmail} (${r.technicalContactIdirUserId})`
+              : '',
+            secondTechnicalContact: r.secondTechnicalContactEmail
+              ? `${r.secondTechnicalContactEmail} (${r.secondTechnicalContactIdirUserId})`
+              : '',
             status: getStatus(r.status),
             rcChannel: r.rcChannel,
             rcChannelOwnedBy: r.rcChannelOwnedBy,
-            actions: (
-              <div style={{ display: 'flex', columnGap: '0.5rem' }}>
-                <Button
-                  size="small"
-                  variant="secondary"
-                  style={{ position: 'relative' }}
-                  onClick={() => onEditClick(String(r.id))}
-                >
-                  Edit{' '}
-                </Button>
-                <Button
-                  size="small"
-                  variant="secondary"
-                  style={{ position: 'relative' }}
-                  onClick={() => onViewClick(String(r.id))}
-                >
-                  View{' '}
-                </Button>
-              </div>
-            ),
           };
         })}
-        columns={[
-          {
-            header: 'Keycloak Realm Name',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'realm',
-          },
-          {
-            header: 'Product Name',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'productName',
-          },
-          {
-            header: 'Identity Provider',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'idps',
-          },
-          {
-            header: 'Protocol',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'protocol',
-          },
-          {
-            header: 'Product Owner Email',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'productOwnerEmail',
-          },
-          {
-            header: 'Product Owner IDIR',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'productOwnerIdirUserId',
-          },
-          {
-            header: 'Technical Owner Email',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'technicalContactEmail',
-          },
-          {
-            header: 'Technical Owner IDIR',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'technicalContactIdirUserId',
-          },
-          {
-            header: 'Second Technical Owner Email',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'secondTechnicalContactEmail',
-          },
-          {
-            header: 'Second Technical Owner IDIR',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'secondTechnicalContactIdirUserId',
-          },
-          {
-            header: 'Rocket Chat Channel',
-            cell: (row) => (
-              <Link href={row.renderValue() as string} external>
-                Rocketchat
-              </Link>
-            ),
-            accessorKey: 'rcChannel',
-          },
-          {
-            header: 'Rocket Chat Channel Owner',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'rcChannelOwnedBy',
-          },
-          {
-            header: 'Status',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'status',
-          },
-          {
-            header: 'Actions',
-            cell: (row) => row.renderValue(),
-            accessorKey: 'actions',
-          },
-        ]}
-        noDataFoundMessage={'No realms found.'}
+        columns={columns}
+        enablePagination
+        enableGlobalSearch={true}
+        variant="mini"
       />
     </div>
   );
