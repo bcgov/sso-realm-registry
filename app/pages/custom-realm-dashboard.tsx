@@ -1,20 +1,6 @@
-import React, { ChangeEvent, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import styled from 'styled-components';
-import {
-  createColumnHelper,
-  SortingState,
-  useReactTable,
-  ColumnFiltersState,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  FilterFn,
-  flexRender,
-  Column,
-} from '@tanstack/react-table';
 import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
-import { faSort, faSortUp, faSortDown, faTrash, faFilter, faClose } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ModalContext } from 'context/modal';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { getRealmProfiles, deleteRealmRequest, updateRealmProfile } from 'services/realm';
@@ -24,154 +10,25 @@ import { GetServerSidePropsContext } from 'next';
 import { checkAdminRole } from 'utils/helpers';
 import { getAllRealms } from 'pages/api/realms';
 import CustomRealmTabs from 'page-partials/custom-realm-dashboard/CustomRealmTabs';
-import Select, { MultiValue } from 'react-select';
 import { StatusEnum } from 'validators/create-realm';
+import { Table } from '@bcgov-sso/common-react-components';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const Container = styled.div`
-  padding: 2em;
+  padding: 0 1.5em;
 `;
 
-const bgGrey = '#ededed';
-const selectedRowBg = '#4950fa';
-const hoverRowBg = '#fdb913';
-
-const Table = styled.table`
-  background-color: ${bgGrey};
-  border-collapse: separate;
-  padding: 0 1em;
-  border-spacing: 0 0.5em;
-
-  thead {
-    tr {
-      td,
-      th {
-        border-bottom: none;
-        vertical-align: top;
-      }
-      th > div.sortable {
-        svg {
-          padding-left: 0.2em;
-        }
-        cursor: pointer;
-      }
-    }
-  }
-
-  tbody {
-    tr {
-      background-color: white;
-      td,
-      th {
-        padding: 0.5em 1em;
-      }
-
-      &:hover {
-        background-color: ${hoverRowBg};
-        color: white;
-        cursor: pointer;
-      }
-
-      td:last-child {
-        border-bottom-right-radius: 0.2em;
-        border-top-right-radius: 0.2em;
-      }
-
-      td:first-child {
-        border-bottom-left-radius: 0.2em;
-        border-top-left-radius: 0.2em;
-      }
-
-      &.selected {
-        background-color: ${selectedRowBg};
-        color: white;
-        font-weight: bold;
-      }
-
-      .delete-icon {
-        padding: 0.2em;
-      }
-
-      .delete-icon.disabled {
-        cursor: not-allowed;
-        color: grey;
-        &:hover {
-          color: grey;
-        }
-      }
-
-      .delete-icon:hover {
-        color: red;
-      }
-    }
-  }
-`;
-
-// Filter Functions
-const listFilter: FilterFn<any> = (row, columnId, value) => {
-  if (value.length === 0) return true;
-  return value.includes(row.getValue(columnId));
-};
-const searchFilter: FilterFn<any> = (row, columnId, value) => {
-  return (row.getValue(columnId) as string).includes(value);
-};
-
-const columnHelper = createColumnHelper<CustomRealmFormData>();
 interface Props {
   defaultRealmRequests: CustomRealmFormData[];
   alert: BottomAlert;
 }
 const realmCreatingStatuses = ['pending', 'prSuccess', 'planned'];
 
-const FiltersContainer = styled.div`
-  display: flex;
-  column-gap: 1em;
-  margin-bottom: 0.5em;
-
-  .input-container {
-    display: flex;
-    width: 17em;
-    flex-direction: column;
-    label {
-      font-weight: bold;
-    }
-
-    .focus-box {
-      border: 1px solid rgb(204, 204, 204);
-      border-radius: 4px;
-      height: 41px;
-      &:hover {
-        border: 1px solid rgb(180, 180, 180);
-      }
-      &:focus-within {
-        outline: #2684ff auto 2px;
-      }
-    }
-
-    .react-select-input {
-      height: 37px;
-      margin-top: 1px;
-      outline: none;
-      border: none;
-    }
-
-    .flex-row {
-      display: flex;
-      align-items: center;
-      input {
-        flex-grow: 1;
-      }
-    }
-
-    .clear-input-icon {
-      padding: 0 0.3em;
-      color: rgb(204, 204, 204);
-      &:hover {
-        color: rgb(180, 180, 180);
-      }
-      border-left: 1px solid rgb(204, 204, 204);
-    }
-  }
-`;
+const listFilter = (row: any, columnId: string, value: any) => {
+  if (value.length === 0) return true;
+  return value.includes(row.getValue(columnId));
+};
 
 const statusLabelMap: { [key: string]: string } = {
   [StatusEnum.PENDING]: 'Pending',
@@ -202,14 +59,8 @@ interface SelectOption {
 
 function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>(defaultRealmRequests || []);
-  const [selectedRow, setSelectedRow] = useState<CustomRealmFormData | undefined>(defaultRealmRequests[0]);
+  const [selectedRow, setSelectedRow] = useState<CustomRealmFormData | undefined>();
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [requestStatusFilter, setRequestStatusFilter] = useState<null | MultiValue<SelectOption>>(null);
-  const [archivedStatusFilter, setArchivedStatusFilter] = useState<null | MultiValue<SelectOption>>(null);
-  const [approvalStatusFilter, setApprovalStatusFilter] = useState<null | MultiValue<SelectOption>>(null);
-  const [realmNameFilter, setRealmNameFilter] = useState<string>('');
   const { setModalConfig } = useContext(ModalContext);
 
   const handleDeleteRequest = (id: number) => {
@@ -285,96 +136,88 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   };
 
   const columns = [
-    columnHelper.accessor('id', {
-      header: () => 'Custom Realm ID',
-      cell: (info) => info.getValue(),
+    {
+      header: 'Custom Realm ID',
+      accessorKey: 'id',
       enableColumnFilter: false,
-    }),
-    columnHelper.accessor('realm', {
-      header: () => 'Custom Realm Name',
-      cell: (info) => info.getValue(),
-      filterFn: searchFilter,
-      enableColumnFilter: true,
-      enableSorting: false,
-    }),
-    columnHelper.accessor('productOwnerEmail', {
-      header: () => 'Product Owner',
+    },
+    {
+      header: 'Custom Realm Name',
+      accessorKey: 'realm',
       enableColumnFilter: false,
-      cell: (info) => info.renderValue(),
-    }),
-    columnHelper.accessor('technicalContactEmail', {
-      header: () => 'Technical Contact',
+    },
+    {
+      header: 'Product Owner',
+      accessorKey: 'productOwnerEmail',
       enableColumnFilter: false,
-      cell: (info) => info.renderValue(),
-    }),
-    columnHelper.accessor('status', {
-      header: 'Request Status',
-      enableSorting: false,
-      cell: (info) => {
-        const val = info.renderValue();
-        if (val && statusLabelMap[val]) {
-          return statusLabelMap[val];
-        } else {
-          return val;
-        }
+    },
+    {
+      header: 'Technical Contact',
+      accessorKey: 'technicalContactEmail',
+      enableColumnFilter: false,
+    },
+    {
+      header: 'Status',
+      accessorKey: 'status',
+      filterFn: listFilter,
+      meta: {
+        filterLabel: 'Request Status',
+        filterOptions: statusOptions,
+        multiSelect: true,
       },
-      enableColumnFilter: true,
-      filterFn: listFilter,
-    }),
-    columnHelper.accessor('approved', {
+    },
+    {
       header: 'Approval Status',
-      enableSorting: false,
-      enableColumnFilter: true,
+      accessorKey: 'approved',
+      meta: {
+        filterLabel: 'Approved',
+        filterOptions: approvalOptions,
+      },
       filterFn: listFilter,
-      cell: (info) => {
+      cell: (info: any) => {
         const approved = info.renderValue();
         if (approved === null) return 'Undecided';
         return approved ? 'Approved' : 'Declined';
       },
-    }),
-    columnHelper.accessor('archived', {
+    },
+    {
       header: 'Archived',
-      enableSorting: false,
-      enableColumnFilter: true,
+      accessorKey: 'archived',
       filterFn: listFilter,
-      cell: (info) => (info.renderValue() ? 'True' : 'False'),
-    }),
-    columnHelper.display({
+      meta: {
+        filterLabel: 'Archived',
+        filterOptions: archivedOptions,
+      },
+      cell: (info: any) => (info.renderValue() ? 'True' : 'False'),
+    },
+    {
       header: 'Actions',
+      accessorKey: 'actions',
+      enableColumnFilter: false,
       enableSorting: false,
-      cell: (props) => {
+      cell: (props: any) => {
         const disabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
         return (
-          <FontAwesomeIcon
-            onClick={() => {
-              if (!disabled) handleDeleteRequest(props.row.getValue('id'));
-            }}
-            icon={faTrash}
-            className={`delete-icon ${disabled ? 'disabled' : ''}`}
-            role="button"
-            data-testid="delete-btn"
-            title={disabled ? 'Only applied realms can be disabled' : 'Disable this realm'}
-          />
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <FontAwesomeIcon
+              onClick={() => {
+                if (!disabled) handleDeleteRequest(props.row.getValue('id'));
+              }}
+              icon={faTrash}
+              className={`delete-icon ${disabled ? 'disabled' : ''}`}
+              role="button"
+              data-testid="delete-btn"
+              title={disabled ? 'Only applied realms can be disabled' : 'Disable this realm'}
+            />
+          </div>
         );
       },
-    }),
+    },
   ];
 
-  const table = useReactTable({
-    data: realmRequests,
-    columns,
-    onSortingChange: setSorting,
-    enableColumnFilters: true,
-    state: {
-      sorting,
-      columnFilters,
-    },
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    enableFilters: true,
-    getFilteredRowModel: getFilteredRowModel(),
-  });
+  const handleRowSelect = (row: any) => {
+    setSelectedRow(row);
+  };
 
   const fetchRealms = async () => {
     // Intentionally not flashing error since this is a background fetch.
@@ -407,118 +250,13 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   return (
     <Container>
       <h1>Custom Realm Dashboard</h1>
-      <FiltersContainer>
-        <div className="input-container">
-          <label htmlFor="realm-name-filter-input">Request Name Filter:</label>
-          <div className="focus-box">
-            <div className="flex-row">
-              <input
-                className="react-select-input"
-                value={realmNameFilter}
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  setRealmNameFilter(newValue);
-                  table.getColumn('realm')?.setFilterValue(newValue);
-                }}
-                id="realm-name-filter-input"
-              />
-              {realmNameFilter.length > 0 && (
-                <FontAwesomeIcon
-                  icon={faClose}
-                  title="Clear filter"
-                  size="lg"
-                  className="clear-input-icon"
-                  onClick={() => {
-                    setRealmNameFilter('');
-                    table.getColumn('realm')?.setFilterValue('');
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="input-container">
-          <label htmlFor="status-filter-select">Request Status Filters:</label>
-          <Select
-            value={requestStatusFilter}
-            onChange={(selected) => {
-              setRequestStatusFilter(selected);
-              const newFilter = Array.from(selected.values()).map((selection) => selection.value);
-              table.getColumn('status')?.setFilterValue(newFilter);
-            }}
-            options={statusOptions}
-            inputId="status-filter-select"
-            isMulti={true}
-          />
-        </div>
-        <div className="input-container">
-          <label htmlFor="approval-filter-select">Request Approval Filters:</label>
-          <Select
-            value={approvalStatusFilter}
-            onChange={(selected) => {
-              setApprovalStatusFilter(selected);
-              const newFilter = Array.from(selected.values()).map((selection) => selection.value);
-              table.getColumn('approved')?.setFilterValue(newFilter);
-            }}
-            options={approvalOptions}
-            inputId="approval-filter-select"
-            isMulti={true}
-          />
-        </div>
-        <div className="input-container">
-          <label htmlFor="archived-filter-select">Request Archived Filters:</label>
-          <Select
-            value={archivedStatusFilter}
-            onChange={(selected) => {
-              setArchivedStatusFilter(selected);
-              const newFilter = Array.from(selected.values()).map((selection) => selection.value);
-              table.getColumn('archived')?.setFilterValue(newFilter);
-            }}
-            options={archivedOptions}
-            inputId="approval-filter-select"
-            isMulti={true}
-          />
-        </div>
-      </FiltersContainer>
-      <Table data-testid="custom-realm-table">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th key={header.id}>
-                  <div
-                    {...{
-                      className: header.column.getCanSort() ? 'sortable' : '',
-                      onClick: () => header.column.toggleSorting(),
-                    }}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {header.column.getCanSort() &&
-                      ({
-                        asc: <FontAwesomeIcon icon={faSortDown} />,
-                        desc: <FontAwesomeIcon icon={faSortUp} />,
-                      }[header.column.getIsSorted() as string] ?? <FontAwesomeIcon icon={faSort} />)}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr
-              key={row.id}
-              onClick={() => setSelectedRow(row.original)}
-              className={row.getValue('id') === selectedRow?.id ? 'selected' : ''}
-              data-testid={`custom-realm-row-${row.getValue('id')}`}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      <Table
+        columns={columns}
+        data={realmRequests}
+        variant="mini"
+        enablePagination={false}
+        onRowSelect={handleRowSelect}
+      />
       {selectedRow && (
         <CustomRealmTabs
           lastUpdateTime={lastUpdateTime}
