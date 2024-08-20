@@ -150,6 +150,7 @@ export const sendUpdateEmail = async (realm: any, session: any, updatingApproval
 
   return await sendEmail({
     to: [realm.technicalContactEmail, realm.productOwnerEmail],
+    cc: [ssoTeamEmail],
     body: `
           ${emailHeader}
           ${message}
@@ -184,6 +185,7 @@ export const sendDeleteEmail = async (realm: Roster, session: Session) => {
 
   return await sendEmail({
     to,
+    cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
         <p>We have received a request from ${username} for the deletion of Custom Realm ${realm.realm}. It will be deleted at approximately ${githubActionTriggerHour} as per our automated processes. Please contact the SSO team ASAP if you have any concerns.</p>
@@ -198,6 +200,7 @@ export const sendDeletionCompleteEmail = async (realm: Roster) => {
   if (!to.length) return;
   return await sendEmail({
     to,
+    cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
         <p>This is to inform you that Custom Realm ${realm.realm} has now been deleted.</p>
@@ -211,6 +214,7 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
   const prefix = app_env === 'development' ? '[DEV] ' : '';
   const realmName = realm.realm!;
   return await sendEmail({
+    cc: [ssoTeamEmail],
     to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
     body: `
           ${emailHeader}
@@ -331,6 +335,7 @@ export const onboardNewRealmAdmin = async (
   if (!to.length) return;
   return await sendEmail({
     to,
+    cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
         <p>
@@ -424,6 +429,7 @@ export const offboardRealmAdmin = async (session: Session, realm: Roster, oldCon
   if (!to.length) return;
   return await sendEmail({
     to,
+    cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
         <p>
