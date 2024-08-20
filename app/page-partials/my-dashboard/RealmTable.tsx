@@ -76,7 +76,7 @@ function RealmTable({ realms, onEditClick }: Props) {
       cell: (props: any) => (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ActionButton
-            title="edit"
+            title="Edit"
             icon={faEdit}
             onClick={() => {
               onEditClick(String(props.row.getValue('id')));
