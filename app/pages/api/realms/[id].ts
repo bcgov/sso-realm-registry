@@ -101,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           },
         });
 
-        if (!currentRequest) {
+        if (!currentRequest || currentRequest.approved === false) {
           return res.status(400).json({ success: false, error: 'Invalid request' });
         }
 
