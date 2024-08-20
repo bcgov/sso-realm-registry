@@ -140,7 +140,7 @@ describe('Server Fetching', () => {
   });
 });
 
-describe.skip('Form Validation', () => {
+describe('Form Validation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
