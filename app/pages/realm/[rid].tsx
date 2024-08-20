@@ -96,11 +96,6 @@ function EditRealm({ realm: initialRealm, alert }: { realm: CustomRealmFormData;
       showCancelButton: true,
       showConfirmButton: true,
       onConfirm: async () => {
-        await new Promise((res, rej) => {
-          setTimeout(() => {
-            res(true);
-          }, 5000);
-        });
         const [, err] = await updateRealmProfile(rid as string, formData as RealmProfile);
         if (!err) {
           router.push('/my-dashboard').then(() => {

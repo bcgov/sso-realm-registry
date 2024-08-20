@@ -8,9 +8,10 @@ import { StatusEnum } from 'validators/create-realm';
 interface Props {
   realms: RealmProfile[];
   onEditClick: (id: string) => void;
+  onViewClick: (id: string) => void;
 }
 
-function RealmTable({ realms, onEditClick }: Props) {
+function RealmTable({ realms, onEditClick, onViewClick }: Props) {
   /** Get a readable realm status. Currently treating only an applied state as active.
    * In the future if edits ever trigger the terraform process this will need to change,
    * since there will still be an active integration while updating. Archived requests
@@ -44,14 +45,24 @@ function RealmTable({ realms, onEditClick }: Props) {
             rcChannel: r.rcChannel,
             rcChannelOwnedBy: r.rcChannelOwnedBy,
             actions: (
-              <Button
-                size="small"
-                variant="secondary"
-                style={{ position: 'relative' }}
-                onClick={() => onEditClick(String(r.id))}
-              >
-                Edit{' '}
-              </Button>
+              <div style={{ display: 'flex', columnGap: '0.5rem' }}>
+                <Button
+                  size="small"
+                  variant="secondary"
+                  style={{ position: 'relative' }}
+                  onClick={() => onEditClick(String(r.id))}
+                >
+                  Edit{' '}
+                </Button>
+                <Button
+                  size="small"
+                  variant="secondary"
+                  style={{ position: 'relative' }}
+                  onClick={() => onViewClick(String(r.id))}
+                >
+                  View{' '}
+                </Button>
+              </div>
             ),
           };
         })}
