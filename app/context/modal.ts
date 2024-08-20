@@ -15,6 +15,6 @@ export const ModalContext = createContext({
     show: false,
     title: '',
     body: '',
-  },
+  } as ModalConfig,
   setModalConfig: (config: ModalConfig) => {},
 });
