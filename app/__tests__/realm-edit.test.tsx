@@ -1,10 +1,9 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import MyDashboard from 'pages/my-dashboard';
+import { render, screen } from '@testing-library/react';
+import EditPage from 'pages/realm/[rid]';
 import { CustomRealmFormData } from 'types/realm-profile';
 import { CustomRealmProfiles } from './fixtures';
 import { useSession } from 'next-auth/react';
-import { debug } from 'jest-preview';
 
 const PRODUCT_OWNER_IDIR_USERID = 'po';
 
@@ -57,6 +56,27 @@ jest.mock('next-auth/react', () => {
   };
 });
 
+jest.mock('next-auth', () => {
+  return {
+    __esModule: true,
+    default: jest.fn(() => {}),
+    getServerSession: jest.fn(() => {}),
+  };
+});
+
+const testRealm: CustomRealmFormData = {
+  realm: '',
+  purpose: '',
+  productName: '',
+  primaryEndUsers: [],
+  productOwnerEmail: '',
+  productOwnerIdirUserId: PRODUCT_OWNER_IDIR_USERID,
+  technicalContactEmail: '',
+  technicalContactIdirUserId: '',
+  secondTechnicalContactIdirUserId: '',
+  secondTechnicalContactEmail: '',
+};
+
 describe('Form Validation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -108,11 +128,13 @@ describe('Form Validation', () => {
     };
   };
 
+  it("Displays 'not found' when no realm can be retrieved", () => {
+    render(<EditPage realm={null} />);
+    screen.getByText('Not Found');
+  });
+
   it('Enables/disables expected fields for a technical contact', async () => {
-    const { container } = render(<MyDashboard domains={undefined as any} />);
-    const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    const firstRowEditButton = within(firstRow).getByRole('img', { name: 'Edit' });
-    fireEvent.click(firstRowEditButton);
+    const { container } = render(<EditPage realm={testRealm} />);
 
     const inputs = await getFormInputs(container);
 
@@ -143,10 +165,8 @@ describe('Form Validation', () => {
         user: { idir_username: PRODUCT_OWNER_IDIR_USERID },
       },
     }));
-    const { container } = render(<MyDashboard domains={undefined as any} />);
-    const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    const firstRowEditButton = within(firstRow).getByRole('img', { name: 'Edit' });
-    fireEvent.click(firstRowEditButton);
+    const { container } = render(<EditPage realm={testRealm} />);
+
     const inputs = await getFormInputs(container);
 
     expect(inputs.realmNameInput.disabled).toBe(true);
@@ -176,10 +196,7 @@ describe('Form Validation', () => {
         user: { idir_username: PRODUCT_OWNER_IDIR_USERID, client_roles: 'sso-admin' },
       },
     }));
-    const { container } = render(<MyDashboard domains={undefined as any} />);
-    const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    const firstRowEditButton = within(firstRow).getByRole('img', { name: 'Edit' });
-    fireEvent.click(firstRowEditButton);
+    const { container } = render(<EditPage realm={testRealm} />);
 
     const inputs = await getFormInputs(container);
 

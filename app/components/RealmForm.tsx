@@ -1,6 +1,6 @@
 import { CustomRealmFormData, PrimaryEndUser } from 'types/realm-profile';
 import styled from 'styled-components';
-import React, { useState, ChangeEvent, useEffect } from 'react';
+import React, { useState, ChangeEvent, useEffect, Dispatch, SetStateAction } from 'react';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import Button from '@button-inc/bcgov-theme/Button';
 import { ValidationError } from 'yup';
@@ -13,6 +13,8 @@ import kebabCase from 'lodash.kebabcase';
 import AsyncSelect from 'react-select/async';
 import { getIdirUserId, getIdirUsersByEmail } from 'services/azure';
 import { realmTakenError } from 'pages/custom-realm-form';
+import debounce from 'lodash.debounce';
+
 const SForm = styled.form<{ collapse: boolean }>`
   display: grid;
   grid-template-columns: ${(props) => (props.collapse ? '1fr' : '1fr 1fr')};
@@ -71,7 +73,13 @@ const SForm = styled.form<{ collapse: boolean }>`
   .checkbox-wrapper,
   .radio-wrapper {
     input {
+      display: inline-block;
+      width: auto;
+      flex-grow: 0;
       margin-right: 0.5em;
+    }
+    label {
+      display: inline-block;
     }
   }
 
@@ -166,7 +174,7 @@ const validateForm = (data: CustomRealmFormData, validationSchema: yup.AnyObject
 
 interface Props {
   formData: CustomRealmFormData;
-  setFormData: (data: CustomRealmFormData) => void;
+  setFormData: Dispatch<SetStateAction<CustomRealmFormData>> | Dispatch<SetStateAction<CustomRealmFormData | null>>;
   onSubmit: (data: CustomRealmFormData) => Promise<void>;
   onCancel: () => void;
   isAdmin?: boolean;
@@ -211,20 +219,22 @@ export default function RealmForm({
   const [divisions, setDivisions] = useState<string[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
 
-  const fuzzySearchIdirUsersByEmail = async (email: string) => {
+  const fuzzySearchIdirUsersByEmail = debounce((email: string, cb) => {
     if (email.length > 2) {
-      const [data] = await getIdirUsersByEmail(email);
-      const options = data?.map((u) => {
-        return {
-          value: u.id,
-          label: u.mail,
-        };
+      getIdirUsersByEmail(email).then(([data, err]) => {
+        if (err) return cb([]);
+        const options = data?.map((u) => {
+          return {
+            value: u.id,
+            label: u.mail,
+          };
+        });
+        cb(options);
       });
-      return new Promise<any>((resolve) => {
-        resolve(options);
-      });
+    } else {
+      cb([]);
     }
-  };
+  }, 300);
 
   const handleFormSelectChange = async (e: any, selectorName: string, dependentInput: string) => {
     let idirUserId: string | null = '';
@@ -360,8 +370,9 @@ export default function RealmForm({
             list="ministry-list"
             id="ministry"
             name="ministry"
-            onBlur={handleFormInputChange}
             disabled={!schemaFields.includes('ministry')}
+            value={formData.ministry}
+            onChange={handleFormInputChange}
           />
 
           <datalist id="ministry-list">
@@ -379,8 +390,9 @@ export default function RealmForm({
             list="division-list"
             id="division"
             name="division"
-            onBlur={handleFormInputChange}
+            onChange={handleFormInputChange}
             disabled={!schemaFields.includes('division')}
+            value={formData.division}
           />
 
           <datalist id="division-list">
@@ -398,8 +410,9 @@ export default function RealmForm({
             list="branch-list"
             id="branch"
             name="branch"
-            onBlur={handleFormInputChange}
+            onChange={handleFormInputChange}
             disabled={!schemaFields.includes('branch')}
+            value={formData.branch}
           />
 
           <datalist id="branch-list">
@@ -654,7 +667,7 @@ export default function RealmForm({
       {updatedMessage && <p>{updatedMessage}</p>}
 
       <ButtonContainer className="button-container">
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant="secondary" onClick={onCancel} disabled={submittingForm}>
           Cancel
         </Button>
         <Button onClick={handleSubmit} disabled={submittingForm}>

@@ -3,15 +3,16 @@ import { RealmProfile } from 'types/realm-profile';
 import Link from '@button-inc/bcgov-theme/Link';
 import { StatusEnum } from 'validators/create-realm';
 import { ActionButton } from 'components/ActionButton';
-import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faEye } from '@fortawesome/free-solid-svg-icons';
 import { Table } from '@bcgov-sso/common-react-components';
 
 interface Props {
   realms: RealmProfile[];
   onEditClick: (id: string) => void;
+  onViewClick: (id: string) => void;
 }
 
-function RealmTable({ realms, onEditClick }: Props) {
+function RealmTable({ realms, onEditClick, onViewClick }: Props) {
   /** Get a readable realm status. Currently treating only an applied state as active.
    * In the future if edits ever trigger the terraform process this will need to change,
    * since there will still be an active integration while updating. Archived requests
@@ -81,14 +82,21 @@ function RealmTable({ realms, onEditClick }: Props) {
       enableColumnFilter: false,
       enableSorting: false,
       cell: (props: any) => (
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', columnGap: '0.5rem' }}>
+          <ActionButton
+            title="View URIs"
+            icon={faEye}
+            onClick={() => {
+              onViewClick(String(props.row.getValue('id')));
+            }}
+          />
           <ActionButton
             title="Edit"
             icon={faEdit}
             onClick={() => {
               onEditClick(String(props.row.getValue('id')));
             }}
-          ></ActionButton>
+          />
         </div>
       ),
     },

@@ -99,7 +99,7 @@ interface Route {
 const routes: Route[] = [
   { path: '/', label: 'Home', roles: ['guest', 'user', 'sso-admin'] },
   { path: '/my-dashboard', label: 'My Dashboard', roles: ['user', 'sso-admin'] },
-  { path: '/custom-realm-form', label: 'Request Custom Realm', roles: ['sso-admin', 'user'] },
+  { path: '/custom-realm-form', label: 'Request Custom Realm', roles: ['sso-admin', 'user'], hide: true },
   { path: '/custom-realm-dashboard', label: 'Custom Realm Dashboard', roles: ['sso-admin'] },
   { path: '/realm', label: 'Realm Profile', roles: ['user'], hide: true },
 ];
