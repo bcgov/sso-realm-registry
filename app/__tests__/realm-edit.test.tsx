@@ -196,11 +196,6 @@ describe('Form Validation', () => {
     screen.getByText('Not Found');
   });
 
-  it("Displays 'not found' when no realm can be retrieved", () => {
-    render(<EditPage realm={null} />);
-    screen.getByText('Not Found');
-  });
-
   it('Enables/disables expected fields for a technical contact', async () => {
     const { container } = render(<EditPage realm={testRealm} />);
 
