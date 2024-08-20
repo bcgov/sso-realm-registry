@@ -14,6 +14,7 @@ import { ModalContext } from 'context/modal';
 import { GetServerSidePropsContext } from 'next';
 import { authOptions } from 'pages/api/auth/[...nextauth]';
 import prisma from 'utils/prisma';
+import { Prisma } from '@prisma/client';
 
 const Container = styled(ResponsiveContainer)`
   font-size: 1rem;
@@ -138,33 +139,38 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
   const session = await getServerSession(context.req, context.res, authOptions);
   if (!session) return;
 
-  const username = session?.user?.idir_username || '';
-
   try {
+    const username = session?.user?.idir_username || '';
+    const userIsAdmin = session?.user?.client_roles?.includes('sso-admin');
+    const where: Prisma.RosterWhereInput = {
+      id: Number(context.params?.rid),
+    };
+
+    if (!userIsAdmin) {
+      where['OR'] = [
+        {
+          technicalContactIdirUserId: {
+            equals: username,
+            mode: 'insensitive',
+          },
+        },
+        {
+          secondTechnicalContactIdirUserId: {
+            equals: username,
+            mode: 'insensitive',
+          },
+        },
+        {
+          productOwnerIdirUserId: {
+            equals: username,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
     const realm = await prisma.roster.findFirst({
-      where: {
-        id: Number(context.params?.rid),
-        OR: [
-          {
-            technicalContactIdirUserId: {
-              equals: username,
-              mode: 'insensitive',
-            },
-          },
-          {
-            secondTechnicalContactIdirUserId: {
-              equals: username,
-              mode: 'insensitive',
-            },
-          },
-          {
-            productOwnerIdirUserId: {
-              equals: username,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      },
+      where,
     });
 
     if (!realm) {
