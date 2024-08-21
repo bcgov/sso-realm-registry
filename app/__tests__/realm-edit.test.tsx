@@ -1,9 +1,11 @@
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
-import MyDashboard from 'pages/my-dashboard';
+import { render, screen } from '@testing-library/react';
+import EditPage, { getServerSideProps } from 'pages/realm/[rid]';
 import { CustomRealmFormData } from 'types/realm-profile';
 import { CustomRealmProfiles } from './fixtures';
 import { useSession } from 'next-auth/react';
+import prisma from 'utils/prisma';
+import { getServerSession } from 'next-auth';
 
 const PRODUCT_OWNER_IDIR_USERID = 'po';
 
@@ -54,6 +56,88 @@ jest.mock('next-auth/react', () => {
       return { data: mockSession, status: 'authenticated' }; // return type is [] in v3 but changed to {} in v4
     }),
   };
+});
+
+const MOCK_IDIR = 'idir';
+
+jest.mock('next-auth', () => {
+  return {
+    __esModule: true,
+    default: jest.fn(() => {}),
+    getServerSession: jest.fn(() => {
+      return {
+        user: {
+          idir_username: MOCK_IDIR,
+        },
+      };
+    }),
+  };
+});
+
+jest.mock('prisma', () => {
+  return {
+    __esModule: true,
+    default: jest.fn(() => {}),
+    roster: {
+      findFirst: jest.fn(),
+    },
+  };
+});
+
+const testRealm: CustomRealmFormData = {
+  realm: '',
+  purpose: '',
+  productName: '',
+  primaryEndUsers: [],
+  productOwnerEmail: '',
+  productOwnerIdirUserId: PRODUCT_OWNER_IDIR_USERID,
+  technicalContactEmail: '',
+  technicalContactIdirUserId: '',
+  secondTechnicalContactIdirUserId: '',
+  secondTechnicalContactEmail: '',
+};
+
+describe('Server Fetching', () => {
+  it('Requires non-admins to be a product owner, technical contact, or secondary contact to see the edit page', async () => {
+    await getServerSideProps({ params: { rid: 1 } } as any);
+    expect(prisma.roster.findFirst).toHaveBeenCalledTimes(1);
+    const prismaArgs = (prisma.roster.findFirst as jest.Mock).mock.calls[0][0];
+
+    // Checks the id
+    expect(prismaArgs.where.id).toBe(1);
+
+    // Also requires IDIR match
+    expect(prismaArgs.where['OR']).toBeDefined();
+    const technicalContactClause = prismaArgs.where['OR'].find((clause: any) =>
+      Object.keys(clause).includes('technicalContactIdirUserId'),
+    ).technicalContactIdirUserId;
+    const secondaryTechnicalContactClause = prismaArgs.where['OR'].find((clause: any) =>
+      Object.keys(clause).includes('secondTechnicalContactIdirUserId'),
+    ).secondTechnicalContactIdirUserId;
+    const productOwnerClause = prismaArgs.where['OR'].find((clause: any) =>
+      Object.keys(clause).includes('productOwnerIdirUserId'),
+    ).productOwnerIdirUserId;
+
+    expect(technicalContactClause.equals).toBe(MOCK_IDIR);
+    expect(secondaryTechnicalContactClause.equals).toBe(MOCK_IDIR);
+    expect(productOwnerClause.equals).toBe(MOCK_IDIR);
+  });
+
+  it('Allows admins to always see the edit page', async () => {
+    (getServerSession as jest.Mock).mockImplementation(() => ({
+      user: {
+        idir_username: MOCK_IDIR,
+        client_roles: ['sso-admin'],
+      },
+    }));
+    await getServerSideProps({ params: { rid: 1 } } as any);
+    expect(prisma.roster.findFirst).toHaveBeenCalledTimes(1);
+    const prismaArgs = (prisma.roster.findFirst as jest.Mock).mock.calls[0][0];
+    expect(prismaArgs.where['OR']).not.toBeDefined();
+
+    // sso-admin only checks the id
+    expect(prismaArgs.where).toEqual({ id: 1 });
+  });
 });
 
 describe('Form Validation', () => {
@@ -107,11 +191,13 @@ describe('Form Validation', () => {
     };
   };
 
+  it("Displays 'not found' when no realm can be retrieved", () => {
+    render(<EditPage realm={null} />);
+    screen.getByText('Not Found');
+  });
+
   it('Enables/disables expected fields for a technical contact', async () => {
-    const { container } = render(<MyDashboard />);
-    const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    const firstRowEditButton = within(firstRow).getByText('Edit');
-    firstRowEditButton.click();
+    const { container } = render(<EditPage realm={testRealm} />);
 
     const inputs = await getFormInputs(container);
 
@@ -142,10 +228,7 @@ describe('Form Validation', () => {
         user: { idir_username: PRODUCT_OWNER_IDIR_USERID },
       },
     }));
-    const { container } = render(<MyDashboard />);
-    const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    const firstRowEditButton = within(firstRow).getByText('Edit');
-    firstRowEditButton.click();
+    const { container } = render(<EditPage realm={testRealm} />);
 
     const inputs = await getFormInputs(container);
 
@@ -176,10 +259,7 @@ describe('Form Validation', () => {
         user: { idir_username: PRODUCT_OWNER_IDIR_USERID, client_roles: 'sso-admin' },
       },
     }));
-    const { container } = render(<MyDashboard />);
-    const firstRow = (await screen.findByText('realm 1')).closest('tr') as HTMLElement;
-    const firstRowEditButton = within(firstRow).getByText('Edit');
-    firstRowEditButton.click();
+    const { container } = render(<EditPage realm={testRealm} />);
 
     const inputs = await getFormInputs(container);
 

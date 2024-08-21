@@ -8,6 +8,7 @@ import Layout from 'layout/Layout';
 import { SessionProvider, signOut, signIn } from 'next-auth/react';
 import Modal from 'components/Modal';
 import { ModalContext, ModalConfig } from 'context/modal';
+import '@fortawesome/fontawesome-svg-core/styles.css';
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();

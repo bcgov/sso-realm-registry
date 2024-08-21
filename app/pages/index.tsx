@@ -6,10 +6,14 @@ import Grid from '@button-inc/bcgov-theme/Grid';
 import Button from '@button-inc/bcgov-theme/Button';
 import Link from '@button-inc/bcgov-theme/Link';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
-import IntroRealms from 'svg/IntroRealms';
+import squid from 'svg/squid.svg';
+import fishes from 'svg/fishes.svg';
 import { signIn, useSession } from 'next-auth/react';
 import NextLink from 'next/link';
 import { formatWikiURL } from 'utils/helpers';
+import Image from 'next/image';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheckCircle, faClose } from '@fortawesome/free-solid-svg-icons';
 
 const JumbotronH1 = styled.h1`
   font-size: 2.5rem;
@@ -58,6 +62,135 @@ const mediaRules: MediaRule[] = [
     horizontalAlign: 'none',
   },
 ];
+
+const GRID_PADDING = '1rem';
+const SplashImageContainer = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  grid-template-rows: repeat(5, auto);
+  box-shadow: 0px 5px 7px 0px #aaa;
+  margin: 0 7px;
+  padding-top: ${GRID_PADDING};
+  padding-bottom: ${GRID_PADDING};
+  margin-bottom: 10px;
+  justify-items: center;
+  grid-auto-flow: column;
+
+  * {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    justify-self: start;
+    li {
+      display: flex;
+      align-items: flex-start;
+      padding: 0;
+    }
+  }
+
+  .align-start {
+    justify-self: start;
+  }
+
+  .icon-bullet {
+    margin-top: 6px;
+    margin-right: 6px;
+    padding: 0;
+  }
+
+  .divider {
+    background: #bbb;
+    width: 1px;
+    grid-row: 1 / 6;
+    padding: 0;
+    height: calc(100% + 2 * ${GRID_PADDING});
+    position: relative;
+    bottom: ${GRID_PADDING};
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(11, auto);
+    .divider {
+      width: calc(100%);
+      margin: 1rem 0;
+      bottom: 0;
+      padding: 0;
+      grid-row: unset;
+      height: 1px;
+    }
+  }
+`;
+
+const SplashImage = () => {
+  return (
+    <SplashImageContainer>
+      <h2>Standard Realm</h2>
+      <p>SSO team configures it for you</p>
+      <div>
+        <Image height={'200px'} width={'200px'} src={fishes} alt="A group of fish swimming" />
+      </div>
+      <p className="align-start">Service we provide:</p>
+      <ul>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Self-registration
+        </li>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Immediate access to a development, test, and production environment
+        </li>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Default settings
+        </li>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Architecture best practices
+        </li>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          24/7 site reliability monitoring
+        </li>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Continuous improvement & bug fixes
+        </li>
+      </ul>
+      <div className="divider" />
+      <h2>Custom Realm</h2>
+      <p>Your team configures it yourself</p>
+      <Image src={squid} height={'200px'} width={'200px'} alt="A single squid swimming" />
+      <p className="align-start">Service we provide:</p>
+      <ul>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Governance model & decision
+        </li>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Infrastructure code for environment promotion
+        </li>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Access considerations
+        </li>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Migration of project teams that move ministries
+        </li>
+        <li>
+          <FontAwesomeIcon className="icon-bullet" icon={faCheckCircle} size="sm" color="#fcba2a" />
+          Dev-ops/technical support - have long term plan for it
+        </li>
+      </ul>
+    </SplashImageContainer>
+  );
+};
 
 const Home = () => {
   const router = useRouter();
@@ -124,7 +257,9 @@ const Home = () => {
                 </div>
               </Container>
             </Grid.Col>
-            <Grid.Col span={6}>{IntroRealms}</Grid.Col>
+            <Grid.Col span={6}>
+              <SplashImage />
+            </Grid.Col>
           </Grid.Row>
         </Grid>
       </ResponsiveContainer>

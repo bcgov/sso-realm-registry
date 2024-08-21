@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import Head from 'next/head';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import styled from 'styled-components';
@@ -7,7 +7,6 @@ import Alert from '@button-inc/bcgov-theme/Alert';
 import StyledLink from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
 import RealmLeftPanel from 'page-partials/my-dashboard/RealmLeftPanel';
-import RealmRightPanel from 'page-partials/my-dashboard/RealmRightPanel';
 import PopupModal from 'page-partials/my-dashboard/PopupModal';
 import TopAlertWrapper from 'components/TopAlertWrapper';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
@@ -17,6 +16,9 @@ import { useSession } from 'next-auth/react';
 import { User } from 'next-auth';
 import getConfig from 'next/config';
 import { InferGetServerSidePropsType } from 'next';
+import { useRouter } from 'next/router';
+import { ModalContext } from 'context/modal';
+import RealmURIs from 'page-partials/my-dashboard/RealmURIs';
 
 const AlignCenter = styled.div`
   text-align: center;
@@ -50,6 +52,8 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasError, setHasError] = useState<boolean>(false);
   const [realms, setRealms] = useState<RealmProfile[]>([]);
+  const router = useRouter();
+  const { setModalConfig } = useContext(ModalContext);
 
   useEffect(() => {
     async function fetchSurvey() {
@@ -78,9 +82,22 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
   }, []);
 
   const handleEditClick = (id: string) => {
-    // router.push(`/realm/${id}`);
-    window.scrollTo(0, 0);
-    setSelectedId(id);
+    router.push(`/realm/${id}`);
+  };
+
+  const handleViewClick = (id: string) => {
+    const realm = realms.find((realm) => String(realm.id) === id);
+    if (!realm) return;
+
+    setModalConfig({
+      show: true,
+      title: 'Environment Links',
+      body: (
+        <DomainsContext.Provider value={props.domains}>
+          <RealmURIs realm={realm}></RealmURIs>
+        </DomainsContext.Provider>
+      ),
+    });
   };
 
   const handleUpdate = (realm: RealmProfile) => {
@@ -131,22 +148,14 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
         ) : (
           <Grid cols={10} style={{ overflowX: 'hidden' }}>
             <Grid.Row collapse="800" gutter={[15, 2]}>
-              <Grid.Col span={selectedId ? 6 : 10} style={{ overflowX: 'auto' }}>
-                <RealmLeftPanel realms={realms} onEditClick={handleEditClick} onCancel={handleCancel}></RealmLeftPanel>
+              <Grid.Col span={10} style={{ overflowX: 'auto' }}>
+                <RealmLeftPanel
+                  realms={realms}
+                  onEditClick={handleEditClick}
+                  onCancel={handleCancel}
+                  onViewClick={handleViewClick}
+                />
               </Grid.Col>
-              {selectedId && (
-                <Grid.Col span={4}>
-                  <DomainsContext.Provider value={props.domains}>
-                    <RealmRightPanel
-                      key={new Date().getTime()}
-                      realm={realms.find((v) => String(v.id) === selectedId) as RealmProfile}
-                      currentUser={currentUser}
-                      onUpdate={handleUpdate}
-                      onCancel={handleCancel}
-                    />
-                  </DomainsContext.Provider>
-                </Grid.Col>
-              )}
             </Grid.Row>
           </Grid>
         )}
