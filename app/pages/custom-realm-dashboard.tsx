@@ -57,11 +57,15 @@ interface SelectOption {
   label: string;
 }
 
-function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
-  const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>(defaultRealmRequests || []);
+function CustomRealmDashboard({ alert }: Props) {
+  const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>([]);
   const [selectedRow, setSelectedRow] = useState<CustomRealmFormData | undefined>();
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const { setModalConfig } = useContext(ModalContext);
+
+  useEffect(() => {
+    fetchRealms();
+  }, []);
 
   const handleDeleteRequest = (id: number) => {
     const handleConfirm = async () => {
@@ -118,11 +122,11 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
         content: `Realm request for ${realm?.realm} ${approval}.`,
       });
       const updatedRealms = realmRequests.map((realm) => {
-        if (realm.id === realmId) return { ...realm, approved: approving } as CustomRealmFormData;
+        if (realm.id === realmId) return { ...realm, approved: approving } as RealmProfile;
         return realm;
       });
       setRealmRequests(updatedRealms);
-      setSelectedRow({ ...selectedRow, approved: approving } as CustomRealmFormData);
+      setSelectedRow({ ...selectedRow, approved: approving } as RealmProfile);
     };
     const statusVerb = approval === 'approved' ? 'Approve' : 'Decline';
     setModalConfig({
@@ -268,42 +272,3 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
 }
 
 export default withBottomAlert(CustomRealmDashboard);
-
-interface ExtendedForm extends CustomRealmFormData {
-  createdAt: object;
-  updatedAt: object;
-}
-
-/**Fetch realm data with first page load */
-export const getServerSideProps = async (context: GetServerSidePropsContext) => {
-  const session = await getServerSession(context.req, context.res, authOptions);
-  if (!session)
-    return {
-      props: { defaultRealmRequests: [] },
-    };
-
-  const username = session?.user?.idir_username || '';
-  const isAdmin = checkAdminRole(session?.user);
-
-  try {
-    const realms = await getAllRealms(username, isAdmin);
-    // Strip non-serializable dates
-    const formattedRealms = realms.map((realm: ExtendedForm) => {
-      const { createdAt, updatedAt, ...rest } = realm;
-      return rest;
-    });
-
-    return {
-      props: {
-        defaultRealmRequests: formattedRealms,
-      },
-    };
-  } catch (err) {
-    console.error(err);
-    return {
-      props: {
-        defaltRealmRequests: [],
-      },
-    };
-  }
-};
