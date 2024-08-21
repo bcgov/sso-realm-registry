@@ -638,14 +638,14 @@ export default function RealmForm({
 
         {schemaFields.includes('materialToSend') && (
           <div className="input-wrapper first-col">
-            <label htmlFor="materialToSend">Material To Send</label>
+            <label htmlFor="materialToSend">SSO team notes</label>
             <textarea
               rows={6}
               id="materialToSend"
               name="materialToSend"
               onChange={handleFormInputChange}
               value={formData.materialToSend}
-              placeholder="Material To Send"
+              placeholder="SSO team notes"
             />
           </div>
         )}
