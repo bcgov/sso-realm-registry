@@ -4,16 +4,12 @@ import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import { ModalContext } from 'context/modal';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { getRealmProfiles, deleteRealmRequest, updateRealmProfile } from 'services/realm';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from './api/auth/[...nextauth]';
-import { GetServerSidePropsContext } from 'next';
-import { checkAdminRole } from 'utils/helpers';
-import { getAllRealms } from 'pages/api/realms';
 import CustomRealmTabs from 'page-partials/custom-realm-dashboard/CustomRealmTabs';
 import { StatusEnum } from 'validators/create-realm';
 import { Table } from '@bcgov-sso/common-react-components';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Grid as SpinnerGrid } from 'react-loader-spinner';
 
 const Container = styled.div`
   padding: 0 1.5em;
@@ -62,9 +58,10 @@ function CustomRealmDashboard({ alert }: Props) {
   const [selectedRow, setSelectedRow] = useState<CustomRealmFormData | undefined>();
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const { setModalConfig } = useContext(ModalContext);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchRealms();
+    fetchRealms(true);
   }, []);
 
   const handleDeleteRequest = (id: number) => {
@@ -228,7 +225,8 @@ function CustomRealmDashboard({ alert }: Props) {
     setSelectedRow(row);
   };
 
-  const fetchRealms = async () => {
+  const fetchRealms = async (useLoading: boolean = false) => {
+    if (useLoading) setLoading(true);
     // Intentionally not flashing error since this is a background fetch.
     const [profiles, err] = await getRealmProfiles(false);
     if (profiles) {
@@ -241,6 +239,7 @@ function CustomRealmDashboard({ alert }: Props) {
         setSelectedRow(updatedRow);
       }
     }
+    if (useLoading) setLoading(false);
   };
 
   let interval: any;
@@ -259,7 +258,14 @@ function CustomRealmDashboard({ alert }: Props) {
   return (
     <Container>
       <h1>Custom Realm Dashboard</h1>
-      <Table columns={columns} data={realmRequests} variant="mini" enablePagination onRowSelect={handleRowSelect} />
+      {loading ? (
+        <AlignCenter>
+          <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />
+        </AlignCenter>
+      ) : (
+        <Table columns={columns} data={realmRequests} variant="mini" enablePagination onRowSelect={handleRowSelect} />
+      )}
+
       {selectedRow && (
         <CustomRealmTabs
           lastUpdateTime={lastUpdateTime}
@@ -270,5 +276,9 @@ function CustomRealmDashboard({ alert }: Props) {
     </Container>
   );
 }
+
+const AlignCenter = styled.div`
+  text-align: center;
+`;
 
 export default withBottomAlert(CustomRealmDashboard);
