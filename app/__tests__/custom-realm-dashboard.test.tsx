@@ -7,7 +7,6 @@ import { getRealmEvents } from 'services/events';
 import { CustomRealmFormData } from 'types/realm-profile';
 import Router from 'next/router';
 import { CustomRealms } from './fixtures';
-import { debug } from 'jest-preview';
 
 jest.mock('services/realm', () => {
   return {
