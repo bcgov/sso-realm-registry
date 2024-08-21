@@ -103,7 +103,7 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
       ),
     },
   ];
-  const getStatus = (status?: string, approved?: boolean) => {
+  const getStatus = (status?: string, approved?: boolean | null) => {
     if (status === StatusEnum.APPLIED) return 'Ready';
     else if (approved === false) return 'Rejected';
     else return 'In Progress';
