@@ -117,16 +117,27 @@ describe('Restore Realm', () => {
     expect(mocks.res.statusCode).toBe(200);
   });
 
-  it('Only allows archived realms to be restored', async () => {
+  it('Only allows archived realms that are applied or in pull request to be restored', async () => {
     const { req, res } = createMocks({ method: 'POST' });
-    await handler(req, res);
-    expect(res.statusCode).toBe(200);
 
-    (prisma.roster.findUnique as jest.Mock).mockImplementationOnce(() =>
-      Promise.resolve({ ...realm, archived: false }),
-    );
-    await handler(req, res);
-    expect(res.statusCode).toBe(400);
+    const validStatuses = [StatusEnum.PRSUCCESS, StatusEnum.APPLIED];
+    const invalidStatuses = [StatusEnum.APPLYFAILED, StatusEnum.PENDING, StatusEnum.PRFAILED];
+
+    validStatuses.forEach(async (status) => {
+      (prisma.roster.findUnique as jest.Mock).mockImplementationOnce(() =>
+        Promise.resolve({ ...realm, archived: true, status }),
+      );
+      await handler(req, res);
+      expect(res.statusCode).toBe(200);
+    });
+
+    invalidStatuses.forEach(async (status) => {
+      (prisma.roster.findUnique as jest.Mock).mockImplementationOnce(() =>
+        Promise.resolve({ ...realm, archived: true, status }),
+      );
+      await handler(req, res);
+      expect(res.statusCode).toBe(400);
+    });
   });
 
   it('Logs a success event when successful', async () => {

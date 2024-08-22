@@ -38,7 +38,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(400).json({ success: false, error: 'Invalid request' });
     }
 
-    const canRestore = realm.status === StatusEnum.APPLIED && realm.archived === true;
+    const canRestore =
+      ([StatusEnum.PRSUCCESS, StatusEnum.APPLIED] as string[]).includes(realm.status!) && realm.archived === true;
     if (!canRestore) return res.status(400).json({ success: false, error: 'Invalid request' });
 
     let prResponse: CreatePullRequestResponseType;

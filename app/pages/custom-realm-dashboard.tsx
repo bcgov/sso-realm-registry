@@ -235,7 +235,9 @@ function CustomRealmDashboard({ alert }: Props) {
       enableSorting: false,
       cell: (props: any) => {
         const deleteDisabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
-        const restoreDisabled = props.row.original.status !== 'applied' || props.row.original.archived === false;
+        const restoreDisabled =
+          ![StatusEnum.APPLIED, StatusEnum.PRSUCCESS].includes(props.row.original.status) ||
+          props.row.original.archived === false;
         return (
           <div style={{ display: 'flex', justifyContent: 'center', columnGap: '0.5rem' }}>
             <FontAwesomeIcon
