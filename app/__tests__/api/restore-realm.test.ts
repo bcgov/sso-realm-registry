@@ -131,6 +131,15 @@ describe('Restore Realm', () => {
       expect(res.statusCode).toBe(200);
     });
 
+    validStatuses.forEach(async (status) => {
+      (prisma.roster.findUnique as jest.Mock).mockImplementationOnce(() =>
+        // Reject since archived is false for valid status
+        Promise.resolve({ ...realm, archived: false, status }),
+      );
+      await handler(req, res);
+      expect(res.statusCode).toBe(400);
+    });
+
     invalidStatuses.forEach(async (status) => {
       (prisma.roster.findUnique as jest.Mock).mockImplementationOnce(() =>
         Promise.resolve({ ...realm, archived: true, status }),
