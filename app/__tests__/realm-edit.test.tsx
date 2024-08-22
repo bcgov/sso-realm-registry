@@ -217,7 +217,7 @@ describe('Form Validation', () => {
 
     expect(screen.queryByTestId('rc-channel-input', { exact: false })).toBeNull();
     expect(screen.queryByTestId('rc-channel-owner-input', { exact: false })).toBeNull();
-    expect(screen.queryByLabelText('Material To Send', { exact: false })).toBeNull();
+    expect(screen.queryByLabelText('SSO team notes', { exact: false })).toBeNull();
   });
 
   it('Enables/disables expected fields for a product owner', async () => {
@@ -248,7 +248,7 @@ describe('Form Validation', () => {
 
     expect(screen.queryByTestId('rc-channel-input', { exact: false })).toBeNull();
     expect(screen.queryByTestId('rc-channel-owner-input', { exact: false })).toBeNull();
-    expect(screen.queryByLabelText('Material To Send', { exact: false })).toBeNull();
+    expect(screen.queryByLabelText('SSO team notes', { exact: false })).toBeNull();
   });
 
   it('Enables/disables expected fields for an admin', async () => {
@@ -279,6 +279,6 @@ describe('Form Validation', () => {
 
     expect(screen.queryByTestId('rc-channel-input', { exact: false })).not.toBeNull();
     expect(screen.queryByTestId('rc-channel-owner-input', { exact: false })).not.toBeNull();
-    expect(screen.queryByLabelText('Material To Send', { exact: false })).not.toBeNull();
+    expect(screen.queryByLabelText('SSO team notes', { exact: false })).not.toBeNull();
   });
 });

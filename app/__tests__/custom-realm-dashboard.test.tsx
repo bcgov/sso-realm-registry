@@ -7,12 +7,12 @@ import { getRealmEvents } from 'services/events';
 import { CustomRealmFormData } from 'types/realm-profile';
 import Router from 'next/router';
 import { CustomRealms } from './fixtures';
-import { debug } from 'jest-preview';
 
 jest.mock('services/realm', () => {
   return {
     deleteRealmRequest: jest.fn((realmInfo: CustomRealmFormData) => Promise.resolve([true, null])),
     updateRealmProfile: jest.fn((id: number, status: string) => Promise.resolve([true, null])),
+    getRealmProfiles: jest.fn((excludeArchived: boolean) => Promise.resolve([CustomRealms, null])),
   };
 });
 
@@ -107,10 +107,10 @@ jest.mock('../pages/api/auth/[...nextauth]', () => {
 });
 
 describe('Table', () => {
-  it('Loads in table data from serverside props', () => {
-    render(<CustomRealmDashboard defaultRealmRequests={CustomRealms} />);
-    expect(screen.getByText('realm 1'));
-    expect(screen.getByText('realm 2'));
+  it('Loads in table data from serverside props', async () => {
+    render(<CustomRealmDashboard />);
+    await waitFor(() => screen.getByText('realm 1'));
+    await waitFor(() => screen.getByText('realm 2'));
   });
 });
 
@@ -127,6 +127,7 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
+    await waitFor(() => screen.getByText('realm 1'));
     fireEvent.click(screen.getByText('realm 1'));
     screen.getByText('Access Request').click();
     await waitFor(() => screen.getByText('Approve Custom Realm', { selector: 'button' }).click());
@@ -141,6 +142,7 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
+    await waitFor(() => screen.getByText('realm 1'));
     fireEvent.click(screen.getByText('realm 1'));
     screen.getByText('Access Request').click();
     await waitFor(() => screen.getByText('Decline Custom Realm', { selector: 'button' }).click());
@@ -155,6 +157,7 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
+    await waitFor(() => screen.getByText('realm 1'));
     fireEvent.click(screen.getByText('realm 1'));
     screen.getByText('Access Request').click();
     await waitFor(() => screen.getByText('Approve Custom Realm', { selector: 'button' }).click());
@@ -173,6 +176,7 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
+    await waitFor(() => screen.getByText('realm 1'));
     fireEvent.click(screen.getByText('realm 1'));
     screen.getByText('Access Request').click();
     await waitFor(() => screen.getByText('Decline Custom Realm', { selector: 'button' }).click());
@@ -191,6 +195,7 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
+    await waitFor(() => screen.getByText('realm 1'));
     (updateRealmProfile as jest.MockedFunction<any>).mockImplementationOnce(() =>
       Promise.resolve([null, { message: 'failure' }]),
     );
@@ -227,6 +232,7 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
+    await waitFor(() => screen.getByText('realm 1'));
     (updateRealmProfile as jest.MockedFunction<any>).mockImplementationOnce(() =>
       Promise.resolve([null, { message: 'failure' }]),
     );
@@ -263,7 +269,8 @@ describe('Events table', () => {
   });
 
   it('fetches correct events when selected row changes', async () => {
-    render(<CustomRealmDashboard defaultRealmRequests={CustomRealms} />);
+    render(<CustomRealmDashboard />);
+    await waitFor(() => screen.getByText('realm 1'));
     const row1 = screen.getByText('realm 1');
     fireEvent.click(row1);
     expect(getRealmEvents).toHaveBeenCalledTimes(1);
@@ -279,8 +286,8 @@ describe('Events table', () => {
   });
 
   it('displays events for the selected realm and updates when changing rows', async () => {
-    render(<CustomRealmDashboard defaultRealmRequests={CustomRealms} />);
-
+    render(<CustomRealmDashboard />);
+    await waitFor(() => screen.getByText('realm 1'));
     const firstRealmRow = screen.getByText('realm 1');
     fireEvent.click(firstRealmRow);
     const eventTab = screen.getByText('Events');
@@ -306,6 +313,7 @@ describe('Events table', () => {
         router={Router as any}
       />,
     );
+    await waitFor(() => screen.getByText('realm 1'));
     fireEvent.click(screen.getByText('realm 1'));
     await waitFor(() => screen.getByText('Network error when fetching realm events.'));
   });

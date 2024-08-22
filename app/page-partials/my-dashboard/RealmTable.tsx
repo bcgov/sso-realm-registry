@@ -94,20 +94,19 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
             title="Edit"
             icon={faEdit}
             onClick={() => {
+              if (props.row.original.approved === false) return;
               onEditClick(String(props.row.getValue('id')));
             }}
+            disabled={props.row.original.approved === false}
           />
         </div>
       ),
     },
   ];
-  const getStatus = (status?: string) => {
-    switch (status) {
-      case StatusEnum.APPLIED:
-        return 'Ready';
-      default:
-        return 'In Progress';
-    }
+  const getStatus = (status?: string, approved?: boolean | null) => {
+    if (status === StatusEnum.APPLIED) return 'Ready';
+    else if (approved === false) return 'Rejected';
+    else return 'In Progress';
   };
 
   return (
@@ -127,9 +126,10 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
             secondTechnicalContact: r.secondTechnicalContactEmail
               ? `${r.secondTechnicalContactEmail} (${r.secondTechnicalContactIdirUserId})`
               : '',
-            status: getStatus(r.status),
+            status: getStatus(r.status, r.approved),
             rcChannel: r.rcChannel,
             rcChannelOwnedBy: r.rcChannelOwnedBy,
+            approved: r.approved,
           };
         })}
         columns={columns}

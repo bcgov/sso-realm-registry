@@ -143,4 +143,16 @@ describe('Profile Validations', () => {
     const updatedFields = Object.keys(profileUpdate.mock.calls[0][0].data);
     adminAllowedFields.forEach((field) => expect(updatedFields.includes(field)).toBeTruthy());
   });
+
+  it('does not allow to update rejected realms', async () => {
+    (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
+      return Promise.resolve({ ...CustomRealmProfiles[0], approved: false });
+    });
+    const { req, res } = createMocks({
+      method: 'PUT',
+      query: { id: 1 },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(400);
+  });
 });

@@ -4,16 +4,12 @@ import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import { ModalContext } from 'context/modal';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { getRealmProfiles, deleteRealmRequest, updateRealmProfile, restoreRealmProfile } from 'services/realm';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from './api/auth/[...nextauth]';
-import { GetServerSidePropsContext } from 'next';
-import { checkAdminRole } from 'utils/helpers';
-import { getAllRealms } from 'pages/api/realms';
 import CustomRealmTabs from 'page-partials/custom-realm-dashboard/CustomRealmTabs';
 import { StatusEnum } from 'validators/create-realm';
 import { Table } from '@bcgov-sso/common-react-components';
 import { faTrash, faTrashRestoreAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Grid as SpinnerGrid } from 'react-loader-spinner';
 
 const Container = styled.div`
   padding: 0 1.5em;
@@ -57,11 +53,16 @@ interface SelectOption {
   label: string;
 }
 
-function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
-  const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>(defaultRealmRequests || []);
+function CustomRealmDashboard({ alert }: Props) {
+  const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>([]);
   const [selectedRow, setSelectedRow] = useState<CustomRealmFormData | undefined>();
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const { setModalConfig } = useContext(ModalContext);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchRealms(true);
+  }, []);
 
   const handleDeleteRequest = (id: number) => {
     const handleConfirm = async () => {
@@ -150,11 +151,11 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
         content: `Realm request for ${realm?.realm} ${approval}.`,
       });
       const updatedRealms = realmRequests.map((realm) => {
-        if (realm.id === realmId) return { ...realm, approved: approving } as CustomRealmFormData;
+        if (realm.id === realmId) return { ...realm, approved: approving } as RealmProfile;
         return realm;
       });
       setRealmRequests(updatedRealms);
-      setSelectedRow({ ...selectedRow, approved: approving } as CustomRealmFormData);
+      setSelectedRow({ ...selectedRow, approved: approving } as RealmProfile);
     };
     const statusVerb = approval === 'approved' ? 'Approve' : 'Decline';
     setModalConfig({
@@ -267,7 +268,8 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
     setSelectedRow(row);
   };
 
-  const fetchRealms = async () => {
+  const fetchRealms = async (useLoading: boolean = false) => {
+    if (useLoading) setLoading(true);
     // Intentionally not flashing error since this is a background fetch.
     const [profiles, err] = await getRealmProfiles(false);
     if (profiles) {
@@ -280,6 +282,7 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
         setSelectedRow(updatedRow);
       }
     }
+    if (useLoading) setLoading(false);
   };
 
   let interval: any;
@@ -298,7 +301,14 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   return (
     <Container>
       <h1>Custom Realm Dashboard</h1>
-      <Table columns={columns} data={realmRequests} variant="mini" enablePagination onRowSelect={handleRowSelect} />
+      {loading ? (
+        <AlignCenter>
+          <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />
+        </AlignCenter>
+      ) : (
+        <Table columns={columns} data={realmRequests} variant="mini" enablePagination onRowSelect={handleRowSelect} />
+      )}
+
       {selectedRow && (
         <CustomRealmTabs
           lastUpdateTime={lastUpdateTime}
@@ -310,43 +320,8 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
   );
 }
 
+const AlignCenter = styled.div`
+  text-align: center;
+`;
+
 export default withBottomAlert(CustomRealmDashboard);
-
-interface ExtendedForm extends CustomRealmFormData {
-  createdAt: object;
-  updatedAt: object;
-}
-
-/**Fetch realm data with first page load */
-export const getServerSideProps = async (context: GetServerSidePropsContext) => {
-  const session = await getServerSession(context.req, context.res, authOptions);
-  if (!session)
-    return {
-      props: { defaultRealmRequests: [] },
-    };
-
-  const username = session?.user?.idir_username || '';
-  const isAdmin = checkAdminRole(session?.user);
-
-  try {
-    const realms = await getAllRealms(username, isAdmin);
-    // Strip non-serializable dates
-    const formattedRealms = realms.map((realm: ExtendedForm) => {
-      const { createdAt, updatedAt, ...rest } = realm;
-      return rest;
-    });
-
-    return {
-      props: {
-        defaultRealmRequests: formattedRealms,
-      },
-    };
-  } catch (err) {
-    console.error(err);
-    return {
-      props: {
-        defaltRealmRequests: [],
-      },
-    };
-  }
-};
