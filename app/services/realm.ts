@@ -36,6 +36,16 @@ export const updateRealmProfile = async (id: string, data: RealmProfile): Promis
   }
 };
 
+export const restoreRealmProfile = async (id: string): Promise<[any, null] | [null, any]> => {
+  try {
+    const result = await instance.post(`realms/${id}/restore`).then((res) => res.data);
+    return [result as RealmProfile, null];
+  } catch (err: any) {
+    console.error(err);
+    return [null, err];
+  }
+};
+
 export const submitRealmRequest = async (realmInfo: CustomRealmFormData) => {
   try {
     const result = await instance.post(`realms`, realmInfo).then((res) => res.data);

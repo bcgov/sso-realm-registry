@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]';
+import { authOptions } from '../../auth/[...nextauth]';
 import { RoleEnum, adminOnlyFields, checkAdminRole, createEvent, getUpdatedProperties } from 'utils/helpers';
 import prisma from 'utils/prisma';
 import { EventEnum, StatusEnum, getUpdateRealmSchemaByRole } from 'validators/create-realm';
