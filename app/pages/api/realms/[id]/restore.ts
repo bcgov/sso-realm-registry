@@ -63,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           },
         }),
       ]);
-      return res.status(500).send('Failed');
+      return res.status(500).send({ success: false, error: 'Unexpected Exception' });
     }
 
     await prisma.roster.update({

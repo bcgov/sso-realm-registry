@@ -111,7 +111,7 @@ function CustomRealmDashboard({ alert }: Props) {
         variant: 'success',
         fadeOut: 3500,
         closable: true,
-        content: `Deleted request id ${id} successfully.`,
+        content: `Restored request id ${id} successfully.`,
       });
       const updatedRealms = realmRequests.map((realm) =>
         realm.id === id ? { ...realm, archived: false, status: StatusEnum.PRSUCCESS } : realm,
