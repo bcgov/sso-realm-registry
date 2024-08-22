@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import { ModalContext } from 'context/modal';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
-import { getRealmProfiles, deleteRealmRequest, updateRealmProfile } from 'services/realm';
+import { getRealmProfiles, deleteRealmRequest, updateRealmProfile, restoreRealmProfile } from 'services/realm';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './api/auth/[...nextauth]';
 import { GetServerSidePropsContext } from 'next';
@@ -12,7 +12,7 @@ import { getAllRealms } from 'pages/api/realms';
 import CustomRealmTabs from 'page-partials/custom-realm-dashboard/CustomRealmTabs';
 import { StatusEnum } from 'validators/create-realm';
 import { Table } from '@bcgov-sso/common-react-components';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faTrashRestoreAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const Container = styled.div`
@@ -89,6 +89,38 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
       show: true,
       title: 'Delete Custom Realm',
       body: `Are you sure you want to delete this custom realm? Once you delete it, this realm name cannot be used again.`,
+      showCancelButton: true,
+      showConfirmButton: true,
+      onConfirm: handleConfirm,
+    });
+  };
+
+  const handleRestoreRequest = (id: number) => {
+    const handleConfirm = async () => {
+      const [, err] = await restoreRealmProfile(String(id));
+      if (err) {
+        return alert.show({
+          variant: 'danger',
+          fadeOut: 3500,
+          closable: true,
+          content: `Network error when deleting request id ${id}. Please try again.`,
+        });
+      }
+      alert.show({
+        variant: 'success',
+        fadeOut: 3500,
+        closable: true,
+        content: `Deleted request id ${id} successfully.`,
+      });
+      const updatedRealms = realmRequests.map((realm) =>
+        realm.id === id ? { ...realm, archived: false, status: StatusEnum.PRSUCCESS } : realm,
+      );
+      setRealmRequests(updatedRealms);
+    };
+    setModalConfig({
+      show: true,
+      title: 'Restore Custom Realm',
+      body: `Are you sure you want to restore this custom realm?`,
       showCancelButton: true,
       showConfirmButton: true,
       onConfirm: handleConfirm,
@@ -201,18 +233,29 @@ function CustomRealmDashboard({ defaultRealmRequests, alert }: Props) {
       enableColumnFilter: false,
       enableSorting: false,
       cell: (props: any) => {
-        const disabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
+        const deleteDisabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
+        const restoreDisabled = props.row.original.status !== 'applied' || props.row.original.archived === false;
         return (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', columnGap: '0.5rem' }}>
             <FontAwesomeIcon
               onClick={() => {
-                if (!disabled) handleDeleteRequest(props.row.getValue('id'));
+                if (!deleteDisabled) handleDeleteRequest(props.row.getValue('id'));
               }}
               icon={faTrash}
-              className={`delete-icon ${disabled ? 'disabled' : ''}`}
+              className={`delete-icon ${deleteDisabled ? 'disabled' : ''}`}
               role="button"
               data-testid="delete-btn"
-              title={disabled ? 'Only applied realms can be disabled' : 'Disable this realm'}
+              title={deleteDisabled ? 'Only applied realms can be disabled' : 'Disable this realm'}
+            />
+            <FontAwesomeIcon
+              onClick={() => {
+                if (!restoreDisabled) handleRestoreRequest(props.row.getValue('id'));
+              }}
+              icon={faTrashRestoreAlt}
+              className={`delete-icon ${restoreDisabled ? 'disabled' : ''}`}
+              role="button"
+              data-testid="delete-btn"
+              title={restoreDisabled ? 'Only disabled realms can be restored' : 'Restore this realm'}
             />
           </div>
         );

@@ -18,3 +18,8 @@ a {
 .underline {
   text-decoration: underline;
 }
+
+svg[role='button'].disabled {
+  cursor: not-allowed;
+  color: #cacaca;
+}
