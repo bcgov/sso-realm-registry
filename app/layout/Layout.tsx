@@ -87,6 +87,7 @@ const HoverItem = styled.li`
 
 const HeaderTitle = styled.div`
   margin-top: 15px;
+  color: #fff;
 `;
 
 interface Route {

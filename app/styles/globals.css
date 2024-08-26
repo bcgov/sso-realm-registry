@@ -4,10 +4,11 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans,
     Helvetica Neue, sans-serif;
+  color: #292929;
 }
 
 a {
-  color: inherit;
+  color: #1a5a96;
   text-decoration: none;
 }
 
@@ -22,4 +23,19 @@ a {
 svg[role='button'].disabled {
   cursor: not-allowed;
   color: #cacaca;
+}
+
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: #292929;
 }
