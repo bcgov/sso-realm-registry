@@ -76,7 +76,7 @@ function NewRealmForm({ alert }: Props) {
       <Head>
         <title>Custom Realm</title>
       </Head>
-      <h1>Request a Custom Realm</h1>
+      <h1 style={{ fontWeight: '28px' }}>Request a custom realm</h1>
       <RealmForm
         formData={formData}
         setFormData={setFormData}
