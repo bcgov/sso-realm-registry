@@ -4,7 +4,6 @@ import Head from 'next/head';
 import styled from 'styled-components';
 import Grid from '@button-inc/bcgov-theme/Grid';
 import Button from '@button-inc/bcgov-theme/Button';
-import Link from '@button-inc/bcgov-theme/Link';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import squid from 'svg/squid.svg';
 import fishes from 'svg/fishes.svg';
@@ -16,11 +15,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faClose } from '@fortawesome/free-solid-svg-icons';
 
 const JumbotronH1 = styled.h1`
-  font-size: 2.5rem;
+  font-size: 48px;
 `;
 
 const JumbotronP = styled.p`
-  font-size: 1.5rem;
+  font-size: 24px;
 `;
 
 const Container = styled.div`
@@ -30,17 +29,13 @@ const Container = styled.div`
   height: 100%;
 
   .custom-realm-info {
-    a {
-      color: #0d6efd;
-    }
-
     .custom-realm-link a {
       color: #003366;
       text-decoration: underline;
     }
 
     .large-font {
-      font-size: 1.2em;
+      font-size: 20px;
     }
   }
 `;
@@ -246,10 +241,15 @@ const Home = () => {
                   <p className="large-font">Do you want to request a new Custom Realm?</p>
                   <p>
                     Over 90% of our clients benefit from our Standard Service, please visit our{' '}
-                    <Link href={formatWikiURL()}>information</Link> to ensure this is not a fit for you. To maintain our{' '}
-                    <Link href={formatWikiURL('Alerts-and-Us#service-levels')}>service levels</Link>, we need to
-                    evaluate every single custom realm request coming to us. Please fill out the form to start the
-                    conversation with us.
+                    <NextLink target="_blank" href={formatWikiURL()}>
+                      information
+                    </NextLink>{' '}
+                    to ensure this is not a fit for you. To maintain our{' '}
+                    <NextLink target="_blank" href={formatWikiURL('Alerts-and-Us#service-levels')}>
+                      service levels
+                    </NextLink>
+                    , we need to evaluate every single custom realm request coming to us. Please fill out the form to
+                    start the conversation with us.
                   </p>
                   <strong className="custom-realm-link">
                     <NextLink href="/custom-realm-form">Request a Custom Realm</NextLink>

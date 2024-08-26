@@ -20,11 +20,10 @@ const SForm = styled.form<{ collapse: boolean }>`
   grid-template-columns: ${(props) => (props.collapse ? '1fr' : '1fr 1fr')};
   column-gap: 2em;
   row-gap: 1em;
-  font-size: 1rem;
+  font-size: 16px;
 
   .error-message {
     color: red;
-    font-size: 0.8em;
     padding: 0;
     margin: 0;
   }
@@ -60,8 +59,8 @@ const SForm = styled.form<{ collapse: boolean }>`
   fieldset {
     border: 0;
     legend {
-      font-size: 1em;
-      margin-bottom: 0;
+      font-size: 16px;
+      margin-bottom: 16px;
     }
   }
 
@@ -117,7 +116,6 @@ const SForm = styled.form<{ collapse: boolean }>`
 
   label {
     font-weight: 700;
-    font-size: 0.8rem;
   }
 
   input,

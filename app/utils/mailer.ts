@@ -8,7 +8,7 @@ import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv, formatWikiURL }
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { app_env, sso_logout_redirect_uri } = serverRuntimeConfig;
 const subjectPrefix = app_env === 'development' ? '[DEV] ' : '';
-const ssoTeamEmail = 'bcgov.sso@gov.bc.ca';
+export const ssoTeamEmail = 'bcgov.sso@gov.bc.ca';
 
 const emailHeader = `
 <header style="color: #0e3468; text-align: center; margin-bottom: 30px; background: #f2f2f2; padding: 20px; box-shadow: 0 12px 6px -6px rgb(224, 224, 224);">
@@ -150,6 +150,28 @@ export const sendUpdateEmail = async (realm: any, session: any, updatingApproval
 
   return await sendEmail({
     to: [realm.technicalContactEmail, realm.productOwnerEmail],
+    cc: [ssoTeamEmail],
+    body: `
+          ${emailHeader}
+          ${message}
+          ${emailFooter}
+      `,
+    subject,
+  });
+};
+
+export const sendRestoreEmail = async (realm: Roster, requester: string) => {
+  const prefix = app_env === 'development' ? '[DEV] ' : '';
+  const subject = `${prefix}Notification: Realm ${realm.realm} Restoration Requested`;
+
+  const message = `
+    <main>
+      <p>We have received a request from ${requester} for the restoration of the ${realm.realm} custom realm. The restoration process will take approximately 24 hours. Please contact the SSO team if you have any concerns.</p>
+    </main>
+  `;
+
+  return sendEmail({
+    to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
     cc: [ssoTeamEmail],
     body: `
           ${emailHeader}
