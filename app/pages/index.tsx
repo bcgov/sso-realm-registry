@@ -29,10 +29,6 @@ const Container = styled.div`
   height: 100%;
 
   .custom-realm-info {
-    a {
-      color: #0d6efd;
-    }
-
     .custom-realm-link a {
       color: #003366;
       text-decoration: underline;
