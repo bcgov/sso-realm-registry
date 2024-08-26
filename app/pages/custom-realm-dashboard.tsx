@@ -84,6 +84,7 @@ function CustomRealmDashboard({ alert }: Props) {
       const remainingRealms = realmRequests.filter((realm) => realm.id !== id);
       setRealmRequests(remainingRealms);
       setSelectedRow(remainingRealms[0]);
+      await fetchRealms();
     };
 
     setModalConfig({
@@ -124,6 +125,7 @@ function CustomRealmDashboard({ alert }: Props) {
       });
       setRealmRequests(updatedRealms);
       setSelectedRow({ ...selectedRow, approved: approving } as RealmProfile);
+      await fetchRealms();
     };
     const statusVerb = approval === 'approved' ? 'Approve' : 'Decline';
     setModalConfig({
@@ -206,7 +208,7 @@ function CustomRealmDashboard({ alert }: Props) {
         return (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <FontAwesomeIcon
-              onClick={() => {
+              onClick={async () => {
                 if (!disabled) handleDeleteRequest(props.row.getValue('id'));
               }}
               icon={faTrash}
@@ -241,19 +243,6 @@ function CustomRealmDashboard({ alert }: Props) {
     }
     if (useLoading) setLoading(false);
   };
-
-  let interval: any;
-  useEffect(() => {
-    if (interval) clearInterval(interval);
-
-    if (selectedRow?.approved && realmCreatingStatuses.includes(selectedRow?.status || '')) {
-      interval = setInterval(() => {
-        fetchRealms();
-      }, 15000);
-    }
-
-    return () => clearInterval(interval);
-  }, [selectedRow]);
 
   return (
     <Container>

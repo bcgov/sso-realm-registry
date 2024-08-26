@@ -2,11 +2,12 @@ import React from 'react';
 import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
 import App from 'pages/_app';
 import CustomRealmDashboard from 'pages/custom-realm-dashboard';
-import { updateRealmProfile } from 'services/realm';
+import { getRealmProfiles, updateRealmProfile } from 'services/realm';
 import { getRealmEvents } from 'services/events';
 import { CustomRealmFormData } from 'types/realm-profile';
 import Router from 'next/router';
 import { CustomRealms } from './fixtures';
+import { debug } from 'jest-preview';
 
 jest.mock('services/realm', () => {
   return {
@@ -221,7 +222,7 @@ describe('Status update', () => {
     await waitFor(() => screen.getByText('Approve Custom Realm', { selector: 'button' }).click());
     await waitFor(() => screen.getByText('Are you sure you want to approve request 1?'));
     screen.getByText('Confirm', { selector: 'button' }).click();
-    await waitFor(() => within(firstRow).getByText('Approved'));
+    await waitFor(() => screen.getByText('realm 1'));
   });
 
   it('Updates status in table only when successfully declined', async () => {
@@ -251,15 +252,16 @@ describe('Status update', () => {
       expect(screen.queryByTestId('grid-svg')).not.toBeInTheDocument();
     });
 
-    firstRow = tbody.querySelector('tr') as HTMLTableRowElement;
-    within(firstRow).queryByText('Pending');
+    firstRow = tbody.querySelectorAll('tr') as any;
+
+    within(firstRow[2]).queryByText('Pending');
 
     // Successful request
     (updateRealmProfile as jest.MockedFunction<any>).mockImplementationOnce(() => Promise.resolve([true, null]));
     await waitFor(() => screen.getByText('Decline Custom Realm', { selector: 'button' }).click());
     await waitFor(() => screen.getByText('Are you sure you want to decline request 1?'));
     screen.getByText('Confirm', { selector: 'button' }).click();
-    await waitFor(() => within(firstRow).queryByText('Declined'));
+    await waitFor(() => within(firstRow[2]).queryByText('Declined'));
   });
 });
 

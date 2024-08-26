@@ -1,20 +1,31 @@
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/realms/[id]';
 import prisma from 'utils/prisma';
-import { CustomRealmProfiles } from '../fixtures';
+import { CustomRealmProfiles, MockHttpRequest } from '../fixtures';
 import { getServerSession } from 'next-auth';
+import { createCustomRealm } from 'controllers/keycloak';
 
 jest.mock('../../utils/mailer', () => {
   return {
     sendUpdateEmail: jest.fn(),
+    sendDeleteEmail: jest.fn(),
+    sendReadyToUseEmail: jest.fn(),
   };
 });
 
-jest.mock('../../utils/github', () => {
+jest.mock('../../utils/idir', () => {
   return {
-    createCustomRealmPullRequest: jest.fn(),
-    mergePullRequest: jest.fn(),
-    deleteBranch: jest.fn(),
+    generateXML: jest.fn(),
+    makeSoapRequest: jest.fn(() => Promise.resolve({ response: null })),
+    getBceidAccounts: jest.fn(() => Promise.resolve([])),
+  };
+});
+
+jest.mock('../../controllers/keycloak.ts', () => {
+  return {
+    createCustomRealm: jest.fn(() => true),
+    disableCustomRealm: jest.fn(() => true),
+    addUserAsRealmAdmin: jest.fn(() => true),
   };
 });
 
@@ -79,7 +90,7 @@ describe('Profile Validations', () => {
     (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
       return Promise.resolve(CustomRealmProfiles[0]);
     });
-    const { req, res } = createMocks({
+    const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',
       body: CustomRealmProfiles[0],
     });
@@ -105,7 +116,7 @@ describe('Profile Validations', () => {
         status: 'authenticated',
       };
     });
-    const { req, res } = createMocks({
+    const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',
       body: CustomRealmProfiles[0],
     });
@@ -132,7 +143,7 @@ describe('Profile Validations', () => {
         status: 'authenticated',
       };
     });
-    const { req, res } = createMocks({
+    const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',
       body: CustomRealmProfiles[0],
     });
@@ -148,11 +159,40 @@ describe('Profile Validations', () => {
     (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
       return Promise.resolve({ ...CustomRealmProfiles[0], approved: false });
     });
-    const { req, res } = createMocks({
+    const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',
       query: { id: 1 },
     });
     await handler(req, res);
     expect(res.statusCode).toBe(400);
+  });
+
+  it('calls kc admin api to create realm in all environments', async () => {
+    (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
+      return Promise.resolve(CustomRealmProfiles[0]);
+    });
+
+    (prisma.roster.update as jest.Mock).mockImplementation(() => {
+      return Promise.resolve({ ...CustomRealmProfiles[0], approved: true });
+    });
+    (getServerSession as jest.Mock).mockImplementation(() => {
+      return {
+        expires: new Date(Date.now() + 2 * 86400).toISOString(),
+        user: {
+          username: 'test',
+          client_roles: ['sso-admin'],
+        },
+        status: 'authenticated',
+      };
+    });
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: { ...CustomRealmProfiles[0], approved: true },
+      query: { id: 1 },
+    });
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(createCustomRealm).toHaveBeenCalledTimes(3);
   });
 });
