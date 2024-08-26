@@ -60,7 +60,7 @@ const SForm = styled.form<{ collapse: boolean }>`
     border: 0;
     legend {
       font-size: 16px;
-      margin-bottom: 0.6em;
+      margin-bottom: 16px;
     }
   }
 
