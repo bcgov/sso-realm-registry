@@ -107,7 +107,7 @@ describe('Realm Delete Request', () => {
   });
 });
 
-describe('Github Actions Delete', () => {
+describe('delete realms', () => {
   const mockToken = 'secret';
   beforeEach(() => {
     jest.clearAllMocks();
