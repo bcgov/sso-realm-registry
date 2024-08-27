@@ -136,9 +136,9 @@ export const sendUpdateEmail = async (realm: any, session: any, updatingApproval
   if (updatingApprovalStatus && realm.approved === true) {
     message = `
           <main>
-              <p>We're pleased to inform you that your request for the Custom Realm ${realm.realm} has been approved and is currently being processed. Kindly anticipate an update from us within the next 24 hours.</p>
+              <p>We're pleased to inform you that your request for the Custom Realm ${realm.realm} has been approved and is currently being processed.</p>
           </main>`;
-    subject = `${prefix}Important: Your request for Custom Realm ${realm.realm} has been Approved`;
+    subject = `${prefix}Important: Your request for Custom Realm ${realm.realm} has been Approved (email 1 of 2)`;
   } else if (updatingApprovalStatus && realm.approved === false) {
     message = `
               <main>
@@ -337,7 +337,7 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
             </main>
           ${emailFooter}
           `,
-    subject: `${prefix}Important: Custom Realm ${realmName} Created and Action Required for Realm Admin Configuration`,
+    subject: `${prefix}Important: Custom Realm ${realmName} Created and Action Required for Realm Admin Configuration (email 2 of 2)`,
   });
 };
 

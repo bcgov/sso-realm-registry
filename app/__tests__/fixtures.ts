@@ -1,3 +1,4 @@
+import { NextApiRequest, NextApiResponse } from 'next/types';
 import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 
 export const CustomRealms: CustomRealmFormData[] = [
@@ -86,3 +87,8 @@ export const CustomRealmProfiles: RealmProfile[] = CustomRealms.map((realm) => (
   updatedAt: '',
   status: 'pending',
 }));
+
+export interface MockHttpRequest {
+  req: NextApiRequest;
+  res: NextApiResponse;
+}

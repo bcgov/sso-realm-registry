@@ -121,9 +121,7 @@ const LeftMenuItems = ({ currentUser, currentPath }: { currentUser: Partial<User
         .map((route) => {
           return (
             <li key={route.path} className={isCurrent(route.path) ? 'current' : ''}>
-              <Link href={route.path}>
-                <a className={isCurrent(route.path) ? 'current' : ''}>{route.label}</a>
-              </Link>
+              <Link href={route.path}>{route.label}</Link>
             </li>
           );
         })}

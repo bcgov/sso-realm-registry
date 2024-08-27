@@ -1,5 +1,5 @@
 import getConfig from 'next/config';
-import KcAdminClient from 'keycloak-admin';
+import KcAdminClient from '@keycloak/keycloak-admin-client';
 import flatten from 'lodash/flatten';
 import compact from 'lodash/compact';
 import validator from 'validator';
@@ -49,10 +49,6 @@ class KeycloakCore {
     const kcAdminClient = new KcAdminClient({
       baseUrl: `${this._url}/auth`,
       realmName: 'master',
-      requestConfig: {
-        /* Axios request config options https://github.com/axios/axios#request-config */
-        timeout: 5000,
-      },
     });
 
     await kcAdminClient.auth({
