@@ -127,7 +127,7 @@ const SplashImage = () => {
       <h2>Standard Realm</h2>
       <p>SSO team configures it for you</p>
       <div>
-        <Image height={'200px'} width={'200px'} src={fishes} alt="A group of fish swimming" />
+        <Image style={{ height: '200px', width: '200px' }} src={fishes} alt="A group of fish swimming" />
       </div>
       <p className="align-start">Service we provide:</p>
       <ul>
@@ -159,7 +159,7 @@ const SplashImage = () => {
       <div className="divider" />
       <h2>Custom Realm</h2>
       <p>Your team configures it yourself</p>
-      <Image src={squid} height={'200px'} width={'200px'} alt="A single squid swimming" />
+      <Image src={squid} style={{ height: '200px', width: '200px' }} alt="A single squid swimming" />
       <p className="align-start">Service we provide:</p>
       <ul>
         <li>

@@ -100,6 +100,10 @@ describe('Realm Delete Request', () => {
     await deleteHandler(req, res);
     expect(res.statusCode).toBe(200);
     expect(deleteCustomRealm).toHaveBeenCalledTimes(3);
+    let rosterUpdateArgs = (prisma.roster.update as jest.Mock).mock.calls[0][0];
+    expect(rosterUpdateArgs.data.status).toBe('planned');
+    rosterUpdateArgs = (prisma.roster.update as jest.Mock).mock.calls[1][0];
+    expect(rosterUpdateArgs.data.archived).toBe(true);
   });
 });
 

@@ -1,8 +1,9 @@
-import ClientRepresentation from 'keycloak-admin/lib/defs/clientRepresentation';
-import GroupRepresentation from 'keycloak-admin/lib/defs/groupRepresentation';
-import RoleRepresentation, { RoleMappingPayload } from 'keycloak-admin/lib/defs/roleRepresentation';
 import KeycloakCore from 'utils/keycloak-core';
 import { getRealmPermissionsByRole } from 'utils/helpers';
+import RoleRepresentation, { RoleMappingPayload } from '@keycloak/keycloak-admin-client/lib/defs/roleRepresentation';
+import ClientRepresentation from '@keycloak/keycloak-admin-client/lib/defs/clientRepresentation';
+import GroupRepresentation from '@keycloak/keycloak-admin-client/lib/defs/groupRepresentation';
+import RealmRepresentation from '@keycloak/keycloak-admin-client/lib/defs/realmRepresentation';
 
 /**
  * Function to remove access at the master realm level as administrator of a custom realm. Custom realm owners access control comes from the role <realmname>-realm-admin. Removes this role from supplied usernames if found.
@@ -164,7 +165,9 @@ export const createCustomRealm = async (realmName: string, env: string) => {
               role.name,
               env,
               role.realmName,
-              grantingClientRoles.filter((clientRole) => role.permissions.includes(clientRole.name as string)),
+              grantingClientRoles.filter((clientRole: RoleRepresentation) =>
+                role.permissions.includes(clientRole.name as string),
+              ),
             );
 
             // create a service account that has a role in custom realm
@@ -191,24 +194,26 @@ export const createCustomRealm = async (realmName: string, env: string) => {
               id: customRealmCliClient[0].id as string,
             });
 
-            await kcAdminClient.users.addRealmRoleMappings({
-              id: customRealmAdminCliClientUser.id as string,
-              realm: role.realmName,
-              roles: [
+            if (customRealmRole && customRealmAdminCliClientUser) {
+              await kcAdminClient.users.addRealmRoleMappings({
+                id: customRealmAdminCliClientUser.id as string,
+                realm: role.realmName,
+                roles: [
+                  {
+                    id: customRealmRole.id as string,
+                    name: customRealmRole.name as string,
+                  },
+                ],
+              });
+
+              // create group and assign roles
+              await createRealmGroup(role.group, env, role.realmName, [
                 {
                   id: customRealmRole.id as string,
                   name: customRealmRole.name as string,
                 },
-              ],
-            });
-
-            // create group and assign roles
-            await createRealmGroup(role.group, env, role.realmName, [
-              {
-                id: customRealmRole.id as string,
-                name: customRealmRole.name as string,
-              },
-            ]);
+              ]);
+            }
           }
 
           return customRealm;
@@ -225,9 +230,9 @@ export const deleteCustomRealm = async (realmName: string, env: string) => {
   try {
     const kcCore = new KeycloakCore(env);
     const kcAdminClient = await kcCore.getAdminClient();
-    const realm = await kcAdminClient.realms.find();
+    const realms = await kcAdminClient.realms.find();
 
-    const realmExists = realm.find((realm) => realm.realm === realmName);
+    const realmExists = realms.find((realm: RealmRepresentation) => realm.realm === realmName);
 
     if (realmExists) {
       // delete custom realm
@@ -246,7 +251,7 @@ export const deleteCustomRealm = async (realmName: string, env: string) => {
       });
 
       const masterRealmCliClientExists = masterRealmCliClients.find(
-        (client) => client.clientId === `${masterRealmResources.name}-cli`,
+        (client: ClientRepresentation) => client.clientId === `${masterRealmResources.name}-cli`,
       );
 
       if (masterRealmCliClientExists)
@@ -255,11 +260,13 @@ export const deleteCustomRealm = async (realmName: string, env: string) => {
           id: masterRealmCliClientExists.id as string,
         });
 
-      const masterRealmGroup = await kcAdminClient.groups.find({
+      const masterRealmGroups = await kcAdminClient.groups.find({
         realm: masterRealmResources.realmName,
       });
 
-      const masterRealmGroupExists = masterRealmGroup.find((group) => group.name === masterRealmResources.group);
+      const masterRealmGroupExists = masterRealmGroups.find(
+        (group: GroupRepresentation) => group.name === masterRealmResources.group,
+      );
       if (masterRealmGroupExists)
         await kcAdminClient.groups.del({
           realm: masterRealmResources.realmName,
@@ -269,7 +276,9 @@ export const deleteCustomRealm = async (realmName: string, env: string) => {
       const masterRealmRole = await kcAdminClient.roles.find({
         realm: masterRealmResources.realmName,
       });
-      const masterRealmRoleExists = masterRealmRole.find((role) => role.name === masterRealmResources.name);
+      const masterRealmRoleExists = masterRealmRole.find(
+        (role: RoleRepresentation) => role.name === masterRealmResources.name,
+      );
       if (masterRealmRoleExists)
         await kcAdminClient.roles.delById({
           realm: masterRealmResources.realmName,
@@ -342,21 +351,25 @@ const createOpenIdClient = async (
   }
 };
 
-const createGroup = async (realmName: string, env: string, groupName: string): Promise<GroupRepresentation> => {
+const createGroup = async (
+  realmName: string,
+  env: string,
+  groupName: string,
+): Promise<GroupRepresentation | undefined> => {
   const kcCore = new KeycloakCore(env);
   const kcAdminClient = await kcCore.getAdminClient();
-  const groupExists = await kcAdminClient.groups.find({
+  const groups = await kcAdminClient.groups.find({
     realm: realmName,
     search: groupName,
   });
-  if (groupExists.length === 0) {
+  if (groups.length === 0) {
     const groupId = await kcAdminClient.groups.create({
       realm: realmName,
       name: groupName,
     });
     return await kcAdminClient.groups.findOne({ realm: realmName, id: groupId.id });
   }
-  return groupExists[0];
+  return groups[0];
 };
 
 const createRealmRole = async (
@@ -364,7 +377,7 @@ const createRealmRole = async (
   env: string,
   realmName: string,
   compositeRoles: RoleRepresentation[] = [],
-): Promise<RoleRepresentation> => {
+): Promise<RoleRepresentation | undefined> => {
   try {
     const kcCore = new KeycloakCore(env);
     const kcAdminClient = await kcCore.getAdminClient();
@@ -375,7 +388,7 @@ const createRealmRole = async (
 
     const role = await kcAdminClient.roles.findOneByName({ realm: realmName, name: created.roleName });
 
-    if (compositeRoles.length > 0) {
+    if (role && compositeRoles.length > 0) {
       await kcAdminClient.roles.createComposite(
         {
           realm: realmName,
@@ -396,7 +409,7 @@ const createRealmGroup = async (
   env: string,
   realmName: string,
   roles: RoleMappingPayload[] = [],
-): Promise<GroupRepresentation> => {
+): Promise<GroupRepresentation | undefined> => {
   try {
     const kcCore = new KeycloakCore(env);
     const kcAdminClient = await kcCore.getAdminClient();
