@@ -10,6 +10,7 @@ import { Table } from '@bcgov-sso/common-react-components';
 import { faTrash, faTrashRestoreAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
+import Head from 'next/head';
 
 const Container = styled.div`
   padding: 0 1.5em;
@@ -290,24 +291,29 @@ function CustomRealmDashboard({ alert }: Props) {
   };
 
   return (
-    <Container>
-      <h1>Custom Realm Dashboard</h1>
-      {loading ? (
-        <AlignCenter>
-          <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />
-        </AlignCenter>
-      ) : (
-        <Table columns={columns} data={realmRequests} variant="mini" enablePagination onRowSelect={handleRowSelect} />
-      )}
+    <>
+      <Head>
+        <title>Custom Realm Dashboard</title>
+      </Head>
+      <Container>
+        <h1>Custom Realm Dashboard</h1>
+        {loading ? (
+          <AlignCenter>
+            <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />
+          </AlignCenter>
+        ) : (
+          <Table columns={columns} data={realmRequests} variant="mini" enablePagination onRowSelect={handleRowSelect} />
+        )}
 
-      {selectedRow && (
-        <CustomRealmTabs
-          lastUpdateTime={lastUpdateTime}
-          selectedRow={selectedRow}
-          handleRequestStatusChange={handleRequestStatusChange}
-        />
-      )}
-    </Container>
+        {selectedRow && (
+          <CustomRealmTabs
+            lastUpdateTime={lastUpdateTime}
+            selectedRow={selectedRow}
+            handleRequestStatusChange={handleRequestStatusChange}
+          />
+        )}
+      </Container>
+    </>
   );
 }
 
