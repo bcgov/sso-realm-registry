@@ -9,23 +9,16 @@ import omit from 'lodash.omit';
 import {
   offboardRealmAdmin,
   onboardNewRealmAdmin,
-  sendDeleteEmail,
   sendDeletionCompleteEmail,
   sendReadyToUseEmail,
   sendUpdateEmail,
 } from 'utils/mailer';
-import {
-  addUserAsRealmAdmin,
-  createCustomRealm,
-  deleteCustomRealm,
-  disableCustomRealm,
-  removeUserAsRealmAdmin,
-} from 'controllers/keycloak';
+import { addUserAsRealmAdmin, manageCustomRealm, removeUserAsRealmAdmin } from 'controllers/keycloak';
 import { generateXML, makeSoapRequest, getBceidAccounts } from 'utils/idir';
 import getConfig from 'next/config';
 
 const { serverRuntimeConfig = {} } = getConfig() || {};
-const { idir_requestor_user_guid, app_env } = serverRuntimeConfig;
+const { idir_requestor_user_guid } = serverRuntimeConfig;
 
 interface ErrorData {
   success: boolean;
@@ -89,6 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       let isPO = false;
       let updatedRealm: any;
       let updatingApprovalStatus = false;
+      let allEnvRealmsCreated = false;
 
       const omitFieldsBeforeApplied = [
         'productOwnerEmail',
@@ -147,25 +141,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               details: req.body,
             });
 
-            await prisma.roster.update({
-              data: {
-                status: StatusEnum.PLANNED,
-              },
-              where: {
-                id: parseInt(currentRequest.id as string, 10),
-              },
-            });
-
-            let allEnvRealmsCreated = true;
-
             try {
-              for (const env of currentRequest?.environments) {
-                const created = await createCustomRealm(currentRequest?.realm!, env);
-                if (!created) allEnvRealmsCreated = false;
-              }
+              await manageCustomRealm(currentRequest?.realm!, currentRequest.environments, 'create');
+              allEnvRealmsCreated = true;
             } catch (err) {
-              console.error('error creating custom realm', err);
-              allEnvRealmsCreated = false;
+              console.error('Error creating custom realm', err);
             }
 
             await createEvent({
@@ -306,7 +286,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         }
         // emails
         await sendUpdateEmail(updatedRealm, session, updatingApprovalStatus);
-        if (isAdmin && updatingApprovalStatus && updatedRealm.approved) await sendReadyToUseEmail(currentRequest!);
+        if (isAdmin && updatingApprovalStatus && updatedRealm.approved && allEnvRealmsCreated)
+          await sendReadyToUseEmail(currentRequest!);
 
         return res.send(updatedRealm);
       } catch (err) {
@@ -321,72 +302,71 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
     } else if (req.method === 'DELETE') {
       const { id } = req.query;
+      if (!id) return res.status(400).send('Invalid request');
       if (!isAdmin) return res.status(401).send('Unauthorized');
 
-      const realm = await prisma.roster.findUnique({
-        where: {
-          id: parseInt(id as string, 10),
-          archived: false,
-        },
-      });
-
-      if (!realm) return res.status(404).send('Not found');
-
-      await prisma.roster.update({
-        data: {
-          status: StatusEnum.PLANNED,
-        },
-        where: {
-          id: parseInt(id as string, 10),
-        },
-      });
-
-      let realmsDisabled = true;
+      let allEnvRealmsDeleted = false;
 
       try {
-        for (const env of realm.environments) {
-          if (app_env === 'production') await disableCustomRealm(realm.realm!, env);
-          // delete custom realms in non production environments
-          else await deleteCustomRealm(realm.realm!, env);
+        const realm = await prisma.roster.findUnique({
+          where: {
+            id: parseInt(id as string, 10),
+            archived: false,
+          },
+        });
+
+        if (!realm) return res.status(404).send('Not found');
+
+        try {
+          await manageCustomRealm(realm.realm as string, realm.environments, 'delete');
+          allEnvRealmsDeleted = true;
+        } catch (err) {
+          console.error('Error deleting custom realm', err);
         }
+
+        await prisma.roster.update({
+          data: {
+            archived: true,
+            status: allEnvRealmsDeleted ? StatusEnum.APPLIED : StatusEnum.APPLYFAILED,
+          },
+          where: {
+            id: parseInt(id as string, 10),
+          },
+        });
+
+        await createEvent({
+          realmId: parseInt(req.query.id as string, 10),
+          eventCode: allEnvRealmsDeleted ? EventEnum.REQUEST_DELETE_SUCCESS : EventEnum.REQUEST_DELETE_FAILED,
+          idirUserId: username,
+          details: req.body,
+        });
+
+        if (!allEnvRealmsDeleted) {
+          return res.status(422).send('Unable to process the delete request at this time');
+        }
+
+        await Promise.all(
+          realm.environments.map((env) => {
+            return removeUserAsRealmAdmin(
+              [realm.productOwnerEmail, realm.technicalContactEmail],
+              env,
+              realm.realm as string,
+            );
+          }),
+        );
+
+        await sendDeletionCompleteEmail(realm);
+        return res.status(200).send('Success');
       } catch (err) {
         console.error(err);
-        realmsDisabled = false;
+        await createEvent({
+          realmId: parseInt(req.query.id as string, 10),
+          eventCode: EventEnum.REQUEST_DELETE_FAILED,
+          idirUserId: username,
+          details: req.body,
+        });
+        throw Error(`Failed to delete realm with id ${id}`);
       }
-
-      await prisma.roster.update({
-        data: {
-          archived: true,
-          status: realmsDisabled ? StatusEnum.APPLIED : StatusEnum.APPLYFAILED,
-        },
-        where: {
-          id: parseInt(id as string, 10),
-        },
-      });
-
-      await createEvent({
-        realmId: parseInt(req.query.id as string, 10),
-        eventCode: realmsDisabled ? EventEnum.REQUEST_DELETE_SUCCESS : EventEnum.REQUEST_DELETE_FAILED,
-        idirUserId: username,
-        details: req.body,
-      });
-
-      if (!realmsDisabled) {
-        return res.status(422).send('Unable to process the delete request at this time');
-      }
-
-      await Promise.all(
-        ['dev', 'test', 'prod'].map((env) => {
-          return removeUserAsRealmAdmin(
-            [realm.productOwnerEmail, realm.technicalContactEmail],
-            env,
-            realm.realm as string,
-          );
-        }),
-      );
-
-      await sendDeletionCompleteEmail(realm);
-      return res.status(200).send('Success');
     } else {
       return res.status(405).json({ success: false, error: 'Not allowed' });
     }

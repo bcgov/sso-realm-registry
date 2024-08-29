@@ -896,10 +896,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@keycloak/keycloak-admin-client@^25.0.4":
-  version "25.0.4"
-  resolved "https://registry.yarnpkg.com/@keycloak/keycloak-admin-client/-/keycloak-admin-client-25.0.4.tgz#2ec46bab133cc807df78ffd7ca7bba47ec8ed000"
-  integrity sha512-mZVFwly7cHZq1XpvJrrOutU0qrUbGo8NUdpb7PS4309x8yG2a4/WyZfh2lgiopBRQ6R/b24RsuHa4GetQPqT+g==
+"@keycloak/keycloak-admin-client@24.0.5":
+  version "24.0.5"
+  resolved "https://registry.yarnpkg.com/@keycloak/keycloak-admin-client/-/keycloak-admin-client-24.0.5.tgz#b61a3bf02faaf659525ccc815c75cc3d5a545a80"
+  integrity sha512-SXDVtQ3ov7GQbxXq51Uq8lzhwzQwNg6XiY50ZA9whuUe2t/0zPT4Zd/LcULcjweIjSNWWgfbDyN1E3yRSL8Qqw==
   dependencies:
     camelize-ts "^3.0.0"
     url-join "^5.0.0"

@@ -21,7 +21,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.6.0",
     "@fortawesome/free-solid-svg-icons": "^6.1.1",
     "@fortawesome/react-fontawesome": "^0.2.2",
-    "@keycloak/keycloak-admin-client": "^25.0.4",
+    "@keycloak/keycloak-admin-client": "24.0.5",
     "@prisma/client": "5.5.2",
     "@tanstack/match-sorter-utils": "^8.8.4",
     "@tanstack/react-table": "^8.9.7",

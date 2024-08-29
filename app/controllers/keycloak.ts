@@ -3,7 +3,10 @@ import { getRealmPermissionsByRole } from 'utils/helpers';
 import RoleRepresentation, { RoleMappingPayload } from '@keycloak/keycloak-admin-client/lib/defs/roleRepresentation';
 import ClientRepresentation from '@keycloak/keycloak-admin-client/lib/defs/clientRepresentation';
 import GroupRepresentation from '@keycloak/keycloak-admin-client/lib/defs/groupRepresentation';
-import RealmRepresentation from '@keycloak/keycloak-admin-client/lib/defs/realmRepresentation';
+import getConfig from 'next/config';
+
+const { serverRuntimeConfig = {} } = getConfig() || {};
+const { app_env } = serverRuntimeConfig;
 
 /**
  * Function to remove access at the master realm level as administrator of a custom realm. Custom realm owners access control comes from the role <realmname>-realm-admin. Removes this role from supplied usernames if found.
@@ -230,14 +233,12 @@ export const deleteCustomRealm = async (realmName: string, env: string) => {
   try {
     const kcCore = new KeycloakCore(env);
     const kcAdminClient = await kcCore.getAdminClient();
-    const realms = await kcAdminClient.realms.find();
+    const realm = await kcAdminClient.realms.findOne({ realm: realmName });
 
-    const realmExists = realms.find((realm: RealmRepresentation) => realm.realm === realmName);
-
-    if (realmExists) {
+    if (realm) {
       // delete custom realm
       await kcAdminClient.realms.del({
-        realm: realmExists.realm as string,
+        realm: realm.realm as string,
       });
     }
     const masterRealmResources = getRealmPermissionsByRole(realmName as string).find(
@@ -291,23 +292,38 @@ export const deleteCustomRealm = async (realmName: string, env: string) => {
   }
 };
 
-export const disableCustomRealm = async (realmName: string, env: string) => {
+export const manageCustomRealm = async (realmName: string, envs: string[], action: 'create' | 'delete' | 'restore') => {
   try {
-    const kcCore = new KeycloakCore(env);
-    const kcAdminClient = await kcCore.getAdminClient();
-    const realm = await kcAdminClient.realms.findOne({ realm: realmName });
-    if (realm) {
-      await kcAdminClient.realms.update(
-        {
-          realm: realmName,
-        },
-        { enabled: false },
-      );
+    for (const env of envs) {
+      const kcCore = new KeycloakCore(env);
+      const kcAdminClient = await kcCore.getAdminClient();
+      const realm = await kcAdminClient.realms.findOne({ realm: realmName });
+
+      switch (action) {
+        case 'create':
+          if (!realm) await createCustomRealm(realmName, env);
+          break;
+        case 'delete':
+          if (realm) {
+            if (app_env === 'production') {
+              if (realm.enabled) await kcAdminClient.realms.update({ realm: realmName }, { enabled: false });
+            } else await deleteCustomRealm(realmName, env);
+          }
+          break;
+        case 'restore':
+          if (app_env === 'production' && realm && realm.enabled === false) {
+            await kcAdminClient.realms.update({ realm: realmName }, { enabled: true });
+          } else {
+            if (!realm) await createCustomRealm(realmName, env);
+          }
+          break;
+        default:
+          throw Error(`Invalid action: ${action}`);
+      }
     }
-    return true;
   } catch (err) {
     console.error(err);
-    return false;
+    throw Error(`Failed to ${action} custom realm at this time`);
   }
 };
 

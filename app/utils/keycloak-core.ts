@@ -49,6 +49,9 @@ class KeycloakCore {
     const kcAdminClient = new KcAdminClient({
       baseUrl: `${this._url}/auth`,
       realmName: 'master',
+      requestArgOptions: {
+        catchNotFound: true,
+      },
     });
 
     await kcAdminClient.auth({

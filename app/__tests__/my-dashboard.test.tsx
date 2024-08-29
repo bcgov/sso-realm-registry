@@ -1,15 +1,8 @@
 import React from 'react';
-import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
-import App from 'pages/_app';
-import CustomRealmDashboard from 'pages/custom-realm-dashboard';
-import { updateRealmProfile } from 'services/realm';
-import { getRealmEvents } from 'services/events';
-import { CustomRealmFormData } from 'types/realm-profile';
-import Router from 'next/router';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { CustomRealms } from './fixtures';
 import RealmLeftPanel from 'page-partials/my-dashboard/RealmLeftPanel';
 import noop from 'lodash.noop';
-import { debug } from 'jest-preview';
 
 const editFunction = jest.fn();
 
