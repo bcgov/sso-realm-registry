@@ -87,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const disablingRealm = currentRequest?.archived && newStatus === StatusEnum.APPLIED;
         if (disablingRealm) {
           await Promise.all(
-            ['dev', 'test', 'prod'].map((env) => {
+            currentRequest.environments.map((env) => {
               return removeUserAsRealmAdmin(
                 [currentRequest.productOwnerEmail, currentRequest.technicalContactEmail],
                 env,

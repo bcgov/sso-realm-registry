@@ -20,7 +20,6 @@ interface Props {
   defaultRealmRequests: CustomRealmFormData[];
   alert: BottomAlert;
 }
-const realmCreatingStatuses = ['pending', 'prSuccess', 'planned'];
 
 const listFilter = (row: any, columnId: string, value: any) => {
   if (value.length === 0) return true;
@@ -115,10 +114,7 @@ function CustomRealmDashboard({ alert }: Props) {
         closable: true,
         content: `Restored request id ${id} successfully.`,
       });
-      const updatedRealms = realmRequests.map((realm) =>
-        realm.id === id ? { ...realm, archived: false, status: StatusEnum.PRSUCCESS } : realm,
-      );
-      setRealmRequests(updatedRealms);
+      await fetchRealms();
     };
     setModalConfig({
       show: true,
@@ -239,8 +235,7 @@ function CustomRealmDashboard({ alert }: Props) {
       cell: (props: any) => {
         const deleteDisabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
         const restoreDisabled =
-          ![StatusEnum.APPLIED, StatusEnum.PRSUCCESS].includes(props.row.original.status) ||
-          props.row.original.archived === false;
+          ![StatusEnum.APPLIED].includes(props.row.original.status) || props.row.original.archived === false;
         return (
           <div style={{ display: 'flex', justifyContent: 'center', columnGap: '0.5rem' }}>
             <FontAwesomeIcon

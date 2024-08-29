@@ -4,8 +4,8 @@ import { authOptions } from '../../auth/[...nextauth]';
 import { checkAdminRole, createEvent } from 'utils/helpers';
 import prisma from 'utils/prisma';
 import { EventEnum, StatusEnum } from 'validators/create-realm';
-import { CreatePullRequestResponseType, createCustomRealmPullRequest, mergePullRequest } from 'utils/github';
 import { sendRestoreEmail } from 'utils/mailer';
+import { manageCustomRealm } from 'controllers/keycloak';
 
 interface ErrorData {
   success: boolean;
@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     if (!isAdmin) {
       return res.status(403).send({ success: false, error: 'forbidden' });
     }
-
+    let allEnvRealmsRestored = false;
     const lastUpdatedBy = `${session.user.family_name}, ${session.user.given_name}`;
     const realm = await prisma.roster.findUnique({
       where: {
@@ -38,32 +38,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(400).json({ success: false, error: 'Invalid request' });
     }
 
-    const canRestore =
-      ([StatusEnum.PRSUCCESS, StatusEnum.APPLIED] as string[]).includes(realm.status!) && realm.archived === true;
+    const canRestore = ([StatusEnum.APPLIED] as string[]).includes(realm.status!) && realm.archived === true;
     if (!canRestore) return res.status(400).json({ success: false, error: 'Invalid request' });
 
-    let prResponse: CreatePullRequestResponseType;
     try {
-      prResponse = await createCustomRealmPullRequest(realm.realm!, realm.environments);
-      await mergePullRequest(prResponse?.data?.number);
-    } catch (e) {
-      console.error(e);
-      await Promise.all([
-        createEvent({
-          realmId: parseInt(req.query.id as string, 10),
-          eventCode: EventEnum.REQUEST_RESTORE_FAILED,
-          idirUserId: username,
-        }),
-        prisma.roster.update({
-          where: {
-            id: parseInt(req.query.id as string, 10),
-          },
-          data: {
-            status: StatusEnum.PRFAILED,
-          },
-        }),
-      ]);
-      return res.status(500).send({ success: false, error: 'Unexpected Exception' });
+      await manageCustomRealm(realm.realm!, realm.environments!, 'restore');
+      allEnvRealmsRestored = true;
+    } catch (err) {
+      console.error('Error restoring custom realm', err);
     }
 
     await prisma.roster.update({
@@ -73,18 +55,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       data: {
         lastUpdatedBy,
         archived: false,
-        status: StatusEnum.PRSUCCESS,
-        prNumber: prResponse.data.number,
+        status: allEnvRealmsRestored ? StatusEnum.APPLIED : StatusEnum.APPLYFAILED,
       },
     });
 
     await createEvent({
       realmId: parseInt(req.query.id as string, 10),
-      eventCode: EventEnum.REQUEST_RESTORE_SUCCESS,
+      eventCode: allEnvRealmsRestored ? EventEnum.REQUEST_RESTORE_SUCCESS : EventEnum.REQUEST_RESTORE_FAILED,
       idirUserId: username,
     });
 
+    if (!allEnvRealmsRestored) {
+      return res.status(422).send('Unable to process the restore request at this time');
+    }
+
     await sendRestoreEmail(realm, `${session.user.given_name} ${session.user.family_name}`);
+
     res.status(200).send('success');
   } catch (err: any) {
     console.error(err);

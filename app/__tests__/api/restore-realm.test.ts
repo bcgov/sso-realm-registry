@@ -1,18 +1,14 @@
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/realms/[id]/restore';
 import prisma from 'utils/prisma';
-import { getServerSession } from 'next-auth';
 import { createEvent } from 'utils/helpers';
 import { EventEnum, StatusEnum } from 'validators/create-realm';
-import { createCustomRealmPullRequest, mergePullRequest } from 'utils/github';
-import { sendEmail } from 'utils/ches';
 import { ssoTeamEmail } from 'utils/mailer';
+import { manageCustomRealm } from 'controllers/keycloak';
+import { createMockSendEmail, mockAdminSession, mockSession, mockUserSession } from './utils/mocks';
+import { MockHttpRequest } from '__tests__/fixtures';
 
-jest.mock('../../utils/ches', () => {
-  return {
-    sendEmail: jest.fn(),
-  };
-});
+jest.mock('utils/ches');
 
 jest.mock('../../utils/helpers', () => {
   return {
@@ -21,46 +17,31 @@ jest.mock('../../utils/helpers', () => {
   };
 });
 
-const PR_NUMBER = 1;
-jest.mock('../../utils/github', () => {
+jest.mock('../../controllers/keycloak', () => {
   return {
-    createCustomRealmPullRequest: jest.fn(() =>
-      Promise.resolve({
-        data: {
-          number: PR_NUMBER,
-        },
-      }),
-    ),
-    mergePullRequest: jest.fn(),
+    removeUserAsRealmAdmin: jest.fn(),
+    createCustomRealm: jest.fn(() => true),
+    manageCustomRealm: jest.fn(() => true),
+    deleteCustomRealm: jest.fn(() => true),
+  };
+});
+
+jest.mock('../../utils/idir', () => {
+  return {
+    generateXML: jest.fn(),
+    makeSoapRequest: jest.fn(() => Promise.resolve({ response: null })),
+    getBceidAccounts: jest.fn(() => Promise.resolve([])),
   };
 });
 
 const ADMIN_FIRST_NAME = 'admin_firstname';
 const ADMIN_LAST_NAME = 'admin_firstname';
-const adminSession = {
-  expires: new Date(Date.now() + 2 * 86400).toISOString(),
-  user: {
-    family_name: ADMIN_LAST_NAME,
-    given_name: ADMIN_FIRST_NAME,
-    idir_username: 'admin',
-    client_roles: ['sso-admin'],
-  },
-  status: 'authenticated',
-};
-
-const userSession = {
-  expires: new Date(Date.now() + 2 * 86400).toISOString(),
-  user: {
-    idir_username: 'user',
-  },
-  status: 'authenticated',
-};
 
 jest.mock('next-auth/next', () => {
   return {
     __esModule: true,
     getServerSession: jest.fn(() => {
-      return adminSession;
+      return mockSession;
     }),
   };
 });
@@ -104,24 +85,27 @@ describe('Restore Realm', () => {
   });
 
   it('Only allows sso-admins to restore realms', async () => {
-    (getServerSession as jest.Mock).mockImplementation(() => userSession);
-    let mocks = createMocks({ method: 'POST' });
+    mockUserSession();
+    const { req, res }: MockHttpRequest = createMocks({ method: 'POST' });
 
-    await handler(mocks.req, mocks.res);
-    expect(mocks.res.statusCode).toBe(403);
+    await handler(req, res);
 
-    (getServerSession as jest.Mock).mockImplementation(() => adminSession);
-    mocks = createMocks({ method: 'POST' });
+    expect(res.statusCode).toBe(403);
 
-    await handler(mocks.req, mocks.res);
-    expect(mocks.res.statusCode).toBe(200);
+    mockAdminSession();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
   });
 
-  it('Only allows archived realms that are applied or in pull request to be restored', async () => {
-    const { req, res } = createMocks({ method: 'POST' });
+  it('Only allows archived realms that are applied to be restored', async () => {
+    mockAdminSession();
 
-    const validStatuses = [StatusEnum.PRSUCCESS, StatusEnum.APPLIED];
-    const invalidStatuses = [StatusEnum.APPLYFAILED, StatusEnum.PENDING, StatusEnum.PRFAILED];
+    const validStatuses = [StatusEnum.APPLIED];
+    const invalidStatuses = [StatusEnum.APPLYFAILED, StatusEnum.PENDING];
+
+    const { req, res }: MockHttpRequest = createMocks({ method: 'POST' });
 
     validStatuses.forEach(async (status) => {
       (prisma.roster.findUnique as jest.Mock).mockImplementationOnce(() =>
@@ -150,7 +134,8 @@ describe('Restore Realm', () => {
   });
 
   it('Logs a success event when successful', async () => {
-    const { req, res } = createMocks({ method: 'POST' });
+    mockAdminSession();
+    const { req, res }: MockHttpRequest = createMocks({ method: 'POST' });
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
@@ -160,63 +145,47 @@ describe('Restore Realm', () => {
     expect(createEventArgs.eventCode).toBe(EventEnum.REQUEST_RESTORE_SUCCESS);
   });
 
-  it('Logs a failure event when github callouts fail and sets the failed status', async () => {
-    (createCustomRealmPullRequest as jest.Mock).mockImplementationOnce(() => Promise.reject());
-    const { req, res } = createMocks({ method: 'POST' });
+  it('Logs a failure event when restore fails', async () => {
+    mockAdminSession();
+    (manageCustomRealm as jest.Mock).mockImplementationOnce(() => Promise.reject());
+    const { req, res }: MockHttpRequest = createMocks({ method: 'POST' });
     await handler(req, res);
 
-    expect(res.statusCode).toBe(500);
+    expect(res.statusCode).toBe(422);
     expect(createEvent).toHaveBeenCalledTimes(1);
     let createEventArgs = (createEvent as jest.Mock).mock.calls[0][0];
     expect(createEventArgs.eventCode).toBe(EventEnum.REQUEST_RESTORE_FAILED);
 
     expect(prisma.roster.update).toHaveBeenCalledTimes(1);
     let updateArgs = (prisma.roster.update as jest.Mock).mock.calls[0][0];
-    expect(updateArgs.data).toEqual({ status: StatusEnum.PRFAILED });
-
-    jest.clearAllMocks();
-
-    (mergePullRequest as jest.Mock).mockImplementationOnce(() => Promise.reject());
-    await handler(req, res);
-
-    expect(res.statusCode).toBe(500);
-    expect(createEvent).toHaveBeenCalledTimes(1);
-    createEventArgs = (createEvent as jest.Mock).mock.calls[0][0];
-    expect(createEventArgs.eventCode).toBe(EventEnum.REQUEST_RESTORE_FAILED);
-
-    expect(prisma.roster.update).toHaveBeenCalledTimes(1);
-    updateArgs = (prisma.roster.update as jest.Mock).mock.calls[0][0];
-    expect(updateArgs.data).toEqual({ status: StatusEnum.PRFAILED });
+    expect(updateArgs.data.status).toEqual(StatusEnum.APPLYFAILED);
   });
 
   it("sends an email to the the realm owners and cc's our team", async () => {
-    const { req, res } = createMocks({ method: 'POST' });
+    mockAdminSession();
+    const { req, res }: MockHttpRequest = createMocks({ method: 'POST' });
+    const emailList = createMockSendEmail();
+
     await handler(req, res);
-
-    expect(sendEmail).toHaveBeenCalledTimes(1);
-    const emailArgs = (sendEmail as jest.Mock).mock.calls[0][0];
-
-    expect(emailArgs.to.includes(PO_EMAIL)).toBeTruthy();
-    expect(emailArgs.to.includes(TECHNICAL_CONTACT_EMAIL)).toBeTruthy();
-    expect(emailArgs.cc.includes(ssoTeamEmail)).toBeTruthy();
-
-    // Includes the updater
-    expect(
-      emailArgs.body.includes(`We have received a request from ${ADMIN_FIRST_NAME} ${ADMIN_LAST_NAME}`),
-    ).toBeTruthy();
+    expect(manageCustomRealm).toHaveBeenCalledTimes(1);
+    expect(emailList.length).toBe(1);
+    expect(emailList[0].subject).toContain(`Notification: Realm ${realm.realm} Restoration Requested`);
+    expect(emailList[0].to).toEqual(expect.arrayContaining([realm.productOwnerEmail, realm.technicalContactEmail]));
+    expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
   });
 
   it('Updates the expected realm fields in the database', async () => {
-    const { req, res } = createMocks({ method: 'POST' });
+    mockAdminSession();
+    const { req, res }: MockHttpRequest = createMocks({ method: 'POST' });
     await handler(req, res);
 
     expect(prisma.roster.update).toHaveBeenCalledTimes(1);
     const updateArgs = (prisma.roster.update as jest.Mock).mock.calls[0][0];
+    console.log('🚀 ~ it ~ updateArgs:', updateArgs);
     expect(updateArgs.data).toEqual({
-      lastUpdatedBy: `${ADMIN_LAST_NAME}, ${ADMIN_FIRST_NAME}`,
+      lastUpdatedBy: 'test, test',
       archived: false,
-      prNumber: PR_NUMBER,
-      status: StatusEnum.PRSUCCESS,
+      status: StatusEnum.APPLIED,
     });
   });
 });
