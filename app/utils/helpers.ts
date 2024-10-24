@@ -74,7 +74,7 @@ export const generateRealmLinksByEnv = (env: string, realmName: string) => {
 
 export const generateMasterRealmLinksByEnv = (env: string, realmName: string) => {
   const domain = env === 'dev' ? dev_kc_url : env === 'test' ? test_kc_url : prod_kc_url;
-  return `${domain}/auth/admin/master/console/#/realms/${realmName}`;
+  return `${domain}/auth/admin/master/console/`;
 };
 
 export const getRealmPermissionsByRole = (realmName: string) => {

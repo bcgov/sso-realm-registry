@@ -291,7 +291,7 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
                       </ul>
                   </li>
                   <li>
-                    <p>At this point you will see a <code>forbidden</code> message</p>
+                    <p>At this point you cannot log in, and might see a loading spinner or a <code>forbidden</code> message. Exit from the browser and continue with next step.</p>
                   </li>
                   <li>
                     <p>One of the existing Realm Admins will need to add the user that logged in to #1 above to the custom realm admin group via the <strong>master</strong> links</p>
