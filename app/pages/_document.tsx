@@ -27,7 +27,11 @@ export default class MyDocument extends Document {
   render() {
     return (
       <Html>
-        <Head />
+        <Head>
+          <html lang="en" />
+          <meta name="description" content="Keycloak Realm Registry" />
+          <link rel="icon" href="/bcid-favicon-32x32.png" />
+        </Head>
         <body>
           <Main />
           <NextScript />

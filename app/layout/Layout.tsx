@@ -87,14 +87,7 @@ const HoverItem = styled.li`
 
 const HeaderTitle = styled.div`
   margin-top: 15px;
-`;
-
-const Beta = styled.span`
-  vertical-align: text-top;
-  color: #fcba19;
-  text-transform: uppercase;
-  font-weight: 600;
-  font-size: 16px;
+  color: #fff;
 `;
 
 interface Route {
@@ -107,7 +100,7 @@ interface Route {
 const routes: Route[] = [
   { path: '/', label: 'Home', roles: ['guest', 'user', 'sso-admin'] },
   { path: '/my-dashboard', label: 'My Dashboard', roles: ['user', 'sso-admin'] },
-  { path: '/custom-realm-form', label: 'Request Custom Realm', roles: ['sso-admin', 'user'] },
+  { path: '/custom-realm-form', label: 'Request Custom Realm', roles: ['sso-admin', 'user'], hide: true },
   { path: '/custom-realm-dashboard', label: 'Custom Realm Dashboard', roles: ['sso-admin'] },
   { path: '/realm', label: 'Realm Profile', roles: ['user'], hide: true },
 ];
@@ -128,9 +121,7 @@ const LeftMenuItems = ({ currentUser, currentPath }: { currentUser: Partial<User
         .map((route) => {
           return (
             <li key={route.path} className={isCurrent(route.path) ? 'current' : ''}>
-              <Link href={route.path}>
-                <a className={isCurrent(route.path) ? 'current' : ''}>{route.label}</a>
-              </Link>
+              <Link href={route.path}>{route.label}</Link>
             </li>
           );
         })}
@@ -266,11 +257,7 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
     <>
       <BCSans />
       <Navigation
-        title={() => (
-          <HeaderTitle>
-            Keycloak Realm Registry<Beta>Beta</Beta>
-          </HeaderTitle>
-        )}
+        title={() => <HeaderTitle>Keycloak Realm Registry</HeaderTitle>}
         rightSide={rightSide}
         mobileMenu={MobileMenu}
         onBannerClick={console.log}

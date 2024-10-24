@@ -1,13 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { useRouter } from 'next/router';
-import { useForm } from 'react-hook-form';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
-import Button from '@button-inc/bcgov-theme/Button';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
-import { getRealmProfile, updateRealmProfile } from 'services/realm';
-import { RealmProfile } from 'types/realm-profile';
-import { UserSession } from 'types/user-session';
+import { updateRealmProfile } from 'services/realm';
+import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import styled from 'styled-components';
+import RealmForm from 'components/RealmForm';
+import { getUpdateRealmSchemaByRole } from 'validators/create-realm';
+import { useSession } from 'next-auth/react';
+import { getServerSession, User } from 'next-auth';
+import { RoleEnum } from 'utils/helpers';
+import { ModalContext } from 'context/modal';
+import { GetServerSidePropsContext } from 'next';
+import { authOptions } from 'pages/api/auth/[...nextauth]';
+import prisma from 'utils/prisma';
+import { Prisma } from '@prisma/client';
 
 const Container = styled(ResponsiveContainer)`
   font-size: 1rem;
@@ -53,152 +60,141 @@ const mediaRules: MediaRule[] = [
     marginTop: 10,
   },
   {
-    width: 850,
+    width: 1150,
     marginTop: 10,
   },
 ];
 
 interface Props {
+  realm: CustomRealmFormData | null;
   alert: BottomAlert;
 }
 
-function EditRealm({ alert }: Props) {
+function EditPage({ realm, alert }: Props) {
+  if (!realm) {
+    return (
+      <Container rules={mediaRules}>
+        <h1>Not Found</h1>
+      </Container>
+    );
+  }
+  return <EditRealm realm={realm!} alert={alert} />;
+}
+
+function EditRealm({ realm: initialRealm, alert }: { realm: CustomRealmFormData; alert: BottomAlert }) {
   const router = useRouter();
   const { rid } = router.query;
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm();
-  const [realm, setRealm] = useState<RealmProfile | null>(null);
-
-  const updateRealm = (realm: RealmProfile) => {
-    setRealm(realm);
-    const keys = Object.keys(realm);
-    for (let x = 0; x < keys.length; x++) {
-      const key = keys[x];
-      setValue(key, realm[key]);
-    }
-  };
+  const [realm, setRealm] = useState<CustomRealmFormData>(initialRealm);
+  const { data } = useSession();
+  const { setModalConfig } = useContext(ModalContext);
+  const currentUser: Partial<User> = data?.user!;
 
   const onSubmit = async (formData: any) => {
-    const [data, err] = await updateRealmProfile(rid as string, formData as RealmProfile);
-    if (!err) {
-      updateRealm(data as RealmProfile);
-
-      alert.show({
-        variant: 'success',
-        fadeOut: 2500,
-        closable: true,
-        content: 'Realm profile hass been updated successfully',
-      });
-    }
+    setModalConfig({
+      show: true,
+      title: `Update Realm Request`,
+      body: `Are you sure you want to update request ${realm?.id}?`,
+      showCancelButton: true,
+      showConfirmButton: true,
+      onConfirm: async () => {
+        const [, err] = await updateRealmProfile(rid as string, formData as RealmProfile);
+        if (!err) {
+          router.push('/my-dashboard').then(() => {
+            alert.show({
+              variant: 'success',
+              fadeOut: 2500,
+              closable: true,
+              content: 'Realm profile has been updated successfully',
+            });
+          });
+        }
+      },
+    });
   };
 
-  useEffect(() => {
-    async function fetchRealm() {
-      if (!rid) return;
-
-      const [data, err] = await getRealmProfile(rid as string);
-      if (!err) {
-        updateRealm(data as RealmProfile);
-      }
-    }
-
-    fetchRealm();
-  }, [rid]);
+  const isAdmin = currentUser?.client_roles?.includes('sso-admin');
+  const isPO = currentUser?.idir_username?.toLowerCase() === realm?.productOwnerIdirUserId.toLowerCase();
+  let role = RoleEnum.TECHNICAL_LEAD;
+  if (isAdmin) role = RoleEnum.ADMIN;
+  else if (isPO) role = RoleEnum.PRODUCT_OWNER;
 
   return (
     <Container rules={mediaRules}>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <label htmlFor="product_name">
-          Product Name<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Product Name"
-          {...register('product_name', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
-        <label htmlFor="product_owner_email">
-          Product Owner Email<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Product Owner Email"
-          {...register('product_owner_email', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        <label htmlFor="product_owner_idir_userid">Product Owner Idir</label>
-        <input
-          type="text"
-          placeholder="Product Owner Idir"
-          disabled
-          {...register('product_owner_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
-        <label htmlFor="technical_contact_email">
-          Technical Contact Email<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Technical Contact Email"
-          {...register('technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        <label htmlFor="technical_contact_idir_userid">Technical Contact Idir</label>
-        <input
-          type="text"
-          placeholder="Technical Contact Idir"
-          disabled
-          {...register('technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
-        <label htmlFor="second_technical_contact_email">
-          Second Technical Contact Email<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Second Technical Contact Email"
-          {...register('second_technical_contact_email', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        <label htmlFor="second_technical_contact_idir_userid">Second Technical Contact Idir</label>
-        <input
-          type="text"
-          placeholder="Second Technical Contact Idir"
-          disabled
-          {...register('second_technical_contact_idir_userid', { required: false, minLength: 2, maxLength: 1000 })}
-        />
-
-        <label htmlFor="rc_channel">
-          Rocket.Chat Channel<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Rocket.Chat Channel"
-          {...register('rc_channel', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        <label htmlFor="rc_channel_owned_by">
-          Rocket.Chat Channel Owner<span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="Rocket.Chat Channel Owner"
-          {...register('rc_channel_owned_by', { required: false, pattern: /^\S+@\S+$/i })}
-        />
-
-        {realm && <p>Last Updated: {new Date(realm.updated_at).toLocaleString()}</p>}
-
-        <Button type="submit" variant="primary">
-          Save
-        </Button>
-      </form>
+      <h1>Edit Realm Information</h1>
+      <RealmForm
+        formData={realm}
+        setFormData={setRealm}
+        onSubmit={onSubmit}
+        onCancel={() => router.push('/my-dashboard')}
+        validationSchema={getUpdateRealmSchemaByRole(role)}
+        collapse={false}
+      />
     </Container>
   );
 }
 
-export default withBottomAlert(EditRealm);
+export default withBottomAlert(EditPage);
+
+export const getServerSideProps = async (context: GetServerSidePropsContext) => {
+  const session = await getServerSession(context.req, context.res, authOptions);
+  if (!session) return;
+
+  try {
+    const username = session?.user?.idir_username || '';
+    const userIsAdmin = session?.user?.client_roles?.includes('sso-admin');
+    const where: Prisma.RosterWhereInput = {
+      id: Number(context.params?.rid),
+    };
+
+    if (!userIsAdmin) {
+      where['OR'] = [
+        {
+          technicalContactIdirUserId: {
+            equals: username,
+            mode: 'insensitive',
+          },
+        },
+        {
+          secondTechnicalContactIdirUserId: {
+            equals: username,
+            mode: 'insensitive',
+          },
+        },
+        {
+          productOwnerIdirUserId: {
+            equals: username,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
+    const realm = await prisma.roster.findFirst({
+      where,
+    });
+
+    if (!realm) {
+      return {
+        props: {
+          realm,
+        },
+      };
+    }
+
+    const realmSerialized = {
+      ...realm,
+      createdAt: realm?.createdAt?.toISOString(),
+      updatedAt: realm?.updatedAt?.toISOString(),
+    };
+    return {
+      props: {
+        realm: realmSerialized,
+      },
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      props: {},
+    };
+  }
+};

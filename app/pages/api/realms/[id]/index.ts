@@ -1,18 +1,24 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]';
+import { authOptions } from '../../auth/[...nextauth]';
 import { RoleEnum, adminOnlyFields, checkAdminRole, createEvent, getUpdatedProperties } from 'utils/helpers';
 import prisma from 'utils/prisma';
 import { EventEnum, StatusEnum, getUpdateRealmSchemaByRole } from 'validators/create-realm';
 import { ValidationError } from 'yup';
-import {
-  CreatePullRequestResponseType,
-  createCustomRealmPullRequest,
-  deleteBranch,
-  mergePullRequest,
-} from 'utils/github';
 import omit from 'lodash.omit';
-import { offboardRealmAdmin, onboardNewRealmAdmin, sendDeleteEmail, sendUpdateEmail } from 'utils/mailer';
+import {
+  offboardRealmAdmin,
+  onboardNewRealmAdmin,
+  sendDeletionCompleteEmail,
+  sendReadyToUseEmail,
+  sendUpdateEmail,
+} from 'utils/mailer';
+import { addUserAsRealmAdmin, manageCustomRealm, removeUserAsRealmAdmin } from 'controllers/keycloak';
+import { generateXML, makeSoapRequest, getBceidAccounts } from 'utils/idir';
+import getConfig from 'next/config';
+
+const { serverRuntimeConfig = {} } = getConfig() || {};
+const { idir_requestor_user_guid } = serverRuntimeConfig;
 
 interface ErrorData {
   success: boolean;
@@ -23,7 +29,7 @@ type Data = ErrorData | string;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   let username: string;
-  let currentRequest;
+  let currentRequest: any;
   try {
     const session = await getServerSession(req, res, authOptions);
     if (!session) return res.status(401).json({ success: false, error: 'unauthorized' });
@@ -76,6 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       let isPO = false;
       let updatedRealm: any;
       let updatingApprovalStatus = false;
+      let allEnvRealmsCreated = false;
 
       const omitFieldsBeforeApplied = [
         'productOwnerEmail',
@@ -87,7 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       ];
 
       try {
-        const lastUpdatedBy = `${session.user.family_name}, ${session.user.given_name}`;
+        let lastUpdatedBy = `${session.user.family_name}, ${session.user.given_name}`;
 
         updateRequest.ministry =
           updateRequest.ministry === 'Other' ? updateRequest.ministryOther : updateRequest.ministry;
@@ -101,7 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           },
         });
 
-        if (!currentRequest) {
+        if (!currentRequest || currentRequest.approved === false) {
           return res.status(400).json({ success: false, error: 'Invalid request' });
         }
 
@@ -124,8 +131,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           if (
             currentRequest.status === StatusEnum.PENDING &&
             String(updateRequest.approved) === 'true' &&
-            !currentRequest.prNumber &&
-            !currentRequest.approved
+            currentRequest.approved === null
           ) {
             updatingApprovalStatus = true;
             await createEvent({
@@ -134,15 +140,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               idirUserId: username,
               details: req.body,
             });
-            const prResponse: CreatePullRequestResponseType = await createCustomRealmPullRequest(
-              currentRequest.realm!,
-              currentRequest.environments,
-            );
-            const pr = await mergePullRequest(prResponse.data.number);
-            if (pr.data.merged) await deleteBranch(currentRequest.realm!);
-            updateRequest.prNumber = prResponse.data.number;
-            updateRequest.status = updateRequest.prNumber ? StatusEnum.PRSUCCESS : StatusEnum.PRFAILED;
+
+            try {
+              await manageCustomRealm(currentRequest?.realm!, currentRequest.environments, 'create');
+              allEnvRealmsCreated = true;
+            } catch (err) {
+              console.error('Error creating custom realm', err);
+            }
+
+            await createEvent({
+              realmId: parseInt(req.query.id as string, 10),
+              eventCode: allEnvRealmsCreated ? EventEnum.REQUEST_APPLY_SUCCESS : EventEnum.REQUEST_APPLY_FAILED,
+              idirUserId: username,
+              details: req.body,
+            });
+
             updateRequest.approved = true;
+            updateRequest.status = allEnvRealmsCreated ? StatusEnum.APPLIED : StatusEnum.APPLYFAILED;
+
+            try {
+              if (allEnvRealmsCreated) {
+                [currentRequest?.productOwnerIdirUserId, currentRequest?.technicalContactIdirUserId].forEach(
+                  async (idirUserId) => {
+                    const samlPayload = generateXML('userId', idirUserId as string, idir_requestor_user_guid);
+                    const { response }: any = await makeSoapRequest(samlPayload);
+                    const accounts = await getBceidAccounts(response);
+
+                    if (accounts.length > 0) {
+                      await addUserAsRealmAdmin(
+                        `${accounts[0].guid}@idir`,
+                        currentRequest?.environments!,
+                        currentRequest?.realm!,
+                      );
+                    } else {
+                      console.error(`No guid found for user ${String(idirUserId)}`);
+                    }
+                  },
+                );
+              }
+            } catch (err) {
+              console.error('failed to create realm admins', err);
+            }
 
             // when request is pending and gets rejected
           } else if (
@@ -213,8 +251,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         });
         updatedRealm = !isAdmin ? omit(updatedRealm, adminOnlyFields) : updatedRealm;
 
-        await sendUpdateEmail(updatedRealm, session, updatingApprovalStatus);
-
         let typeOfContactUpdate = '';
 
         if (
@@ -248,6 +284,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           );
           await offboardRealmAdmin(session, updatedRealm, currentRequest.technicalContactEmail!, typeOfContactUpdate);
         }
+        // emails
+        await sendUpdateEmail(updatedRealm, session, updatingApprovalStatus);
+        if (isAdmin && updatingApprovalStatus && updatedRealm.approved && allEnvRealmsCreated)
+          await sendReadyToUseEmail(currentRequest!);
 
         return res.send(updatedRealm);
       } catch (err) {
@@ -262,72 +302,76 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
     } else if (req.method === 'DELETE') {
       const { id } = req.query;
+      if (!id) return res.status(400).send('Invalid request');
       if (!isAdmin) return res.status(401).send('Unauthorized');
 
-      const realm = await prisma.roster.findUnique({
-        where: {
-          id: parseInt(id as string, 10),
-          archived: false,
-        },
-      });
+      let allEnvRealmsDeleted = false;
 
-      if (!realm) return res.status(404).send('Not found');
+      try {
+        const realm = await prisma.roster.findUnique({
+          where: {
+            id: parseInt(id as string, 10),
+            archived: false,
+          },
+        });
 
-      const prResponse: CreatePullRequestResponseType | null = await createCustomRealmPullRequest(
-        realm.realm!,
-        realm.environments,
-        false,
-      ).catch((err) => {
-        console.error(`Error creating pr for realm id ${id}: ${err}`);
-        return null;
-      });
+        if (!realm) return res.status(404).send('Not found');
 
-      const failPR = () => {
-        return Promise.all([
-          prisma.roster.update({ data: { status: StatusEnum.PRFAILED }, where: { id: parseInt(id as string, 10) } }),
-          createEvent({
-            realmId: parseInt(req.query.id as string, 10),
-            eventCode: EventEnum.REQUEST_DELETE_FAILED,
-            idirUserId: username,
-          }),
-        ]);
-      };
+        try {
+          await manageCustomRealm(realm.realm as string, realm.environments, 'delete');
+          allEnvRealmsDeleted = true;
+        } catch (err) {
+          console.error('Error deleting custom realm', err);
+        }
 
-      if (!prResponse?.data.number) {
-        console.info(`PR Failed for deletion of realm id ${id}`);
-        // Intentionally not awaiting since 500 already, handling error async
-        await failPR().catch((err) => console.error(err));
-        return res.status(500).send('Unexpected error removing request. Please try again.');
-      }
-
-      const pr = await mergePullRequest(prResponse.data.number);
-      if (!pr.data.merged) {
-        console.info(`Failed to merge pull request for realm id ${id}`);
-        await failPR().catch((err) => console.error(err));
-        return res.status(500).send('Unexpected error removing request. Please try again.');
-      }
-
-      // handled by github repo settings
-      //await deleteBranch(realm.realm!);
-      await Promise.all([
-        prisma.roster.update({
+        await prisma.roster.update({
           data: {
             archived: true,
-            prNumber: prResponse.data.number,
-            status: StatusEnum.PRSUCCESS,
+            status: allEnvRealmsDeleted ? StatusEnum.APPLIED : StatusEnum.APPLYFAILED,
           },
           where: {
             id: parseInt(id as string, 10),
           },
-        }),
-        await sendDeleteEmail(realm, session),
-      ]);
-      res.status(200).send('Success');
+        });
+
+        await createEvent({
+          realmId: parseInt(req.query.id as string, 10),
+          eventCode: allEnvRealmsDeleted ? EventEnum.REQUEST_DELETE_SUCCESS : EventEnum.REQUEST_DELETE_FAILED,
+          idirUserId: username,
+          details: req.body,
+        });
+
+        if (!allEnvRealmsDeleted) {
+          return res.status(422).send('Unable to process the delete request at this time');
+        }
+
+        await Promise.all(
+          realm.environments.map((env) => {
+            return removeUserAsRealmAdmin(
+              [realm.productOwnerEmail, realm.technicalContactEmail],
+              env,
+              realm.realm as string,
+            );
+          }),
+        );
+
+        await sendDeletionCompleteEmail(realm);
+        return res.status(200).send('Success');
+      } catch (err) {
+        console.error(err);
+        await createEvent({
+          realmId: parseInt(req.query.id as string, 10),
+          eventCode: EventEnum.REQUEST_DELETE_FAILED,
+          idirUserId: username,
+          details: req.body,
+        });
+        throw Error(`Failed to delete realm with id ${id}`);
+      }
     } else {
-      return res.status(404).json({ success: false, error: 'not found' });
+      return res.status(405).json({ success: false, error: 'Not allowed' });
     }
   } catch (err: any) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message || err });
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 }

@@ -39,7 +39,6 @@ const Table = styled.table`
   & th,
   & td {
     border: none;
-    word-wrap: break-word;
   }
 `;
 

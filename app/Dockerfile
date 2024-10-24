@@ -1,10 +1,10 @@
-FROM node:18.18.2-alpine as builder
+FROM node:20.17.0-alpine as builder
 WORKDIR /opt/app
 COPY . .
 RUN yarn install --frozen-lockfile
 RUN yarn build
 
-FROM node:18.18.2-alpine as runner
+FROM node:20.17.0-alpine as runner
 WORKDIR /opt/app
 ENV NODE_ENV production
 

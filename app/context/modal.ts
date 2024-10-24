@@ -1,9 +1,9 @@
-import { createContext } from 'react';
+import React, { createContext } from 'react';
 
 export interface ModalConfig {
   show: boolean;
   title: string;
-  body: string;
+  body: string | React.ReactNode;
   showConfirmButton?: boolean;
   showCancelButton?: boolean;
   onClose?: () => void;
@@ -15,6 +15,6 @@ export const ModalContext = createContext({
     show: false,
     title: '',
     body: '',
-  },
+  } as ModalConfig,
   setModalConfig: (config: ModalConfig) => {},
 });

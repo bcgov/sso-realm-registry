@@ -36,6 +36,8 @@ export enum EventEnum {
   REQUEST_APPLY_FAILED = 'request-apply-failed',
   REQUEST_DELETE_FAILED = 'request-delete-failed',
   REQUEST_DELETE_SUCCESS = 'request-delete-success',
+  REQUEST_RESTORE_SUCCESS = 'request-restore-success',
+  REQUEST_RESTORE_FAILED = 'request-restore-failed',
 }
 
 export enum EnvironmentsEnum {

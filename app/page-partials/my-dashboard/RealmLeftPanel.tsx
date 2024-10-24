@@ -8,9 +8,10 @@ interface Props {
   realms: RealmProfile[];
   onEditClick: (id: string) => void;
   onCancel: () => void;
+  onViewClick: (id: string) => void;
 }
 
-function RealmLeftPanel({ realms, onEditClick, onCancel }: Props) {
+function RealmLeftPanel({ realms, onEditClick, onViewClick }: Props) {
   const [tab, setTab] = useState('dashboard');
 
   return (
@@ -30,7 +31,11 @@ function RealmLeftPanel({ realms, onEditClick, onCancel }: Props) {
           Duplicate Users
         </a> */}
       </Tabs>
-      {tab === 'dashboard' ? <RealmTable realms={realms} onEditClick={onEditClick} /> : <DuplicateIDIR />}
+      {tab === 'dashboard' ? (
+        <RealmTable realms={realms} onEditClick={onEditClick} onViewClick={onViewClick} />
+      ) : (
+        <DuplicateIDIR />
+      )}
     </>
   );
 }

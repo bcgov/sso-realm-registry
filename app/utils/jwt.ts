@@ -24,7 +24,7 @@ export const validateRequest = async (req: NextApiRequest, res: NextApiResponse<
 };
 
 export const getIdirUserGuid = async (token: string) => {
-  const { header } = jws.decode(token);
+  const { header } = jws.decode(token) as jws.Signature;
 
   const { keys }: any = await axios.get(idir_jwks_uri).then((res) => res.data);
 

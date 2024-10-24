@@ -134,10 +134,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await sendCreateEmail(newRealm, session);
       return res.status(201).json(newRealm);
     } else {
-      return res.status(404).json({ success: false, error: 'not found' });
+      return res.status(405).json({ success: false, error: 'Not allowed' });
     }
   } catch (err: any) {
     console.error(err);
-    res.status(422).json({ success: false, error: err.message || err });
+    return res.status(422).json({ success: false, error: "Couldn't process request" });
   }
 }

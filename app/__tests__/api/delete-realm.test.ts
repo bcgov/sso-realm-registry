@@ -1,33 +1,29 @@
 import { createMocks } from 'node-mocks-http';
 import deleteHandler from '../../pages/api/realms/[id]';
-import githubResponseHandler from '../../pages/api/realms/pending';
 import prisma from 'utils/prisma';
-import { CustomRealmProfiles } from '../fixtures';
-import { getServerSession } from 'next-auth';
-import { createCustomRealmPullRequest, mergePullRequest } from 'utils/github';
-import { EventEnum, StatusEnum } from 'validators/create-realm';
-import { removeUserAsRealmAdmin } from 'controllers/keycloak';
-import { sendDeletionCompleteEmail } from 'utils/mailer';
+import { CustomRealmProfiles, MockHttpRequest } from '../fixtures';
+import { manageCustomRealm, removeUserAsRealmAdmin } from 'controllers/keycloak';
+import { ssoTeamEmail } from 'utils/mailer';
+import { createMockSendEmail, mockAdminSession, mockSession } from './utils/mocks';
+import { createEvent } from 'utils/helpers';
+import { EventEnum } from 'validators/create-realm';
+
+jest.mock('../../utils/helpers', () => {
+  return {
+    ...jest.requireActual('../../utils/helpers'),
+    createEvent: jest.fn(),
+  };
+});
+
+jest.mock('utils/ches');
 
 jest.mock('../../controllers/keycloak', () => {
   return {
-    removeUserAsRealmAdmin: jest.fn(),
-  };
-});
-
-jest.mock('../../utils/mailer', () => {
-  return {
-    sendUpdateEmail: jest.fn(),
-    sendDeleteEmail: jest.fn(),
-    sendDeletionCompleteEmail: jest.fn(() => Promise.resolve(true)),
-  };
-});
-
-jest.mock('../../utils/github', () => {
-  return {
-    createCustomRealmPullRequest: jest.fn(() => Promise.resolve({ data: { number: 1 } })),
-    mergePullRequest: jest.fn(() => Promise.resolve({ data: { merged: true } })),
-    deleteBranch: jest.fn(),
+    removeUserAsRealmAdmin: jest.fn(() => true),
+    createCustomRealm: jest.fn(() => true),
+    disableCustomRealm: jest.fn(() => true),
+    deleteCustomRealm: jest.fn(() => true),
+    manageCustomRealm: jest.fn(() => true),
   };
 });
 
@@ -36,16 +32,6 @@ jest.mock('next/config', () => () => ({
     gh_api_token: 'secret',
   },
 }));
-
-const mockSession = {
-  expires: new Date(Date.now() + 2 * 86400).toISOString(),
-  user: {
-    username: 'test',
-    family_name: 'test',
-    idir_username: 'test',
-  },
-  status: 'authenticated',
-};
 
 jest.mock('next-auth/next', () => {
   return {
@@ -61,19 +47,7 @@ jest.mock('../../pages/api/auth/[...nextauth]', () => {
   };
 });
 
-const mockAdminSession = () => {
-  (getServerSession as jest.Mock).mockImplementation(() => {
-    return {
-      ...mockSession,
-      user: {
-        ...mockSession.user,
-        client_roles: ['sso-admin'],
-      },
-    };
-  });
-};
-
-describe('Realm Delete Request', () => {
+describe('Delete Realm Permissions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Mock prisma find/update functions
@@ -89,123 +63,79 @@ describe('Realm Delete Request', () => {
   });
 
   it('Only allows admins to delete realms', async () => {
-    const { req, res } = createMocks({
+    const { req, res }: MockHttpRequest = createMocks({
       method: 'DELETE',
       query: { id: 1 },
     });
     await deleteHandler(req, res);
     expect(res.statusCode).toBe(401);
-    expect(createCustomRealmPullRequest).not.toHaveBeenCalled();
-    expect(mergePullRequest).not.toHaveBeenCalled();
-
     mockAdminSession();
     await deleteHandler(req, res);
     expect(res.statusCode).toBe(200);
-    expect(createCustomRealmPullRequest).toHaveBeenCalled();
-    expect(mergePullRequest).toHaveBeenCalled();
-  });
-
-  it('Updates the status, archived, and prNumber when deleted successfully', async () => {
-    const { req, res } = createMocks({
-      method: 'DELETE',
-      query: { id: 1 },
-    });
-    mockAdminSession();
-    await deleteHandler(req, res);
-    expect(res.statusCode).toBe(200);
-
-    const rosterUpdateArgs = (prisma.roster.update as jest.Mock).mock.calls[0][0];
-    expect(rosterUpdateArgs.data.archived).toBe(true);
-    expect(rosterUpdateArgs.data.prNumber).toBe(1);
-    expect(rosterUpdateArgs.data.status).toBe(StatusEnum.PRSUCCESS);
-  });
-
-  it('Updates the status to failed if the pr fails or merge fails and logs an event', async () => {
-    // PR Creation failure
-    const failureEvent = {
-      data: {
-        realmId: 1,
-        eventCode: EventEnum.REQUEST_DELETE_FAILED,
-        idirUserId: 'test',
-      },
-    };
-    const { req, res } = createMocks({
-      method: 'DELETE',
-      query: { id: 1 },
-    });
-    (createCustomRealmPullRequest as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('Failed')));
-    mockAdminSession();
-    await deleteHandler(req, res);
-    expect(res.statusCode).toBe(500);
-
+    expect(manageCustomRealm).toHaveBeenCalledTimes(1);
     let rosterUpdateArgs = (prisma.roster.update as jest.Mock).mock.calls[0][0];
-    expect(rosterUpdateArgs.data.status).toBe(StatusEnum.PRFAILED);
-    expect(prisma.event.create).toHaveBeenCalledWith(failureEvent);
-
-    // PR merge failure
-    (mergePullRequest as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('Failed')));
-    await deleteHandler(req, res);
-
-    expect(res.statusCode).toBe(500);
-    rosterUpdateArgs = (prisma.roster.update as jest.Mock).mock.calls[0][0];
-    expect(rosterUpdateArgs.data.status).toBe(StatusEnum.PRFAILED);
-    expect(prisma.event.create).toHaveBeenCalledWith(failureEvent);
+    expect(rosterUpdateArgs.data.archived).toBe(true);
+    expect(rosterUpdateArgs.data.status).toBe('applied');
   });
 });
 
-describe('Github Actions Delete', () => {
-  const mockToken = 'secret';
+describe('Delete Realms', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
       return Promise.resolve({ ...CustomRealmProfiles[0], id: 1, archived: true });
     });
   });
-  const requestData = {
-    method: 'PUT' as 'PUT',
-    body: {
-      ids: [1],
-      action: 'tf_apply',
-      success: 'true',
-    },
-    headers: {
-      Authorization: mockToken,
-    },
-  };
 
-  it('requires api token', async () => {
-    let { req, res } = createMocks(requestData);
-    await githubResponseHandler(req, res);
-    expect(res.statusCode).toBe(200);
-
-    // Remove auth header
-    ({ req, res } = createMocks({ ...requestData, headers: { Authorization: 'empty' } }));
-    await githubResponseHandler(req, res);
-    expect(res.statusCode).toBe(401);
-  });
-
-  it('Removes technical contact and product owner from all envirionments', async () => {
-    const { req, res } = createMocks(requestData);
-    await githubResponseHandler(req, res);
-    expect(res.statusCode).toBe(200);
-
-    // Email only sent once
-    expect(sendDeletionCompleteEmail).toHaveBeenCalledTimes(1);
-
-    // PO email and technical contact email removed in each realm
-    ['dev', 'test', 'prod'].forEach((env) => {
-      expect(removeUserAsRealmAdmin).toHaveBeenCalledWith(['a@b.com', 'b@c.com'], env, 'realm 1');
+  it('successfully deletes realm in all environments and sends email', async () => {
+    mockAdminSession();
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'DELETE',
+      query: { id: 1 },
     });
-    // No extra calls
+
+    const emailList = createMockSendEmail();
+
+    await deleteHandler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(manageCustomRealm).toHaveBeenCalledTimes(1);
+    // PO email and technical contact email removed in each realm
+    CustomRealmProfiles[0].environments.forEach((env) => {
+      expect(removeUserAsRealmAdmin).toHaveBeenCalledWith(
+        [CustomRealmProfiles[0].productOwnerEmail, CustomRealmProfiles[0].technicalContactEmail],
+        env,
+        CustomRealmProfiles[0].realm,
+      );
+    });
     expect(removeUserAsRealmAdmin).toHaveBeenCalledTimes(3);
+    expect(emailList.length).toBe(1);
+    expect(emailList[0].subject).toContain(
+      `Notification: Custom Realm ${CustomRealmProfiles[0].realm} has now been Deleted.`,
+    );
+    expect(emailList[0].to).toEqual(
+      expect.arrayContaining([CustomRealmProfiles[0].productOwnerEmail, CustomRealmProfiles[0].technicalContactEmail]),
+    );
+    expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
   });
 
-  it('Only sends deletion complete email if all users removed successfully', async () => {
-    const { req, res } = createMocks(requestData);
-    (removeUserAsRealmAdmin as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('failure')));
-    await githubResponseHandler(req, res);
+  it('does not send email if deleting realm in all environments fails', async () => {
+    mockAdminSession();
 
-    expect(res.statusCode).toBe(500);
-    expect(sendDeletionCompleteEmail).not.toHaveBeenCalled();
+    (manageCustomRealm as jest.Mock).mockImplementationOnce(() => Promise.reject('some error'));
+
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'DELETE',
+      query: { id: 1 },
+    });
+
+    const emailList = createMockSendEmail();
+
+    await deleteHandler(req, res);
+    const createEventArgs = (createEvent as jest.Mock).mock.calls[0][0];
+    expect(createEventArgs.eventCode).toBe(EventEnum.REQUEST_DELETE_FAILED);
+    expect(res.statusCode).toBe(422);
+    expect(manageCustomRealm).toHaveBeenCalledTimes(1);
+    expect(emailList.length).toBe(0);
   });
 });

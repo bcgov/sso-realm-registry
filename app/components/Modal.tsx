@@ -128,7 +128,7 @@ export default function GlobalModal({ setModalConfig, modalConfig }: Props) {
                 <span />
               )}
               {showConfirmButton && (
-                <Button onClick={onConfirmClick}>
+                <Button onClick={onConfirmClick} disabled={waiting}>
                   {waiting ? <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" /> : 'Confirm'}
                 </Button>
               )}

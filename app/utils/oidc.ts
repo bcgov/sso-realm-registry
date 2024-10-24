@@ -253,7 +253,7 @@ class OIDC {
 
   public async verifyToken(token: string) {
     // 1. Decode the ID token.
-    const { header } = jws.decode(token);
+    const { header } = jws.decode(token) as jws.Signature;
 
     // 2. Compare the local key ID (kid) to the public kid.
     const { jwks, issuer } = await this.fetchIssuerConfiguration();
