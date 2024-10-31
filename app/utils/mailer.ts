@@ -8,7 +8,7 @@ import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv, formatWikiURL }
 const { serverRuntimeConfig = {} } = getConfig() || {};
 const { app_env, sso_logout_redirect_uri } = serverRuntimeConfig;
 const subjectPrefix = app_env === 'development' ? '[DEV] ' : '';
-const ssoTeamEmail = 'bcgov.sso@gov.bc.ca';
+export const ssoTeamEmail = 'bcgov.sso@gov.bc.ca';
 
 const emailHeader = `
 <header style="color: #0e3468; text-align: center; margin-bottom: 30px; background: #f2f2f2; padding: 20px; box-shadow: 0 12px 6px -6px rgb(224, 224, 224);">
@@ -136,9 +136,9 @@ export const sendUpdateEmail = async (realm: any, session: any, updatingApproval
   if (updatingApprovalStatus && realm.approved === true) {
     message = `
           <main>
-              <p>We're pleased to inform you that your request for the Custom Realm ${realm.realm} has been approved and is currently being processed. Kindly anticipate an update from us within the next 24 hours.</p>
+              <p>We're pleased to inform you that your request for the Custom Realm ${realm.realm} has been approved and is currently being processed.</p>
           </main>`;
-    subject = `${prefix}Important: Your request for Custom Realm ${realm.realm} has been Approved`;
+    subject = `${prefix}Important: Your request for Custom Realm ${realm.realm} has been Approved (email 1 of 2)`;
   } else if (updatingApprovalStatus && realm.approved === false) {
     message = `
               <main>
@@ -150,6 +150,29 @@ export const sendUpdateEmail = async (realm: any, session: any, updatingApproval
 
   return await sendEmail({
     to: [realm.technicalContactEmail, realm.productOwnerEmail],
+    cc: [ssoTeamEmail],
+    body: `
+          ${emailHeader}
+          ${message}
+          ${emailFooter}
+      `,
+    subject,
+  });
+};
+
+export const sendRestoreEmail = async (realm: Roster, requester: string) => {
+  const prefix = app_env === 'development' ? '[DEV] ' : '';
+  const subject = `${prefix}Notification: Realm ${realm.realm} Restoration Requested`;
+
+  const message = `
+    <main>
+      <p>We have received a request from ${requester} for the restoration of the ${realm.realm} custom realm. The restoration process will take approximately 24 hours. Please contact the SSO team if you have any concerns.</p>
+    </main>
+  `;
+
+  return sendEmail({
+    to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
+    cc: [ssoTeamEmail],
     body: `
           ${emailHeader}
           ${message}
@@ -184,6 +207,7 @@ export const sendDeleteEmail = async (realm: Roster, session: Session) => {
 
   return await sendEmail({
     to,
+    cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
         <p>We have received a request from ${username} for the deletion of Custom Realm ${realm.realm}. It will be deleted at approximately ${githubActionTriggerHour} as per our automated processes. Please contact the SSO team ASAP if you have any concerns.</p>
@@ -198,6 +222,7 @@ export const sendDeletionCompleteEmail = async (realm: Roster) => {
   if (!to.length) return;
   return await sendEmail({
     to,
+    cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
         <p>This is to inform you that Custom Realm ${realm.realm} has now been deleted.</p>
@@ -211,6 +236,7 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
   const prefix = app_env === 'development' ? '[DEV] ' : '';
   const realmName = realm.realm!;
   return await sendEmail({
+    cc: [ssoTeamEmail],
     to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
     body: `
           ${emailHeader}
@@ -265,7 +291,7 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
                       </ul>
                   </li>
                   <li>
-                    <p>At this point you will see a <code>forbidden</code> message</p>
+                    <p>At this point you cannot log in, and might see a loading spinner or a <code>forbidden</code> message. Exit from the browser and continue with next step.</p>
                   </li>
                   <li>
                     <p>One of the existing Realm Admins will need to add the user that logged in to #1 above to the custom realm admin group via the <strong>master</strong> links</p>
@@ -311,7 +337,7 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
             </main>
           ${emailFooter}
           `,
-    subject: `${prefix}Important: Custom Realm ${realmName} Created and Action Required for Realm Admin Configuration`,
+    subject: `${prefix}Important: Custom Realm ${realmName} Created and Action Required for Realm Admin Configuration (email 2 of 2)`,
   });
 };
 
@@ -331,6 +357,7 @@ export const onboardNewRealmAdmin = async (
   if (!to.length) return;
   return await sendEmail({
     to,
+    cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
         <p>
@@ -424,6 +451,7 @@ export const offboardRealmAdmin = async (session: Session, realm: Roster, oldCon
   if (!to.length) return;
   return await sendEmail({
     to,
+    cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
         <p>

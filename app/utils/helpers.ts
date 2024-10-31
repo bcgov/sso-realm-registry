@@ -74,5 +74,57 @@ export const generateRealmLinksByEnv = (env: string, realmName: string) => {
 
 export const generateMasterRealmLinksByEnv = (env: string, realmName: string) => {
   const domain = env === 'dev' ? dev_kc_url : env === 'test' ? test_kc_url : prod_kc_url;
-  return `${domain}/auth/admin/master/console/#/realms/${realmName}`;
+  return `${domain}/auth/admin/master/console/`;
+};
+
+export const getRealmPermissionsByRole = (realmName: string) => {
+  return [
+    {
+      name: 'realm-admin',
+      permissions: ['realm-admin'],
+      group: 'Realm Administrator',
+      realmName,
+      clientId: 'realm-management',
+    },
+    {
+      name: 'realm-viewer',
+      permissions: [
+        'view-realm',
+        'view-users',
+        'view-clients',
+        'view-identity-providers',
+        'view-authorization',
+        'view-events',
+      ],
+      group: 'Realm Viewer',
+      realmName,
+      clientId: 'realm-management',
+    },
+    {
+      name: `${realmName}-realm-admin`,
+      permissions: [
+        'create-client',
+        'impersonation',
+        'manage-authorization',
+        'manage-clients',
+        'manage-events',
+        'manage-identity-providers',
+        'manage-realm',
+        'manage-users',
+        'query-clients',
+        'query-groups',
+        'query-realms',
+        'query-users',
+        'view-authorization',
+        'view-clients',
+        'view-events',
+        'view-identity-providers',
+        'view-realm',
+        'view-users',
+      ],
+      group: `${realmName} Realm Administrator`,
+      realmName: 'master',
+      clientId: `${realmName}-realm`,
+    },
+  ];
 };
