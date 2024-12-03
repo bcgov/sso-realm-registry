@@ -70,7 +70,7 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
         // create user in realm
         idirRealmUser = await kcAdminClient.users.create({
           realm: userIdp,
-          username,
+          username: userGuid,
           emailVerified: true,
           enabled: true,
         });
@@ -82,7 +82,7 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
           federatedIdentityId: userIdp,
           federatedIdentity: {
             userId: userGuid.toUpperCase(),
-            userName: userGuid,
+            userName: userGuid.toUpperCase(),
             identityProvider: userIdp,
           },
         });
@@ -92,7 +92,7 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
 
       const masterRealmUsers = await kcAdminClient.users.find({
         realm: 'master',
-        username: username,
+        username,
         max: 1,
       });
 
@@ -100,7 +100,7 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
         // create user in master realm
         masterRealmUser = await kcAdminClient.users.create({
           realm: 'master',
-          username: username,
+          username,
           emailVerified: true,
           enabled: true,
         });
