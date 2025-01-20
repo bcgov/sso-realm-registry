@@ -1,6 +1,6 @@
 # Generating service accounts for the CICD pipeline
 
-The github actions need service accounts to run. The script `generate_sa.sh` will create a service acount for the prod environment of a given openshift project and give that account the roles in the dev, test, and prod environments for deploying the keycloak site.
+The github actions need service accounts to run. The script `generate_sa.sh` will create a service acount for the prod environment of a given openshift project and give that account the roles in the dev, test, and prod environments for deploying the realm registry site.
 
 ## Generate the service accounts
 
