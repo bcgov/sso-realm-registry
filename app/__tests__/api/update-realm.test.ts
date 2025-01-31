@@ -217,8 +217,13 @@ describe('approval and rejection', () => {
     expect(manageCustomRealm).toHaveBeenCalledTimes(1);
     expect(emailList.length).toBe(2);
     expect(emailList[0].to).toEqual(
-      expect.arrayContaining([CustomRealms[0].productOwnerEmail, CustomRealms[0].technicalContactEmail]),
+      expect.arrayContaining([
+        CustomRealms[0].productOwnerEmail,
+        CustomRealms[0].technicalContactEmail,
+        CustomRealms[0].secondTechnicalContactEmail,
+      ]),
     );
+    expect(emailList[0].to.length).toBe(3);
     expect(emailList[1].to).toEqual(
       expect.arrayContaining([CustomRealms[0].productOwnerEmail, CustomRealms[0].technicalContactEmail]),
     );
@@ -274,8 +279,13 @@ describe('approval and rejection', () => {
     expect(emailList.length).toBe(1);
     expect(emailList[0].subject).toContain('Important: Your request for Custom Realm realm 1 has been Declined');
     expect(emailList[0].to).toEqual(
-      expect.arrayContaining([CustomRealms[0].productOwnerEmail, CustomRealms[0].technicalContactEmail]),
+      expect.arrayContaining([
+        CustomRealms[0].productOwnerEmail,
+        CustomRealms[0].technicalContactEmail,
+        CustomRealms[0].secondTechnicalContactEmail,
+      ]),
     );
+    expect(emailList[0].to.length).toBe(3);
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
   });
 });

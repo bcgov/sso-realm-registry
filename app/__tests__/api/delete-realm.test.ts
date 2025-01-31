@@ -114,8 +114,13 @@ describe('Delete Realms', () => {
       `Notification: Custom Realm ${CustomRealmProfiles[0].realm} has now been Deleted.`,
     );
     expect(emailList[0].to).toEqual(
-      expect.arrayContaining([CustomRealmProfiles[0].productOwnerEmail, CustomRealmProfiles[0].technicalContactEmail]),
+      expect.arrayContaining([
+        CustomRealmProfiles[0].productOwnerEmail,
+        CustomRealmProfiles[0].technicalContactEmail,
+        CustomRealmProfiles[0].secondTechnicalContactEmail,
+      ]),
     );
+    expect(emailList[0].to.length).toBe(3);
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
   });
 

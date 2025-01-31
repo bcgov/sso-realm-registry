@@ -170,7 +170,10 @@ describe('Restore Realm', () => {
     expect(manageCustomRealm).toHaveBeenCalledTimes(1);
     expect(emailList.length).toBe(1);
     expect(emailList[0].subject).toContain(`Notification: Realm ${realm.realm} Restoration Requested`);
-    expect(emailList[0].to).toEqual(expect.arrayContaining([realm.productOwnerEmail, realm.technicalContactEmail]));
+    expect(emailList[0].to).toEqual(
+      expect.arrayContaining([realm.productOwnerEmail, realm.technicalContactEmail, realm.secondTechnicalContactEmail]),
+    );
+    expect(emailList[0].to.length).toBe(3);
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
   });
 
