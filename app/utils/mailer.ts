@@ -149,7 +149,9 @@ export const sendUpdateEmail = async (realm: any, session: any, updatingApproval
   }
 
   return await sendEmail({
-    to: [realm.technicalContactEmail, realm.productOwnerEmail],
+    to: [realm.technicalContactEmail, realm.productOwnerEmail, realm.secondTechnicalContactEmail].filter(
+      (email) => email,
+    ),
     cc: [ssoTeamEmail],
     body: `
           ${emailHeader}
@@ -171,7 +173,9 @@ export const sendRestoreEmail = async (realm: Roster, requester: string) => {
   `;
 
   return sendEmail({
-    to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
+    to: [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
+      (email) => email,
+    ),
     cc: [ssoTeamEmail],
     body: `
           ${emailHeader}
@@ -186,7 +190,9 @@ export const sendCreateEmail = async (realm: Roster, session: Session) => {
   const prefix = app_env === 'development' ? '[DEV] ' : '';
   const username = `${session.user.given_name} ${session.user.family_name}`;
   return await sendEmail({
-    to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
+    to: [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
+      (email) => email,
+    ),
     cc: [ssoTeamEmail],
     body: `
       ${emailHeader}
@@ -202,7 +208,9 @@ export const sendCreateEmail = async (realm: Roster, session: Session) => {
 export const sendDeleteEmail = async (realm: Roster, session: Session) => {
   const githubActionTriggerHour = '4:00 AM';
   const username = `${session.user.given_name} ${session.user.family_name}`;
-  const to = [realm.technicalContactEmail!, realm.productOwnerEmail!].filter((email) => email);
+  const to = [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
+    (email) => email,
+  );
   if (!to.length) return;
 
   return await sendEmail({
@@ -218,7 +226,9 @@ export const sendDeleteEmail = async (realm: Roster, session: Session) => {
 };
 
 export const sendDeletionCompleteEmail = async (realm: Roster) => {
-  const to = [realm.technicalContactEmail!, realm.productOwnerEmail!].filter((email) => email);
+  const to = [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
+    (email) => email,
+  );
   if (!to.length) return;
   return await sendEmail({
     to,
@@ -237,7 +247,9 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
   const realmName = realm.realm!;
   return await sendEmail({
     cc: [ssoTeamEmail],
-    to: [realm.technicalContactEmail!, realm.productOwnerEmail!],
+    to: [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
+      (email) => email,
+    ),
     body: `
           ${emailHeader}
             <main>
