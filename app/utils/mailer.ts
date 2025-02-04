@@ -247,9 +247,7 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
   const realmName = realm.realm!;
   return await sendEmail({
     cc: [ssoTeamEmail],
-    to: [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
-      (email) => email,
-    ),
+    to: [realm.technicalContactEmail!, realm.productOwnerEmail!].filter((email) => email),
     body: `
           ${emailHeader}
             <main>
