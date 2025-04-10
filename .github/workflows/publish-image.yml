@@ -17,12 +17,18 @@ env:
 jobs:
   build-and-push-image:
     permissions: write-all
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: hmarr/debug-action@v3
       - uses: actions/checkout@v4
+      - name: Install CLI tools from OpenShift Mirror
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          source: mirror
+          kam: latest
+          oc: 4.18.7
 
       - name: Log in to the GitHub Container registry
         uses: docker/login-action@v3
