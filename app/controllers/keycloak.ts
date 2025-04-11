@@ -150,6 +150,24 @@ export const createCustomRealm = async (realmName: string, env: string) => {
         // fetch created custom realm
         const customRealm = await kcAdminClient.realms.findOne({ realm: realmName });
         if (customRealm) {
+          const composites = await kcAdminClient.roles.getCompositeRoles({
+            realm: realmName,
+            id: customRealm.defaultRole!.id!,
+          });
+
+          const manageAccountRole = composites.find((role) => role.name === 'manage-account');
+          await kcAdminClient.roles.delCompositeRoles(
+            {
+              id: customRealm.defaultRole!.id!,
+              realm: realmName,
+            },
+            [
+              {
+                id: manageAccountRole!.id,
+              },
+            ],
+          );
+
           const permissionByRoles = getRealmPermissionsByRole(customRealm.realm as string);
 
           for (const role of permissionByRoles) {
