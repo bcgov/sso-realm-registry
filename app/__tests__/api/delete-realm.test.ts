@@ -27,12 +27,6 @@ jest.mock('../../controllers/keycloak', () => {
   };
 });
 
-jest.mock('next/config', () => () => ({
-  serverRuntimeConfig: {
-    gh_api_token: 'secret',
-  },
-}));
-
 jest.mock('next-auth/next', () => {
   return {
     __esModule: true,
