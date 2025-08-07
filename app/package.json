@@ -109,7 +109,7 @@
     "prettier-plugin-prisma": "^5.0.0",
     "prisma": "^6.13.0",
     "ts-jest": "^29.1.1",
-    "typescript": "^4.7.2"
+    "typescript": "^5.9.2"
   },
   "resolutions": {
     "@button-inc/bcgov-theme/**/prismjs": "1.27.0",
