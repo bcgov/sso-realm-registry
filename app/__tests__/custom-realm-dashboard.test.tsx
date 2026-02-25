@@ -2,18 +2,17 @@ import React from 'react';
 import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
 import App from 'pages/_app';
 import CustomRealmDashboard from 'pages/custom-realm-dashboard';
-import { getRealmProfiles, updateRealmProfile } from 'services/realm';
+import { updateRealmProfile } from 'services/realm';
 import { getRealmEvents } from 'services/events';
 import { CustomRealmFormData } from 'types/realm-profile';
 import Router from 'next/router';
-import { CustomRealms } from './fixtures';
-import { debug } from 'jest-preview';
+import { CustomRealmProfiles, CustomRealms } from './fixtures';
 
 jest.mock('services/realm', () => {
   return {
     deleteRealmRequest: jest.fn((realmInfo: CustomRealmFormData) => Promise.resolve([true, null])),
     updateRealmProfile: jest.fn((id: number, status: string) => Promise.resolve([true, null])),
-    getRealmProfiles: jest.fn((excludeArchived: boolean) => Promise.resolve([CustomRealms, null])),
+    getRealmProfiles: jest.fn((excludeArchived: boolean) => Promise.resolve([CustomRealmProfiles, null])),
   };
 });
 
@@ -95,7 +94,7 @@ jest.mock('next-auth/next', () => {
 jest.mock('../pages/api/realms', () => {
   return {
     __esModule: true,
-    getAllRealms: jest.fn(() => Promise.resolve([CustomRealms, null])),
+    getAllRealms: jest.fn(() => Promise.resolve([CustomRealmProfiles, null])),
     authOptions: {},
   };
 });

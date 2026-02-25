@@ -8,7 +8,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     productName: 'name',
     purpose: 'purpose',
     primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
-    environments: ['dev', 'test', 'prod'],
     preferredAdminLoginMethod: 'idir',
     productOwnerEmail: 'a@b.com',
     productOwnerIdirUserId: 'po',
@@ -24,8 +23,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     rcChannelOwnedBy: '',
     materialToSend: '',
     status: 'pending',
-    idps: [],
-    protocol: [],
   },
   {
     id: 2,
@@ -33,7 +30,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     productName: 'name',
     purpose: 'purpose',
     primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
-    environments: ['dev', 'test', 'prod'],
     preferredAdminLoginMethod: 'idir',
     productOwnerEmail: 'a@b.com',
     productOwnerIdirUserId: 'po',
@@ -46,8 +42,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     division: 'division',
     approved: null,
     status: 'pending',
-    idps: [],
-    protocol: [],
   },
   {
     id: 3,
@@ -55,7 +49,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     productName: 'name',
     purpose: 'purpose',
     primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
-    environments: ['dev', 'test', 'prod'],
     preferredAdminLoginMethod: 'idir',
     productOwnerEmail: 'a@b.com',
     productOwnerIdirUserId: 'po',
@@ -68,15 +61,12 @@ export const CustomRealms: CustomRealmFormData[] = [
     division: 'division',
     approved: false,
     status: 'pending',
-    idps: [],
-    protocol: [],
   },
 ];
 
 export const CustomRealmProfiles: RealmProfile[] = CustomRealms.map((realm) => ({
   ...realm,
-  idps: [],
-  protocol: [],
+  environments: ['dev', 'test', 'prod'],
   productOwnerName: 'po',
   branch: 'main',
   displayName: realm.realm,

@@ -53,22 +53,6 @@ export const getAllRealms = async (username: string, isAdmin: boolean, excludeAr
       },
     });
   }
-
-  const kcCore = new KeycloakCore('prod');
-
-  if (rosters?.length > 0) {
-    const kcAdminClient = await kcCore.getAdminClient();
-    if (kcAdminClient) {
-      for (let x = 0; x < rosters?.length; x++) {
-        const realm = rosters[x];
-        const [realmData] = await Promise.all([kcCore.getRealm(realm.realm)]);
-        realm.idps = realmData?.identityProviders?.map((v) => v.displayName || v.alias) || [];
-        const distinctProviders = new Set(realmData?.identityProviders?.map((v) => v.providerId) || []);
-        realm.protocol = Array.from(distinctProviders);
-      }
-    }
-  }
-
   rosters = !isAdmin ? rosters.map((r: any) => omit(r, adminOnlyFields)) : rosters;
   return rosters;
 };
