@@ -1,8 +1,9 @@
 import React from 'react';
 import { render, screen, within, fireEvent } from '@testing-library/react';
-import { CustomRealms } from './fixtures';
+import { CustomRealmProfiles, CustomRealms } from './fixtures';
 import RealmLeftPanel from 'page-partials/my-dashboard/RealmLeftPanel';
 import noop from 'lodash.noop';
+import { RealmProfile } from 'types/realm-profile';
 
 const editFunction = jest.fn();
 
@@ -64,14 +65,13 @@ describe('realm table', () => {
 
   it('edit button disabled if realm is not approved', async () => {
     render(
-      <RealmLeftPanel realms={CustomRealms as any} onCancel={noop} onEditClick={editFunction} onViewClick={noop} />,
+      <RealmLeftPanel realms={CustomRealmProfiles} onCancel={noop} onEditClick={editFunction} onViewClick={noop} />,
     );
     const table = screen.getByRole('table');
     const thirdRow = table.querySelector('tbody tr:nth-child(3)') as HTMLTableRowElement;
     expect(thirdRow).toBeInTheDocument();
-    const actionCell = thirdRow.querySelector('td:nth-child(10)') as HTMLTableCellElement;
-    expect(actionCell).toBeInTheDocument();
-    const editButton = within(actionCell).getByRole('img', { name: 'Edit' });
+    const editButton = within(thirdRow).getByRole('img', { name: 'Edit' });
+    expect(editButton).toBeInTheDocument();
     fireEvent.click(editButton);
     expect(editFunction).toHaveBeenCalledTimes(0);
   });

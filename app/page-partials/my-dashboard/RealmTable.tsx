@@ -36,12 +36,6 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
       enableColumnFilter: false,
     },
     {
-      header: 'IDP(s)',
-      accessorKey: 'idps',
-      enableColumnFilter: false,
-      enableSorting: false,
-    },
-    {
       header: 'Product Owner',
       accessorKey: 'productOwner',
       enableColumnFilter: false,
@@ -117,8 +111,6 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
             id: r.id,
             realm: r.realm,
             productName: r.productName,
-            idps: r.idps.join(', '),
-            protocol: r.protocol.join(', '),
             productOwner: r.productOwnerEmail ? `${r.productOwnerEmail} (${r.productOwnerIdirUserId})` : '',
             technicalContact: r.technicalContactEmail
               ? `${r.technicalContactEmail} (${r.technicalContactIdirUserId})`
