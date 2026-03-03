@@ -10,23 +10,66 @@ import omit from 'lodash.omit';
 import pick from 'lodash.pick';
 import kebabCase from 'lodash.kebabcase';
 import { sendCreateEmail } from 'utils/mailer';
+import RealmRepresentation from '@keycloak/keycloak-admin-client/lib/defs/realmRepresentation';
+import { Roster } from '@prisma/client';
 
-interface ErrorData {
-  success: boolean;
-  error: string | object;
+type EnvironmentRealmData = {
+  dev: RealmRepresentation[];
+  test: RealmRepresentation[];
+  prod: RealmRepresentation[];
 }
 
-type Data = ErrorData | string;
+type OutOfSyncDetails = { dev: string, test: string, prod: string }
+
+/**
+ * Adds an outOfSync and outOfSync details section to rosters indicating their sync status with keycloak
+ */
+const checkRosterSync = (rosters: Roster[], realms: EnvironmentRealmData) => {
+  return rosters.map((roster) => {
+    let synced = true;
+    let details: OutOfSyncDetails = { dev: '', test: '', prod: '' };
+    if (roster.status === 'pending') {
+      return { ...roster, outOfSync: false };
+    }
+    for (const env of ['dev', 'test', 'prod']) {
+      const foundRealm = realms[env as keyof EnvironmentRealmData].find(realm => realm.realm === roster.realm);
+      if (!foundRealm) {
+        details[env as keyof OutOfSyncDetails] = `Realm ${roster.realm} not found in environment ${env}`;
+        synced = false
+      } else {
+        if (foundRealm.enabled && roster.archived) {
+          details[env as keyof OutOfSyncDetails] = `Realm ${roster.realm} is listed as archived, but still enabled in the ${env} environment.`;
+          synced = false
+        } else if (!foundRealm.enabled && !roster.archived) {
+          details[env as keyof OutOfSyncDetails] = `Realm ${roster.realm} is listed as active, but disabled in the ${env} environment.`;
+          synced = false
+        }
+      }
+    }
+    if (!synced) {
+      return {...roster, outOfSync: true, outOfSyncDetails: details}
+    } else {
+      return {...roster, outOfSync: false}
+    }
+  });
+}
 
 export const getAllRealms = async (username: string, isAdmin: boolean, excludeArchived: boolean = false) => {
-  let rosters: any = null;
   let baseWhereClause: { archived?: boolean } = {};
   if (excludeArchived) baseWhereClause.archived = false;
 
   if (isAdmin) {
-    rosters = await prisma.roster.findMany({ where: baseWhereClause, orderBy: { id: 'desc' } });
+    const rosters = await prisma.roster.findMany({ where: baseWhereClause, orderBy: { id: 'desc' } });
+    let realms: EnvironmentRealmData = { dev: [], test: [], prod: [] };
+    for (const env of ['dev', 'test', 'prod']) {
+      const kcClient = await new KeycloakCore(env)
+      await kcClient.getAdminClient();
+      realms[env as keyof EnvironmentRealmData] = await kcClient.getRealms();
+    }
+    const rostersWithSyncData = checkRosterSync(rosters, realms);
+    return rostersWithSyncData;
   } else {
-    rosters = await prisma.roster.findMany({
+    const rosters = await prisma.roster.findMany({
       orderBy: { id: 'desc' },
       where: {
         ...baseWhereClause,
@@ -51,10 +94,9 @@ export const getAllRealms = async (username: string, isAdmin: boolean, excludeAr
           },
         ],
       },
-    });
+    })
+    return rosters.map((r: any) => omit(r, adminOnlyFields))
   }
-  rosters = !isAdmin ? rosters.map((r: any) => omit(r, adminOnlyFields)) : rosters;
-  return rosters;
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

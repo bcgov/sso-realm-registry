@@ -1,5 +1,6 @@
 import getConfig from 'next/config';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
+import RealmRepresentation from "@keycloak/keycloak-admin-client/lib/defs/realmRepresentation.js"
 import flatten from 'lodash/flatten';
 import compact from 'lodash/compact';
 import validator from 'validator';
@@ -22,7 +23,7 @@ class KeycloakCore {
   private _username: string = '';
   private _password: string = '';
 
-  private _cachedRealmNames: any[] = [];
+  private _cachedRealms: RealmRepresentation[] = [];
   private _cachedNames: any = {};
   private _cachedIDPNames: any = {};
   private _adminClient!: KcAdminClient;
@@ -65,16 +66,14 @@ class KeycloakCore {
     return kcAdminClient as KcAdminClient;
   }
 
-  public async getRealmNames() {
-    if (this._cachedRealmNames.length > 0) return this._cachedRealmNames;
+  public async getRealms() {
+    if (this._cachedRealms.length > 0) return this._cachedRealms;
 
     const adminClient = await this.getAdminClient();
     if (!adminClient) return [];
 
-    const realms = await adminClient.realms.find({});
-
-    this._cachedRealmNames = realms.map((realm) => realm.realm);
-    return this._cachedRealmNames;
+    this._cachedRealms = await adminClient.realms.find({});
+    return this._cachedRealms;
   }
 
   public async findIdirUser(idirUsername: string) {
@@ -97,7 +96,7 @@ class KeycloakCore {
     if (!adminClient) return [];
 
     try {
-      const realmNames = (await this.getRealmNames()) || [];
+      const realmNames = (await this.getRealms()).map(realm => realm.realm) || [];
 
       let users = await Promise.all(
         realmNames.map((realm) => {
