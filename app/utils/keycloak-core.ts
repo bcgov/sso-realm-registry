@@ -1,6 +1,6 @@
 import getConfig from 'next/config';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
-import RealmRepresentation from "@keycloak/keycloak-admin-client/lib/defs/realmRepresentation.js"
+import RealmRepresentation from '@keycloak/keycloak-admin-client/lib/defs/realmRepresentation.js';
 import flatten from 'lodash/flatten';
 import compact from 'lodash/compact';
 import validator from 'validator';
@@ -96,7 +96,7 @@ class KeycloakCore {
     if (!adminClient) return [];
 
     try {
-      const realmNames = (await this.getRealms()).map(realm => realm.realm) || [];
+      const realmNames = (await this.getRealms()).map((realm) => realm.realm) || [];
 
       let users = await Promise.all(
         realmNames.map((realm) => {

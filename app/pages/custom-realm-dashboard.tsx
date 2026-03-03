@@ -36,7 +36,10 @@ const statusLabelMap: { [key: string]: string } = {
   [StatusEnum.PRSUCCESS]: 'PR Succeeded',
 };
 const statusOptions = Object.entries(statusLabelMap).map(([value, label]) => ({ value, label }));
-const syncOptions = [{value: false, label: 'In Sync'}, {value: true, label: 'Out of Sync'}];
+const syncOptions = [
+  { value: false, label: 'In Sync' },
+  { value: true, label: 'Out of Sync' },
+];
 
 const approvalOptions: { value: null | boolean; label: string }[] = [
   { value: null, label: 'Undecided' },
@@ -228,7 +231,7 @@ function CustomRealmDashboard({ alert }: Props) {
       },
       cell: (info: any) => {
         const outOfSync = info.renderValue();
-        return outOfSync ?  'Out of Sync' : 'In Sync';
+        return outOfSync ? 'Out of Sync' : 'In Sync';
       },
     },
     {

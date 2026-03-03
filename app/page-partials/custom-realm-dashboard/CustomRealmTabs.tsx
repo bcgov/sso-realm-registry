@@ -80,27 +80,62 @@ const realmCreatingStatuses = ['pending', 'prSuccess', 'planned'];
  */
 const formatRealmData = (realm?: RealmProfile): React.ReactNode => {
   if (!realm) return null;
-  const details = <>
-    <span>Name:</span> <strong>{" "}{realm.realm}</strong><br />
-    <span>Purpose:</span> <strong>{" "}{realm.purpose}</strong><br />
-    <span>Primary end users:</span> <strong>{" "}{realm.primaryEndUsers.join(', ')}</strong><br />
-    <span>Environments:</span><strong>{" "}{realm.environments.join(', ')}</strong><br />
-    <span>Product owner's email:</span> <strong>{" "}{realm.productOwnerEmail}</strong><br />
-    <span>Product owner's IDIR:</span> <strong>{" "}{realm.productOwnerIdirUserId}</strong><br />
-    <span>Technical contact's email:</span><strong>{" "}{realm.technicalContactEmail}</strong><br />
-    <span>Technical contact's IDIR:</span><strong>{" "}{realm.technicalContactIdirUserId}</strong><br />
-    <span>Secondary technical contact's email:</span><strong>{" "}{realm.secondTechnicalContactEmail}</strong><br />
-    <span>Secondary technical contact's IDIR:</span><strong>{" "}{realm.secondTechnicalContactIdirUserId}</strong><br />
-    {realm.outOfSync && <>
-      <span>Out of Sync Information:</span><br />
-      <ul>
-        {realm.outOfSyncDetails['dev'] && <li><span>Dev:</span><strong>{" "}{realm.outOfSyncDetails['dev']}</strong></li>}
-        {realm.outOfSyncDetails['test'] && <li><span>Test:</span><strong>{" "}{realm.outOfSyncDetails['test']}</strong></li>}
-        {realm.outOfSyncDetails['prod'] && <li><span>Prod:</span><strong>{" "}{realm.outOfSyncDetails['prod']}</strong></li>}
-      </ul>
-    </>}
-  </>
-  return details
+  const details = (
+    <>
+      <span>Name:</span> <strong> {realm.realm}</strong>
+      <br />
+      <span>Purpose:</span> <strong> {realm.purpose}</strong>
+      <br />
+      <span>Primary end users:</span> <strong> {realm.primaryEndUsers.join(', ')}</strong>
+      <br />
+      <span>Environments:</span>
+      <strong> {realm.environments.join(', ')}</strong>
+      <br />
+      <span>Product owner's email:</span> <strong> {realm.productOwnerEmail}</strong>
+      <br />
+      <span>Product owner's IDIR:</span> <strong> {realm.productOwnerIdirUserId}</strong>
+      <br />
+      <span>Technical contact's email:</span>
+      <strong> {realm.technicalContactEmail}</strong>
+      <br />
+      <span>Technical contact's IDIR:</span>
+      <strong> {realm.technicalContactIdirUserId}</strong>
+      <br />
+      <span>Secondary technical contact's email:</span>
+      <strong> {realm.secondTechnicalContactEmail}</strong>
+      <br />
+      <span>Secondary technical contact's IDIR:</span>
+      <strong> {realm.secondTechnicalContactIdirUserId}</strong>
+      <br />
+      {realm.outOfSync && (
+        <>
+          <span>Out of Sync Information:</span>
+          <br />
+          <ul>
+            {realm.outOfSyncDetails['dev'] && (
+              <li>
+                <span>Dev:</span>
+                <strong> {realm.outOfSyncDetails['dev']}</strong>
+              </li>
+            )}
+            {realm.outOfSyncDetails['test'] && (
+              <li>
+                <span>Test:</span>
+                <strong> {realm.outOfSyncDetails['test']}</strong>
+              </li>
+            )}
+            {realm.outOfSyncDetails['prod'] && (
+              <li>
+                <span>Prod:</span>
+                <strong> {realm.outOfSyncDetails['prod']}</strong>
+              </li>
+            )}
+          </ul>
+        </>
+      )}
+    </>
+  );
+  return details;
 };
 
 interface Props {
@@ -179,11 +214,7 @@ function CutsomRealmTabs({ selectedRow, handleRequestStatusChange, lastUpdateTim
         ))}
       </Tabs>
       {/* Only display details if formattedRealmData is not null */}
-      {formattedRealmData && selectedTab === 'Details' && (
-        <TabPanel>
-          {formattedRealmData}
-        </TabPanel>
-      )}
+      {formattedRealmData && selectedTab === 'Details' && <TabPanel>{formattedRealmData}</TabPanel>}
       {selectedTab === 'Access Request' && (
         <TabPanel>
           {selectedRow.approved === null ? (

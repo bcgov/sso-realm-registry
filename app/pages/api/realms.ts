@@ -17,9 +17,9 @@ type EnvironmentRealmData = {
   dev: RealmRepresentation[];
   test: RealmRepresentation[];
   prod: RealmRepresentation[];
-}
+};
 
-type OutOfSyncDetails = { dev: string, test: string, prod: string }
+type OutOfSyncDetails = { dev: string; test: string; prod: string };
 
 /**
  * Adds an outOfSync and outOfSync details section to rosters indicating their sync status with keycloak
@@ -32,27 +32,31 @@ const checkRosterSync = (rosters: Roster[], realms: EnvironmentRealmData) => {
       return { ...roster, outOfSync: false };
     }
     for (const env of ['dev', 'test', 'prod']) {
-      const foundRealm = realms[env as keyof EnvironmentRealmData].find(realm => realm.realm === roster.realm);
+      const foundRealm = realms[env as keyof EnvironmentRealmData].find((realm) => realm.realm === roster.realm);
       if (!foundRealm) {
         details[env as keyof OutOfSyncDetails] = `Realm ${roster.realm} not found in environment ${env}`;
-        synced = false
+        synced = false;
       } else {
         if (foundRealm.enabled && roster.archived) {
-          details[env as keyof OutOfSyncDetails] = `Realm ${roster.realm} is listed as archived, but still enabled in the ${env} environment.`;
-          synced = false
+          details[
+            env as keyof OutOfSyncDetails
+          ] = `Realm ${roster.realm} is listed as archived, but still enabled in the ${env} environment.`;
+          synced = false;
         } else if (!foundRealm.enabled && !roster.archived) {
-          details[env as keyof OutOfSyncDetails] = `Realm ${roster.realm} is listed as active, but disabled in the ${env} environment.`;
-          synced = false
+          details[
+            env as keyof OutOfSyncDetails
+          ] = `Realm ${roster.realm} is listed as active, but disabled in the ${env} environment.`;
+          synced = false;
         }
       }
     }
     if (!synced) {
-      return {...roster, outOfSync: true, outOfSyncDetails: details}
+      return { ...roster, outOfSync: true, outOfSyncDetails: details };
     } else {
-      return {...roster, outOfSync: false}
+      return { ...roster, outOfSync: false };
     }
   });
-}
+};
 
 export const getAllRealms = async (username: string, isAdmin: boolean, excludeArchived: boolean = false) => {
   let baseWhereClause: { archived?: boolean } = {};
@@ -62,7 +66,7 @@ export const getAllRealms = async (username: string, isAdmin: boolean, excludeAr
     const rosters = await prisma.roster.findMany({ where: baseWhereClause, orderBy: { id: 'desc' } });
     let realms: EnvironmentRealmData = { dev: [], test: [], prod: [] };
     for (const env of ['dev', 'test', 'prod']) {
-      const kcClient = await new KeycloakCore(env)
+      const kcClient = await new KeycloakCore(env);
       await kcClient.getAdminClient();
       realms[env as keyof EnvironmentRealmData] = await kcClient.getRealms();
     }
@@ -94,8 +98,8 @@ export const getAllRealms = async (username: string, isAdmin: boolean, excludeAr
           },
         ],
       },
-    })
-    return rosters.map((r: any) => omit(r, adminOnlyFields))
+    });
+    return rosters.map((r: any) => omit(r, adminOnlyFields));
   }
 };
 

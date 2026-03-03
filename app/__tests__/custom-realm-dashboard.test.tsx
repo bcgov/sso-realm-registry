@@ -114,12 +114,21 @@ describe('Table', () => {
   });
 
   it('Displays out of sync information when available', async () => {
-    (getRealmProfiles as jest.Mock).mockImplementation(() => Promise.resolve([
-      [{...CustomRealmProfiles[0], outOfSync: true, outOfSyncDetails: {
-        dev: ['Realm not found in dev environment']
-      }}, {...CustomRealmProfiles[1]}], 
-      null
-    ]));
+    (getRealmProfiles as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve([
+        [
+          {
+            ...CustomRealmProfiles[0],
+            outOfSync: true,
+            outOfSyncDetails: {
+              dev: ['Realm not found in dev environment'],
+            },
+          },
+          { ...CustomRealmProfiles[1] },
+        ],
+        null,
+      ]),
+    );
     render(<CustomRealmDashboard />);
 
     await waitFor(() => screen.getByText('realm 1'));
