@@ -36,6 +36,10 @@ const statusLabelMap: { [key: string]: string } = {
   [StatusEnum.PRSUCCESS]: 'PR Succeeded',
 };
 const statusOptions = Object.entries(statusLabelMap).map(([value, label]) => ({ value, label }));
+const syncOptions = [
+  { value: false, label: 'In Sync' },
+  { value: true, label: 'Out of Sync' },
+];
 
 const approvalOptions: { value: null | boolean; label: string }[] = [
   { value: null, label: 'Undecided' },
@@ -169,12 +173,12 @@ function CustomRealmDashboard({ alert }: Props) {
 
   const columns = [
     {
-      header: 'Custom Realm ID',
+      header: 'ID',
       accessorKey: 'id',
       enableColumnFilter: false,
     },
     {
-      header: 'Custom Realm Name',
+      header: 'Name',
       accessorKey: 'realm',
       enableColumnFilter: false,
     },
@@ -214,6 +218,20 @@ function CustomRealmDashboard({ alert }: Props) {
         const approved = info.renderValue();
         if (approved === null) return 'Undecided';
         return approved ? 'Approved' : 'Declined';
+      },
+    },
+    {
+      header: 'Sync Status',
+      accessorKey: 'outOfSync',
+      enableSorting: false,
+      filterFn: listFilter,
+      meta: {
+        filterLabel: 'Sync Status',
+        filterOptions: syncOptions,
+      },
+      cell: (info: any) => {
+        const outOfSync = info.renderValue();
+        return outOfSync ? 'Out of Sync' : 'In Sync';
       },
     },
     {

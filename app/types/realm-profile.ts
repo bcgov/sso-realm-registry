@@ -7,6 +7,7 @@ export interface RealmProfile extends CustomRealmFormData {
   createdAt: string;
   updatedAt: string;
   environments: Environment[];
+  outOfSync?: boolean;
   [key: string]: any;
 }
 
