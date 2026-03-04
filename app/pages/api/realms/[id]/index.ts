@@ -113,6 +113,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         }
 
         isPO = username.toLowerCase() === currentRequest.productOwnerIdirUserId?.toLowerCase();
+        const isTechnicalContact = [
+          currentRequest.technicalContactIdirUserId.toLowerCase(),
+          currentRequest.secondTechnicalContactIdirUserId.toLowerCase(),
+        ].includes(username.toLowerCase());
+
+        if (!isAdmin && !isPO && !isTechnicalContact)
+          return res.status(401).json({ success: false, error: 'unauthorized' });
 
         updaterRole = isAdmin ? RoleEnum.ADMIN : isPO ? RoleEnum.PRODUCT_OWNER : RoleEnum.TECHNICAL_LEAD;
 
