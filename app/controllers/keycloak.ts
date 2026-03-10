@@ -322,10 +322,8 @@ export const manageCustomRealm = async (realmName: string, envs: string[], actio
           if (!realm) await createCustomRealm(realmName, env);
           break;
         case 'delete':
-          if (realm) {
-            if (app_env === 'production') {
-              if (realm.enabled) await kcAdminClient.realms.update({ realm: realmName }, { enabled: false });
-            } else await deleteCustomRealm(realmName, env);
+          if (realm?.enabled) {
+            await kcAdminClient.realms.update({ realm: realmName }, { enabled: false });
           }
           break;
         case 'restore':
