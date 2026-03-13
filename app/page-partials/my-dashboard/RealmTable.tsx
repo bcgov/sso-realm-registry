@@ -78,14 +78,14 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
       cell: (props: any) => (
         <div style={{ display: 'flex', justifyContent: 'center', columnGap: '0.5rem' }}>
           <ActionButton
-            title="View URIs"
+            aria-label="View URIs"
             icon={faEye}
             onClick={() => {
               onViewClick(String(props.row.getValue('id')));
             }}
           />
           <ActionButton
-            title="Edit"
+            aria-label="Edit"
             icon={faEdit}
             onClick={() => {
               if (props.row.original.approved === false) return;

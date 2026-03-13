@@ -1,10 +1,6 @@
 import axios from 'axios';
 import url from 'url';
-import getConfig from 'next/config';
 import https from 'https';
-
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { ches_api_endpoint, ches_token_endpoint, ches_username, ches_password } = serverRuntimeConfig;
 
 interface EmailOptions {
   from?: string;
@@ -27,14 +23,14 @@ const httpsAgent = new https.Agent({
 const fetchChesToken = async () => {
   const params = new url.URLSearchParams({ grant_type: 'client_credentials' });
   try {
-    const { data } = await axios.post(ches_token_endpoint, params.toString(), {
+    const { data } = await axios.post(process.env.CHES_TOKEN_ENDPOINT ?? '', params.toString(), {
       headers: {
         'Accept-Encoding': 'application/json',
       },
       httpsAgent,
       auth: {
-        username: ches_username,
-        password: ches_password,
+        username: process.env.CHES_USERNAME ?? '',
+        password: process.env.CHES_PASSWORD ?? '',
       },
     });
     const { access_token } = data as { access_token: string };
@@ -52,7 +48,7 @@ export const sendEmail = async ({ from = 'bcgov.sso@gov.bc.ca', to, body, ...res
     }
 
     const res = await axios.post(
-      ches_api_endpoint,
+      process.env.CHES_API_ENDPOINT ?? '',
       {
         // see https://ches.nrs.gov.bc.ca/api/v1/docs#operation/postEmail for options
         bodyType: 'html',

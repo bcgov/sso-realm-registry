@@ -1,18 +1,14 @@
-import getConfig from 'next/config';
 import { promisify } from 'util';
 import soapRequest from 'easy-soap-request';
 import { parseString } from 'xml2js';
 import get from 'lodash.get';
 import map from 'lodash.map';
 
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { bceid_service_id, bceid_service_basic_auth, bceid_web_service_url } = serverRuntimeConfig;
-
 export const parseStringSync = promisify(parseString);
 
 export const defaultHeaders = {
   'Content-Type': 'text/xml;charset=UTF-8',
-  authorization: `Basic ${bceid_service_basic_auth}`,
+  authorization: `Basic ${process.env.BCEID_SERVICE_BASIC_AUTH}`,
 };
 
 export type SearchCriteria = 'userId' | 'firstName' | 'lastName' | 'email';
@@ -29,7 +25,7 @@ export const generateXML = (
     <soapenv:Body>
         <V10:searchInternalAccount>
             <V10:internalAccountSearchRequest>
-                <V10:onlineServiceId>${bceid_service_id}</V10:onlineServiceId>
+                <V10:onlineServiceId>${process.env.BCEID_SERVICE_ID}</V10:onlineServiceId>
                 <V10:requesterAccountTypeCode>Internal</V10:requesterAccountTypeCode>
                 <V10:requesterUserGuid>${idirUserGuid}</V10:requesterUserGuid>
                 <V10:pagination>
@@ -100,7 +96,7 @@ export function parseAccount(data: any) {
 
 export const makeSoapRequest = async (xmlPayload: string) => {
   return await soapRequest({
-    url: bceid_web_service_url,
+    url: process.env.BCEID_WEB_SERVICE_URL ?? '',
     headers: defaultHeaders,
     xml: xmlPayload,
     timeout: 10000,
@@ -110,7 +106,10 @@ export const makeSoapRequest = async (xmlPayload: string) => {
 export const getBceidAccounts = async (samlResponse: any) => {
   const { body } = samlResponse;
   const result = await parseStringSync(body);
-  const data = get(result, 'soap:Envelope.soap:Body.0.searchInternalAccountResponse.0.searchInternalAccountResult.0');
+  const data = get(
+    result,
+    'soap:Envelope.soap:Body.0.searchInternalAccountResponse.0.searchInternalAccountResult.0',
+  ) as any;
   if (!data) throw Error('no data');
 
   const status = get(data, 'code.0');

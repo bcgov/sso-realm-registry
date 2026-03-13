@@ -7,10 +7,6 @@ import { EventEnum, StatusEnum } from 'validators/create-realm';
 import { sendRestoreEmail } from 'utils/mailer';
 import { addUserAsRealmAdmin, manageCustomRealm } from 'controllers/keycloak';
 import { generateXML, makeSoapRequest, getBceidAccounts } from 'utils/idir';
-import getConfig from 'next/config';
-
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { idir_requestor_user_guid } = serverRuntimeConfig;
 
 interface ErrorData {
   success: boolean;
@@ -77,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     try {
       if (allEnvRealmsRestored) {
         [realm?.productOwnerIdirUserId, realm?.technicalContactIdirUserId].forEach(async (idirUserId) => {
-          const samlPayload = generateXML('userId', idirUserId as string, idir_requestor_user_guid);
+          const samlPayload = generateXML('userId', idirUserId as string, process.env.IDIR_REQUESTOR_USER_GUID ?? '');
           const { response }: any = await makeSoapRequest(samlPayload);
           const accounts = await getBceidAccounts(response);
 

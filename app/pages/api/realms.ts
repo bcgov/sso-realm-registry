@@ -7,7 +7,7 @@ import KeycloakCore from 'utils/keycloak-core';
 import { EventEnum, StatusEnum, createRealmSchema } from 'validators/create-realm';
 import { ValidationError } from 'yup';
 import omit from 'lodash.omit';
-import pick from 'lodash.pick';
+import { pick } from 'lodash';
 import kebabCase from 'lodash.kebabcase';
 import { sendCreateEmail } from 'utils/mailer';
 import RealmRepresentation from '@keycloak/keycloak-admin-client/lib/defs/realmRepresentation';
