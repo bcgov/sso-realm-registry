@@ -1,11 +1,8 @@
 import { useEffect } from 'react';
 import { GetStaticProps, GetStaticPaths, GetServerSidePropsContext } from 'next';
-import getConfig from 'next/config';
 import jwt from 'jsonwebtoken';
 import store2 from 'store2';
 import { createOIDC } from 'utils/oidc-conn';
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { jwt_secret, jwt_token_expiry } = serverRuntimeConfig;
 
 interface Sesssion {
   preferred_username: string;
@@ -67,7 +64,9 @@ export async function getServerSideProps({ req, res, query }: GetServerSideProps
       client_roles,
       idir_username,
     };
-    const appToken = jwt.sign({ access_token, ...session }, jwt_secret, { expiresIn: jwt_token_expiry });
+    const appToken = jwt.sign({ access_token, ...session }, process.env.JWT_SECRET ?? '', {
+      expiresIn: process.env.JWT_TOKEN_EXPIRY as jwt.SignOptions['expiresIn'],
+    });
     return {
       props: { appToken, session },
     };

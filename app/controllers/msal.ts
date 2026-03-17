@@ -1,17 +1,13 @@
 import { ConfidentialClientApplication, IConfidentialClientApplication, ProtocolMode } from '@azure/msal-node';
 import axios from 'axios';
-import getConfig from 'next/config';
-
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { ms_graph_api_authority, ms_graph_api_client_id, ms_graph_api_client_secret } = serverRuntimeConfig;
 
 let msalInstance: IConfidentialClientApplication;
 
 const msalConfig = {
   auth: {
-    authority: ms_graph_api_authority || '',
-    clientId: ms_graph_api_client_id || '',
-    clientSecret: ms_graph_api_client_secret || '',
+    authority: process.env.MS_GRAPH_API_AUTHORITY || '',
+    clientId: process.env.MS_GRAPH_API_CLIENT_ID || '',
+    clientSecret: process.env.MS_GRAPH_API_CLIENT_SECRET || '',
   },
 };
 

@@ -1,13 +1,9 @@
 import { sendEmail } from 'utils/ches';
-import getConfig from 'next/config';
 import { Session } from 'next-auth';
-import { RealmProfile } from 'types/realm-profile';
 import { Roster } from '@prisma/client';
 import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv, formatWikiURL } from './helpers';
 
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { app_env, sso_logout_redirect_uri } = serverRuntimeConfig;
-const subjectPrefix = app_env === 'development' ? '[DEV] ' : '';
+const subjectPrefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
 export const ssoTeamEmail = 'bcgov.sso@gov.bc.ca';
 
 const emailHeader = `
@@ -125,7 +121,7 @@ const emailFooter = `
 `;
 
 export const sendUpdateEmail = async (realm: any, session: any, updatingApprovalStatus: boolean) => {
-  const prefix = app_env === 'development' ? '[DEV] ' : '';
+  const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   let message: string = `
               <main>
                   <p>The information for your Custom Realm has been successfully updated within our Realm Registry.</p>
@@ -163,7 +159,7 @@ export const sendUpdateEmail = async (realm: any, session: any, updatingApproval
 };
 
 export const sendRestoreEmail = async (realm: Roster, requester: string) => {
-  const prefix = app_env === 'development' ? '[DEV] ' : '';
+  const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   const subject = `${prefix}Notification: Realm ${realm.realm} Restoration Requested`;
 
   const message = `
@@ -187,7 +183,7 @@ export const sendRestoreEmail = async (realm: Roster, requester: string) => {
 };
 
 export const sendCreateEmail = async (realm: Roster, session: Session) => {
-  const prefix = app_env === 'development' ? '[DEV] ' : '';
+  const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   const username = `${session.user.given_name} ${session.user.family_name}`;
   return await sendEmail({
     to: [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
@@ -243,7 +239,7 @@ export const sendDeletionCompleteEmail = async (realm: Roster) => {
 };
 
 export const sendReadyToUseEmail = async (realm: Roster) => {
-  const prefix = app_env === 'development' ? '[DEV] ' : '';
+  const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   const realmName = realm.realm!;
   return await sendEmail({
     cc: [ssoTeamEmail],
@@ -403,7 +399,9 @@ export const onboardNewRealmAdmin = async (
           </li>
           <li>
             <p>You or one of the existing Realm Admins will need to add the user that logged in. See image below.</p>
-            <img src="${sso_logout_redirect_uri}/onboard-realm-admin.png" alt="OnBoardNewRealmAdmin" style="width:650px">
+            <img src="${
+              process.env.SSO_LOGOUT_REDIRECT_URI
+            }/onboard-realm-admin.png" alt="OnBoardNewRealmAdmin" style="width:650px">
           </li>
           <li>
             <p>Once you&rsquo;ve done this, you and your realm admins can access your realm via a more user friendly url</p>
@@ -476,7 +474,9 @@ export const offboardRealmAdmin = async (session: Session, realm: Roster, oldCon
         <ol type="a">
           <li>
             <p>We recommend deleting the offboarded team member from your custom realm. See image below.</p>
-            <img src="${sso_logout_redirect_uri}/offboard-realm-admin.png" alt="OffBoardRealmAdmin" style="width:650px">
+            <img src="${
+              process.env.SSO_LOGOUT_REDIRECT_URI
+            }/offboard-realm-admin.png" alt="OffBoardRealmAdmin" style="width:650px">
           </li>
           <li>
             <p>As you and your realm admins may have configured the user to a realm level role or realm level group, please remove the user accordingly.</p>
