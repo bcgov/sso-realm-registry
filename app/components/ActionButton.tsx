@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { JSX } from 'react';
 
 interface StyledActionButtonProps {
   disabled?: boolean;
