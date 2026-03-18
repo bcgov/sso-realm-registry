@@ -17,7 +17,7 @@ interface EmailOptions {
 }
 
 const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
+  rejectUnauthorized: true,
 });
 
 const fetchChesToken = async () => {
