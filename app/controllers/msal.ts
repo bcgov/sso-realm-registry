@@ -29,7 +29,23 @@ export async function getAzureAccessToken() {
   }
 }
 
-export async function callAzureGraphApi(endpoint: string) {
+export async function callAzureGraphApi({
+  pathSegments = [],
+  query = {},
+}: {
+  pathSegments: string[];
+  query: { [key: string]: string };
+}) {
+  const baseURL = new URL('https://graph.microsoft.com/v1.0/');
+
+  const safePath = pathSegments.map((seg) => encodeURIComponent(seg)).join('/');
+
+  baseURL.pathname += safePath;
+
+  for (const [key, value] of Object.entries(query)) {
+    baseURL.searchParams.set(key, value);
+  }
+
   const accessToken = await getAzureAccessToken();
 
   const options = {
@@ -40,7 +56,7 @@ export async function callAzureGraphApi(endpoint: string) {
   };
 
   try {
-    const response = await axios.get(endpoint, options);
+    const response = await axios.get(baseURL.toString(), options);
     return response.data;
   } catch (error) {
     console.error(error);

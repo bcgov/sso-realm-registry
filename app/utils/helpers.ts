@@ -126,3 +126,10 @@ export const getRealmPermissionsByRole = (realmName: string) => {
     },
   ];
 };
+
+/*
+  Cleans single quotes in strings for graph API queries.
+*/
+export const odataString = (value: string) => {
+  return `'${value.replace(/'/g, "''")}'`;
+};
