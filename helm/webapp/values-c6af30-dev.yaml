@@ -45,7 +45,6 @@ patroni:
   walG:
     enabled: false
 
-patroni:
   replicaCount: 1
 
   podDisruptionBudget:
