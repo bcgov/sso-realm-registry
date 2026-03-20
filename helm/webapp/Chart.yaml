@@ -5,5 +5,5 @@ appVersion: 2.1.1
 description: Nextjs application to manage SSO keycloak custom realm profiles
 dependencies:
   - name: patroni
-    version: 1.5.1
+    version: 1.6.2
     repository: https://bcgov.github.io/sso-helm-charts
