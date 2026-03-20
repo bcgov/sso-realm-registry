@@ -38,6 +38,7 @@ vault:
 patroni:
   image:
     repository: ghcr.io/bcgov/sso-spilo-17
+    pullPolicy: Always
     tag: 4.0-p3
   postgresMajorVersion: 17
 
