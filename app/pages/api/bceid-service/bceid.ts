@@ -1,19 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import getConfig from 'next/config';
 import { promisify } from 'util';
 import soapRequest from 'easy-soap-request';
 import { parseString } from 'xml2js';
 import get from 'lodash.get';
 import { getIdirUserGuid } from 'utils/jwt';
 
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { bceid_service_id, bceid_service_basic_auth, bceid_web_service_url } = serverRuntimeConfig;
-
 const parseStringSync = promisify(parseString);
 
 const defaultHeaders = {
   'Content-Type': 'text/xml;charset=UTF-8',
-  authorization: `Basic ${bceid_service_basic_auth}`,
+  authorization: `Basic ${process.env.BCEID_SERVICE_BASIC_AUTH}`,
 };
 
 type MatchProperty = 'userGuid' | 'userId';
@@ -30,7 +26,7 @@ const generateXML = (
  <soapenv:Body>
     <getAccountDetail xmlns="http://www.bceid.ca/webservices/Client/V10/">
        <accountDetailRequest>
-          <onlineServiceId>${bceid_service_id}</onlineServiceId>
+          <onlineServiceId>${process.env.BCEID_SERVICE_ID}</onlineServiceId>
           <requesterAccountTypeCode>Internal</requesterAccountTypeCode>
           <requesterUserGuid>${idirUserGuid}</requesterUserGuid>
           <${property}>${matchKey}</${property}>
@@ -51,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const idirUserGuid = await getIdirUserGuid(token);
     const xml = generateXML(property, accountType, matchKey, idirUserGuid);
     const { response }: any = await soapRequest({
-      url: bceid_web_service_url,
+      url: process.env.BCEID_WEB_SERVICE_URL ?? '',
       headers: defaultHeaders,
       xml,
       timeout: 10000,

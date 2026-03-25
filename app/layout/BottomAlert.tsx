@@ -10,7 +10,7 @@ interface ReducerState {
   show?: boolean;
   key?: string;
   variant?: string;
-  faceOut?: boolean;
+  fadeOut?: number;
   closable?: boolean;
   content?: string;
 }

@@ -3,10 +3,6 @@ import { getRealmPermissionsByRole } from 'utils/helpers';
 import RoleRepresentation, { RoleMappingPayload } from '@keycloak/keycloak-admin-client/lib/defs/roleRepresentation';
 import ClientRepresentation from '@keycloak/keycloak-admin-client/lib/defs/clientRepresentation';
 import GroupRepresentation from '@keycloak/keycloak-admin-client/lib/defs/groupRepresentation';
-import getConfig from 'next/config';
-
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { app_env } = serverRuntimeConfig;
 
 /**
  * Function to remove access at the master realm level as administrator of a custom realm. Custom realm owners access control comes from the role <realmname>-realm-admin. Removes this role from supplied usernames if found.
@@ -322,14 +318,12 @@ export const manageCustomRealm = async (realmName: string, envs: string[], actio
           if (!realm) await createCustomRealm(realmName, env);
           break;
         case 'delete':
-          if (realm) {
-            if (app_env === 'production') {
-              if (realm.enabled) await kcAdminClient.realms.update({ realm: realmName }, { enabled: false });
-            } else await deleteCustomRealm(realmName, env);
+          if (realm?.enabled) {
+            await kcAdminClient.realms.update({ realm: realmName }, { enabled: false });
           }
           break;
         case 'restore':
-          if (app_env === 'production' && realm && realm.enabled === false) {
+          if (process.env.APP_ENV === 'production' && realm && realm.enabled === false) {
             await kcAdminClient.realms.update({ realm: realmName }, { enabled: true });
           } else {
             if (!realm) await createCustomRealm(realmName, env);

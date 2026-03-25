@@ -1,45 +1,32 @@
-import getConfig from 'next/config';
 import KcAdminClient from '@keycloak/keycloak-admin-client';
+import RealmRepresentation from '@keycloak/keycloak-admin-client/lib/defs/realmRepresentation.js';
 import flatten from 'lodash/flatten';
 import compact from 'lodash/compact';
 import validator from 'validator';
-
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const {
-  dev_kc_url,
-  dev_kc_username,
-  dev_kc_password,
-  test_kc_url,
-  test_kc_username,
-  test_kc_password,
-  prod_kc_url,
-  prod_kc_username,
-  prod_kc_password,
-} = serverRuntimeConfig;
 
 class KeycloakCore {
   private _url: string = '';
   private _username: string = '';
   private _password: string = '';
 
-  private _cachedRealmNames: any[] = [];
+  private _cachedRealms: RealmRepresentation[] = [];
   private _cachedNames: any = {};
   private _cachedIDPNames: any = {};
   private _adminClient!: KcAdminClient;
 
   constructor(env: string) {
     if (env === 'dev') {
-      this._url = dev_kc_url;
-      this._username = dev_kc_username;
-      this._password = dev_kc_password;
+      this._url = process.env.DEV_KC_URL ?? '';
+      this._username = process.env.DEV_KC_USERNAME ?? '';
+      this._password = process.env.DEV_KC_PASSWORD ?? '';
     } else if (env === 'test') {
-      this._url = test_kc_url;
-      this._username = test_kc_username;
-      this._password = test_kc_password;
+      this._url = process.env.TEST_KC_URL ?? '';
+      this._username = process.env.TEST_KC_USERNAME ?? '';
+      this._password = process.env.TEST_KC_PASSWORD ?? '';
     } else if (env === 'prod') {
-      this._url = prod_kc_url;
-      this._username = prod_kc_username;
-      this._password = prod_kc_password;
+      this._url = process.env.PROD_KC_URL ?? '';
+      this._username = process.env.PROD_KC_USERNAME ?? '';
+      this._password = process.env.PROD_KC_PASSWORD ?? '';
     }
   }
 
@@ -65,16 +52,14 @@ class KeycloakCore {
     return kcAdminClient as KcAdminClient;
   }
 
-  public async getRealmNames() {
-    if (this._cachedRealmNames.length > 0) return this._cachedRealmNames;
+  public async getRealms() {
+    if (this._cachedRealms.length > 0) return this._cachedRealms;
 
     const adminClient = await this.getAdminClient();
     if (!adminClient) return [];
 
-    const realms = await adminClient.realms.find({});
-
-    this._cachedRealmNames = realms.map((realm) => realm.realm);
-    return this._cachedRealmNames;
+    this._cachedRealms = await adminClient.realms.find({});
+    return this._cachedRealms;
   }
 
   public async findIdirUser(idirUsername: string) {
@@ -97,7 +82,7 @@ class KeycloakCore {
     if (!adminClient) return [];
 
     try {
-      const realmNames = (await this.getRealmNames()) || [];
+      const realmNames = (await this.getRealms()).map((realm) => realm.realm) || [];
 
       let users = await Promise.all(
         realmNames.map((realm) => {

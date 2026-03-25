@@ -4,10 +4,10 @@ export interface RealmProfile extends CustomRealmFormData {
   productOwnerName: string;
   willingToMove: string;
   whenToMove: string;
-  idps: string[];
   createdAt: string;
   updatedAt: string;
   environments: Environment[];
+  outOfSync?: boolean;
   [key: string]: any;
 }
 

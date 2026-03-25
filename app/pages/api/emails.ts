@@ -1,9 +1,5 @@
 import axios from 'axios';
 import { NextApiRequest, NextApiResponse } from 'next';
-import getConfig from 'next/config';
-
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { ches_api_endpoint } = serverRuntimeConfig;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
   if (req.method === 'POST') {
@@ -17,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       Authorization: Authorization || authorization,
     };
     try {
-      const result = await axios.post(ches_api_endpoint, payload, { headers });
+      const result = await axios.post(process.env.CHES_API_ENDPOINT ?? '', payload, { headers });
       return res.status(200).json({ success: true, data: result?.data });
     } catch (err: any) {
       return res.status(err?.response?.status || 422).json({ success: false, error: err?.message || err });

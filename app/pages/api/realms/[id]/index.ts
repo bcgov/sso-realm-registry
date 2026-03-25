@@ -15,10 +15,6 @@ import {
 } from 'utils/mailer';
 import { addUserAsRealmAdmin, manageCustomRealm, removeUserAsRealmAdmin } from 'controllers/keycloak';
 import { generateXML, makeSoapRequest, getBceidAccounts } from 'utils/idir';
-import getConfig from 'next/config';
-
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { idir_requestor_user_guid } = serverRuntimeConfig;
 
 interface ErrorData {
   success: boolean;
@@ -113,6 +109,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         }
 
         isPO = username.toLowerCase() === currentRequest.productOwnerIdirUserId?.toLowerCase();
+        const isTechnicalContact = [
+          currentRequest.technicalContactIdirUserId.toLowerCase(),
+          currentRequest.secondTechnicalContactIdirUserId.toLowerCase(),
+        ].includes(username.toLowerCase());
+
+        if (!isAdmin && !isPO && !isTechnicalContact)
+          return res.status(401).json({ success: false, error: 'unauthorized' });
 
         updaterRole = isAdmin ? RoleEnum.ADMIN : isPO ? RoleEnum.PRODUCT_OWNER : RoleEnum.TECHNICAL_LEAD;
 
@@ -162,7 +165,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               if (allEnvRealmsCreated) {
                 [currentRequest?.productOwnerIdirUserId, currentRequest?.technicalContactIdirUserId].forEach(
                   async (idirUserId) => {
-                    const samlPayload = generateXML('userId', idirUserId as string, idir_requestor_user_guid);
+                    const samlPayload = generateXML(
+                      'userId',
+                      idirUserId as string,
+                      process.env.IDIR_REQUESTOR_USER_GUID ?? '',
+                    );
                     const { response }: any = await makeSoapRequest(samlPayload);
                     const accounts = await getBceidAccounts(response);
 

@@ -74,7 +74,7 @@ jest.mock('next-auth', () => {
   };
 });
 
-jest.mock('prisma', () => {
+jest.mock('utils/prisma', () => {
   return {
     __esModule: true,
     default: jest.fn(() => {}),

@@ -1,20 +1,17 @@
 import { Pool, PoolConfig } from 'pg';
 import format from 'pg-format';
-import getConfig from 'next/config';
 
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { pg_host, pg_port, pg_user, pg_password, pg_database, pg_ssl } = serverRuntimeConfig;
 let _pgPool: Pool | null = null;
 
 const pgConfig: PoolConfig = {
-  host: pg_host,
-  port: parseInt(pg_port),
-  user: pg_user,
-  password: pg_password,
-  database: pg_database,
+  host: process.env.PG_HOST,
+  port: parseInt(process.env.PG_PORT ?? ''),
+  user: process.env.PG_USER,
+  password: process.env.PG_PASSWORD,
+  database: process.env.PG_DATABASE,
 };
 
-if (pg_ssl) pgConfig.ssl = { rejectUnauthorized: false };
+if (process.env.PG_SSL) pgConfig.ssl = { rejectUnauthorized: false };
 
 _pgPool = new Pool(pgConfig);
 

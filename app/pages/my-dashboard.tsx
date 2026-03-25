@@ -14,7 +14,6 @@ import { getRealmProfiles } from 'services/realm';
 import { getSurvey } from 'services/survey';
 import { useSession } from 'next-auth/react';
 import { User } from 'next-auth';
-import getConfig from 'next/config';
 import { InferGetServerSidePropsType } from 'next';
 import { useRouter } from 'next/router';
 import { ModalContext } from 'context/modal';
@@ -168,12 +167,10 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
 export default MyDashboard;
 
 export const getServerSideProps = async () => {
-  const { serverRuntimeConfig } = getConfig();
-
   const domains = {
-    dev: serverRuntimeConfig.dev_kc_url,
-    test: serverRuntimeConfig.test_kc_url,
-    prod: serverRuntimeConfig.prod_kc_url,
+    dev: process.env.DEV_KC_URL ?? '',
+    test: process.env.TEST_KC_URL ?? '',
+    prod: process.env.PROD_KC_URL ?? '',
   };
 
   return {

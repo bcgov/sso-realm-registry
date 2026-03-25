@@ -42,7 +42,7 @@ jest.mock('next-auth/next', () => {
       return {
         expires: new Date(Date.now() + 2 * 86400).toISOString(),
         user: {
-          username: 'test',
+          idir_username: 'test',
           family_name: 'test',
         },
         status: 'authenticated',
@@ -88,17 +88,52 @@ const allFields = Object.keys(CustomRealmProfiles[0]);
 const technicalContactRestrictedFields = allFields.filter((field) => !technicalContactAllowedFields.includes(field));
 const productOwnerRestrictedFields = allFields.filter((field) => !productOwnerAllowedFields.includes(field));
 
+const mockUserSession = (username: string) => {
+  (getServerSession as jest.Mock).mockReset();
+  (getServerSession as jest.Mock).mockImplementation(() => {
+    return {
+      expires: new Date(Date.now() + 2 * 86400).toISOString(),
+      user: {
+        idir_username: username,
+      },
+      status: 'authenticated',
+    };
+  });
+};
+
 describe('Profile Validations', () => {
+  const PO_IDIR_ID = 'po';
+  const TC_IDIR_ID = 'tc';
+  const TC2_IDIR_ID = 'tc2';
+  const testRoster = {
+    ...CustomRealmProfiles[0],
+    productOwnerIdirUserId: PO_IDIR_ID,
+    technicalContactIdirUserId: TC_IDIR_ID,
+    secondTechnicalContactIdirUserId: TC2_IDIR_ID,
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-  it('Only allows technical contact to update expected fields', async () => {
     (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
-      return Promise.resolve(CustomRealmProfiles[0]);
+      return Promise.resolve(testRoster);
     });
+  });
+
+  it('Returns 401 on unauthorized update', async () => {
+    mockUserSession('some_user');
     const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',
-      body: CustomRealmProfiles[0],
+      body: testRoster,
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('Only allows technical contact to update expected fields', async () => {
+    mockUserSession(TC2_IDIR_ID);
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: testRoster,
     });
     await handler(req, res);
     const profileUpdate = prisma.roster.update as jest.Mock;
@@ -110,21 +145,10 @@ describe('Profile Validations', () => {
   });
 
   it('Only allows the product owner to update expected fields', async () => {
-    (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
-      return Promise.resolve(CustomRealmProfiles[0]);
-    });
-    (getServerSession as jest.Mock).mockImplementation(() => {
-      return {
-        expires: new Date(Date.now() + 2 * 86400).toISOString(),
-        user: {
-          idir_username: 'po',
-        },
-        status: 'authenticated',
-      };
-    });
+    mockUserSession(PO_IDIR_ID);
     const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',
-      body: CustomRealmProfiles[0],
+      body: testRoster,
     });
     await handler(req, res);
     const profileUpdate = prisma.roster.update as jest.Mock;
@@ -136,9 +160,6 @@ describe('Profile Validations', () => {
   });
 
   it('Allows admins to update expected fields', async () => {
-    (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
-      return Promise.resolve(CustomRealmProfiles[0]);
-    });
     (getServerSession as jest.Mock).mockImplementation(() => {
       return {
         expires: new Date(Date.now() + 2 * 86400).toISOString(),
@@ -151,7 +172,7 @@ describe('Profile Validations', () => {
     });
     const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',
-      body: CustomRealmProfiles[0],
+      body: testRoster,
     });
     await handler(req, res);
     const profileUpdate = prisma.roster.update as jest.Mock;
@@ -162,8 +183,9 @@ describe('Profile Validations', () => {
   });
 
   it('does not allow to update rejected realms', async () => {
+    mockUserSession(PO_IDIR_ID);
     (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
-      return Promise.resolve({ ...CustomRealmProfiles[0], approved: false });
+      return Promise.resolve({ ...testRoster, approved: false });
     });
     const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',

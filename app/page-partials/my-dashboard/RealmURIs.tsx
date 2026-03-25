@@ -1,8 +1,7 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import styled from 'styled-components';
 import Link from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
-import getConfig from 'next/config';
 import { DomainsContext } from 'pages/my-dashboard';
 
 const Title = styled.div`

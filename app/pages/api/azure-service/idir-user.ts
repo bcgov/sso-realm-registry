@@ -13,9 +13,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (!session) return res.status(401).json({ success: false, error: 'unauthorized' });
       const { id } = req.query;
 
+      if (Array.isArray(id)) {
+        return res.status(400).json({ success: false, error: 'malformed input' });
+      }
+
       if (id) {
-        const url = `https://graph.microsoft.com/v1.0/users/${id}?$select=onPremisesSamAccountName`;
-        await callAzureGraphApi(url).then((r) => {
+        await callAzureGraphApi({
+          pathSegments: ['users', id],
+          query: { $select: 'onPremisesSamAccountName' },
+        }).then((r) => {
           return res.send(r.onPremisesSamAccountName);
         });
       } else {
@@ -23,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
     } catch (err: any) {
       console.error('error:', err);
-      return res.status(503).json({ success: false, error: err.message || err });
+      return res.status(503).json({ success: false, error: 'unknown exception' });
     }
   } else {
     return res.status(404).json({ success: false, error: 'not found' });

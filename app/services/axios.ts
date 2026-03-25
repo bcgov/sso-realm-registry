@@ -7,15 +7,6 @@ const instance = axios.create({
   withCredentials: true,
 });
 
-instance?.interceptors.request.use(
-  async function (config) {
-    return { ...config, headers: { ...config.headers } };
-  },
-  function (error) {
-    return Promise.reject(error);
-  },
-);
-
 instance?.interceptors.response.use(
   function (response) {
     return response;

@@ -6,14 +6,13 @@ import { getRealmProfiles, updateRealmProfile } from 'services/realm';
 import { getRealmEvents } from 'services/events';
 import { CustomRealmFormData } from 'types/realm-profile';
 import Router from 'next/router';
-import { CustomRealms } from './fixtures';
-import { debug } from 'jest-preview';
+import { CustomRealmProfiles, CustomRealms } from './fixtures';
 
 jest.mock('services/realm', () => {
   return {
     deleteRealmRequest: jest.fn((realmInfo: CustomRealmFormData) => Promise.resolve([true, null])),
     updateRealmProfile: jest.fn((id: number, status: string) => Promise.resolve([true, null])),
-    getRealmProfiles: jest.fn((excludeArchived: boolean) => Promise.resolve([CustomRealms, null])),
+    getRealmProfiles: jest.fn((excludeArchived: boolean) => Promise.resolve([CustomRealmProfiles, null])),
   };
 });
 
@@ -95,7 +94,7 @@ jest.mock('next-auth/next', () => {
 jest.mock('../pages/api/realms', () => {
   return {
     __esModule: true,
-    getAllRealms: jest.fn(() => Promise.resolve([CustomRealms, null])),
+    getAllRealms: jest.fn(() => Promise.resolve([CustomRealmProfiles, null])),
     authOptions: {},
   };
 });
@@ -112,6 +111,29 @@ describe('Table', () => {
     render(<CustomRealmDashboard />);
     await waitFor(() => screen.getByText('realm 1'));
     await waitFor(() => screen.getByText('realm 2'));
+  });
+
+  it('Displays out of sync information when available', async () => {
+    (getRealmProfiles as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve([
+        [
+          {
+            ...CustomRealmProfiles[0],
+            outOfSync: true,
+            outOfSyncDetails: {
+              dev: ['Realm not found in dev environment'],
+            },
+          },
+          { ...CustomRealmProfiles[1] },
+        ],
+        null,
+      ]),
+    );
+    render(<CustomRealmDashboard />);
+
+    await waitFor(() => screen.getByText('realm 1'));
+    fireEvent.click(screen.getByText('realm 1'));
+    await waitFor(() => screen.getByText('Realm not found in dev environment'));
   });
 });
 

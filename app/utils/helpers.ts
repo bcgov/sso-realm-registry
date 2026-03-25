@@ -1,9 +1,5 @@
 import prisma from './prisma';
 import { diff } from 'deep-diff';
-import getConfig from 'next/config';
-
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { dev_kc_url, test_kc_url, prod_kc_url } = serverRuntimeConfig;
 
 export const formatWikiURL = (page?: string) =>
   `https://mvp.developer.gov.bc.ca/docs/default/component/css-docs/${
@@ -68,12 +64,14 @@ export const getUpdatedProperties = (originalData: any, newData: any) => {
 };
 
 export const generateRealmLinksByEnv = (env: string, realmName: string) => {
-  const domain = env === 'dev' ? dev_kc_url : env === 'test' ? test_kc_url : prod_kc_url;
+  const domain =
+    env === 'dev' ? process.env.DEV_KC_URL : env === 'test' ? process.env.TEST_KC_URL : process.env.PROD_KC_URL;
   return `${domain}/auth/admin/${realmName}/console/`;
 };
 
 export const generateMasterRealmLinksByEnv = (env: string, realmName: string) => {
-  const domain = env === 'dev' ? dev_kc_url : env === 'test' ? test_kc_url : prod_kc_url;
+  const domain =
+    env === 'dev' ? process.env.DEV_KC_URL : env === 'test' ? process.env.TEST_KC_URL : process.env.PROD_KC_URL;
   return `${domain}/auth/admin/master/console/`;
 };
 
@@ -127,4 +125,11 @@ export const getRealmPermissionsByRole = (realmName: string) => {
       clientId: `${realmName}-realm`,
     },
   ];
+};
+
+/*
+  Cleans single quotes in strings for graph API queries.
+*/
+export const odataString = (value: string) => {
+  return `'${value.replace(/'/g, "''")}'`;
 };

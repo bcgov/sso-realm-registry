@@ -29,9 +29,10 @@ vault:
 
 patroni:
   image:
-    repository: registry.opensource.zalan.do/acid/spilo-14
+    repository: ghcr.io/bcgov/sso-spilo-17
     pullPolicy: Always
-    tag: 2.1-p5
+    tag: 4.0-p3
+  postgresMajorVersion: 17
 
   walG:
     enabled: true

@@ -1,17 +1,13 @@
 import { ConfidentialClientApplication, IConfidentialClientApplication, ProtocolMode } from '@azure/msal-node';
 import axios from 'axios';
-import getConfig from 'next/config';
-
-const { serverRuntimeConfig = {} } = getConfig() || {};
-const { ms_graph_api_authority, ms_graph_api_client_id, ms_graph_api_client_secret } = serverRuntimeConfig;
 
 let msalInstance: IConfidentialClientApplication;
 
 const msalConfig = {
   auth: {
-    authority: ms_graph_api_authority || '',
-    clientId: ms_graph_api_client_id || '',
-    clientSecret: ms_graph_api_client_secret || '',
+    authority: process.env.MS_GRAPH_API_AUTHORITY || '',
+    clientId: process.env.MS_GRAPH_API_CLIENT_ID || '',
+    clientSecret: process.env.MS_GRAPH_API_CLIENT_SECRET || '',
   },
 };
 
@@ -33,7 +29,23 @@ export async function getAzureAccessToken() {
   }
 }
 
-export async function callAzureGraphApi(endpoint: string) {
+export async function callAzureGraphApi({
+  pathSegments = [],
+  query = {},
+}: {
+  pathSegments: string[];
+  query: { [key: string]: string };
+}) {
+  const baseURL = new URL('https://graph.microsoft.com/v1.0/');
+
+  const safePath = pathSegments.map((seg) => encodeURIComponent(seg)).join('/');
+
+  baseURL.pathname += safePath;
+
+  for (const [key, value] of Object.entries(query)) {
+    baseURL.searchParams.set(key, value);
+  }
+
   const accessToken = await getAzureAccessToken();
 
   const options = {
@@ -44,7 +56,7 @@ export async function callAzureGraphApi(endpoint: string) {
   };
 
   try {
-    const response = await axios.get(endpoint, options);
+    const response = await axios.get(baseURL.toString(), options);
     return response.data;
   } catch (error) {
     console.error(error);

@@ -1,3 +1,4 @@
+import { Roster } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next/types';
 import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 
@@ -8,7 +9,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     productName: 'name',
     purpose: 'purpose',
     primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
-    environments: ['dev', 'test', 'prod'],
     preferredAdminLoginMethod: 'idir',
     productOwnerEmail: 'a@b.com',
     productOwnerIdirUserId: 'po',
@@ -24,8 +24,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     rcChannelOwnedBy: '',
     materialToSend: '',
     status: 'pending',
-    idps: [],
-    protocol: [],
   },
   {
     id: 2,
@@ -33,7 +31,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     productName: 'name',
     purpose: 'purpose',
     primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
-    environments: ['dev', 'test', 'prod'],
     preferredAdminLoginMethod: 'idir',
     productOwnerEmail: 'a@b.com',
     productOwnerIdirUserId: 'po',
@@ -46,8 +43,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     division: 'division',
     approved: null,
     status: 'pending',
-    idps: [],
-    protocol: [],
   },
   {
     id: 3,
@@ -55,7 +50,6 @@ export const CustomRealms: CustomRealmFormData[] = [
     productName: 'name',
     purpose: 'purpose',
     primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
-    environments: ['dev', 'test', 'prod'],
     preferredAdminLoginMethod: 'idir',
     productOwnerEmail: 'a@b.com',
     productOwnerIdirUserId: 'po',
@@ -68,15 +62,12 @@ export const CustomRealms: CustomRealmFormData[] = [
     division: 'division',
     approved: false,
     status: 'pending',
-    idps: [],
-    protocol: [],
   },
 ];
 
 export const CustomRealmProfiles: RealmProfile[] = CustomRealms.map((realm) => ({
   ...realm,
-  idps: [],
-  protocol: [],
+  environments: ['dev', 'test', 'prod'],
   productOwnerName: 'po',
   branch: 'main',
   displayName: realm.realm,
@@ -86,7 +77,38 @@ export const CustomRealmProfiles: RealmProfile[] = CustomRealms.map((realm) => (
   createdAt: '',
   updatedAt: '',
   status: 'pending',
+  outOfSync: false,
 }));
+
+export const roster: Roster = {
+  id: 1,
+  realm: 'realm 1',
+  productName: 'name',
+  purpose: 'purpose',
+  primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
+  preferredAdminLoginMethod: 'idir',
+  productOwnerEmail: 'a@b.com',
+  productOwnerIdirUserId: 'po',
+  technicalContactEmail: 'b@c.com',
+  technicalContactIdirUserId: 'd@e.com',
+  secondTechnicalContactIdirUserId: 'dmsd',
+  secondTechnicalContactEmail: 'a@b.com',
+  ministry: 'ministry',
+  branch: 'branch',
+  division: 'division',
+  approved: null,
+  rcChannel: '',
+  rcChannelOwnedBy: '',
+  materialToSend: '',
+  status: 'applied',
+  createdAt: new Date(),
+  lastUpdatedBy: 'user',
+  updatedAt: new Date(),
+  environments: ['dev', 'test', 'prod'],
+  prNumber: 1,
+  requestor: 'user',
+  archived: false,
+};
 
 export interface MockHttpRequest {
   req: NextApiRequest;
