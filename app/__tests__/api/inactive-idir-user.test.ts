@@ -104,14 +104,17 @@ const mockPrismaRoster = () =>
     return Promise.resolve(testCases.map((testCase) => testCase.roster));
   });
 
+const mockApiKey = 'secret';
+
 describe('IDIR user deletion', () => {
   const { req, res }: MockHttpRequest = createMocks({
     method: 'DELETE',
-    headers: { authorization: process.env.API_AUTH_SECRET },
+    headers: { authorization: mockApiKey },
     query: { id: DELETED_USER_ID },
   });
 
   beforeEach(() => {
+    process.env.API_AUTH_SECRET = mockApiKey;
     jest.clearAllMocks();
     mockPrismaRoster();
   });
