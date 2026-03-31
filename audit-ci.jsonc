@@ -1,0 +1,10 @@
+{
+  "allowlist": [
+    // Coming from button-inc dependency, to be removed soon
+    "GHSA-c2c7-rcm5-vvqj"
+  ],
+  "directory": "./app",
+  "high": true,
+  "critical": true,
+  "skipDev": true
+}
