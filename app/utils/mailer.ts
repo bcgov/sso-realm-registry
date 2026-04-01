@@ -182,6 +182,79 @@ export const sendRestoreEmail = async (realm: Roster, requester: string) => {
   });
 };
 
+const roleLabels = {
+  productOwnerIdirUserId: 'Product Owner',
+  technicalContactIdirUserId: 'Primary Technical Contact',
+  secondTechnicalContactIdirUserId: 'Secondary Technical Contact',
+};
+
+export const sendDeletedUserEmail = async (realms: Roster[], userId: string) => {
+  const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
+  const subject = `${prefix}Notification: User Removed`;
+
+  const roles = Object.entries(roleLabels) as [keyof Roster, string][];
+  let realmOwnership: string[] = [];
+
+  const realmEmails: Promise<any>[] = [];
+
+  realms.forEach((realm) => {
+    const deletedUserRoles = roles.filter(([key, label]) => {
+      const value = realm[key];
+      return typeof value === 'string' && value.toLowerCase() === userId.toLowerCase();
+    });
+    const ownershipLabels = deletedUserRoles.map(([, label]) => label).join(', ');
+    realmOwnership.push(`${realm.realm}: ${ownershipLabels}`);
+
+    const to = [];
+    // Message the Technical Contact / Product Owner, unless they are the deleted user
+    if (!deletedUserRoles.some((roles) => roles.includes('productOwnerIdirUserId'))) to.push(realm.productOwnerEmail!);
+    if (!deletedUserRoles.some((roles) => roles.includes('technicalContactIdirUserId')))
+      to.push(realm.technicalContactEmail!);
+
+    realmEmails.push(
+      sendEmail({
+        to,
+        cc: [ssoTeamEmail],
+        subject,
+        body: `
+          ${emailHeader}
+          <main>
+            <p>
+              The user with ID ${userId} no longer had an active IDIR, and is listed as having the ${
+          deletedUserRoles.length > 1 ? 'roles' : 'role'
+        } ${deletedUserRoles.map((roles) => roles[1]).join(' and ')} on the custom realm ${
+          realm.realm
+        }. Please update your realm information.
+            </p>
+          </main>
+          ${emailFooter}
+        `,
+      }),
+    );
+  });
+
+  await Promise.all(realmEmails);
+
+  const message = `
+    <main>
+      <p>The user ${userId} had an inactive IDIR and has been removed from keycloak. They are associated to the following custom realms:</p>
+      <ul>
+        ${realmOwnership.map((ownershipData) => `<li> ${ownershipData} </li>`).join('')}
+      </ul>
+    </main>
+  `;
+
+  return sendEmail({
+    to: [ssoTeamEmail],
+    body: `
+          ${emailHeader}
+          ${message}
+          ${emailFooter}
+      `,
+    subject,
+  });
+};
+
 export const sendCreateEmail = async (realm: Roster, session: Session) => {
   const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   const username = `${session.user.given_name} ${session.user.family_name}`;
