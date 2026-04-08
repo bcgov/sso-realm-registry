@@ -1,7 +1,9 @@
 {
   "allowlist": [
     // Coming from button-inc dependency, to be removed soon
-    "GHSA-c2c7-rcm5-vvqj"
+    "GHSA-c2c7-rcm5-vvqj",
+    // Coming from button-inc dependency, to be removed soon
+    "GHSA-r5fr-rjxr-66jc"
   ],
   "directory": "./app",
   "high": true,
