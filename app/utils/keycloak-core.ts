@@ -1,7 +1,6 @@
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 import RealmRepresentation from '@keycloak/keycloak-admin-client/lib/defs/realmRepresentation.js';
-import flatten from 'lodash/flatten';
-import compact from 'lodash/compact';
+import { flatten, compact } from 'lodash';
 import validator from 'validator';
 
 class KeycloakCore {

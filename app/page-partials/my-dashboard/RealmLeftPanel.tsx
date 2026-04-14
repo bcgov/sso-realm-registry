@@ -13,16 +13,7 @@ interface Props {
 function RealmLeftPanel({ realms, onEditClick, onViewClick }: Props) {
   const [tab, setTab] = useState('dashboard');
 
-  return (
-    <>
-      <Tabs>
-        <a className={`nav-link ${tab === 'dashboard' ? 'active' : ''}`} onClick={() => setTab('dashboard')}>
-          My Dashboard
-        </a>
-      </Tabs>
-      {tab === 'dashboard' && <RealmTable realms={realms} onEditClick={onEditClick} onViewClick={onViewClick} />}
-    </>
-  );
+  return <RealmTable realms={realms} onEditClick={onEditClick} onViewClick={onViewClick} />;
 }
 
 export default RealmLeftPanel;

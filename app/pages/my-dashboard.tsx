@@ -1,10 +1,7 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import Head from 'next/head';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import styled from 'styled-components';
-import Grid from '@button-inc/bcgov-theme/Grid';
-import Alert from '@button-inc/bcgov-theme/Alert';
-import StyledLink from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
 import RealmLeftPanel from 'page-partials/my-dashboard/RealmLeftPanel';
 import PopupModal from 'page-partials/my-dashboard/PopupModal';
@@ -18,6 +15,10 @@ import { InferGetServerSidePropsType } from 'next';
 import { useRouter } from 'next/router';
 import { ModalContext } from 'context/modal';
 import RealmURIs from 'page-partials/my-dashboard/RealmURIs';
+import { Alert, Col, Row } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import Link from 'next/link';
 
 const AlignCenter = styled.div`
   text-align: center;
@@ -120,8 +121,9 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
   if (hasError)
     return (
       <TopAlertWrapper>
-        <Alert variant="warning" closable={true}>
-          There was en error while loading your realm information. Please try refreshing the page.
+        <Alert variant="warning" dismissible className="d-flex align-items-center">
+          <FontAwesomeIcon className="icon-bullet" icon={faExclamationTriangle} size="lg" />
+          <div>There was en error while loading your realm information. Please try refreshing the page.</div>
         </Alert>
       </TopAlertWrapper>
     );
@@ -133,9 +135,12 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
       </Head>
       {!answered && (
         <TopAlertWrapper>
-          <Alert variant="warning" closable={true}>
-            Would you like to migrate to a standard realm? Find out more{' '}
-            <StyledLink href="/my-dashboard#realm-migration" content="here" />
+          <Alert variant="warning" dismissible className="d-flex align-items-center">
+            <FontAwesomeIcon className="icon-bullet" icon={faExclamationTriangle} />
+            <div>
+              Would you like to migrate to a standard realm? Find out more{' '}
+              <Link href="/my-dashboard#realm-migration">here</Link>
+            </div>
           </Alert>
         </TopAlertWrapper>
       )}
@@ -145,18 +150,16 @@ function MyDashboard(props: InferGetServerSidePropsType<typeof getServerSideProp
             <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />
           </AlignCenter>
         ) : (
-          <Grid cols={10} style={{ overflowX: 'hidden' }}>
-            <Grid.Row collapse="800" gutter={[15, 2]}>
-              <Grid.Col span={10} style={{ overflowX: 'auto' }}>
-                <RealmLeftPanel
-                  realms={realms}
-                  onEditClick={handleEditClick}
-                  onCancel={handleCancel}
-                  onViewClick={handleViewClick}
-                />
-              </Grid.Col>
-            </Grid.Row>
-          </Grid>
+          <Row>
+            <Col>
+              <RealmLeftPanel
+                realms={realms}
+                onEditClick={handleEditClick}
+                onCancel={handleCancel}
+                onViewClick={handleViewClick}
+              />
+            </Col>
+          </Row>
         )}
         <PopupModal open={!answered} onAnswer={handleAnswer} />
       </ResponsiveContainer>

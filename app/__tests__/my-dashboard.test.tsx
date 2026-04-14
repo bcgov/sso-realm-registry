@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { CustomRealmProfiles, CustomRealms } from './fixtures';
 import RealmLeftPanel from 'page-partials/my-dashboard/RealmLeftPanel';
-import noop from 'lodash.noop';
+import { noop } from 'lodash';
 import { RealmProfile } from 'types/realm-profile';
 
 const editFunction = jest.fn();

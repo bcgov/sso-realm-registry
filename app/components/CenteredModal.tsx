@@ -1,11 +1,11 @@
 import styled from 'styled-components';
-import Modal from '@button-inc/bcgov-theme/Modal';
+import Modal from 'react-bootstrap/Modal';
 
 const CenteredModal = styled(Modal)`
   display: flex;
   align-items: center;
 
-  & .pg-modal-main {
+  & .modal-content {
     margin: auto;
   }
 

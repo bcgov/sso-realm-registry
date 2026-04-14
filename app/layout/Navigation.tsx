@@ -1,11 +1,10 @@
-import React from 'react';
 import styled from 'styled-components';
-import isFunction from 'lodash/isFunction';
-import { BaseNavigation } from '@button-inc/bcgov-theme/Navigation';
-import { BaseHeader } from '@button-inc/bcgov-theme/Header';
-import { Bars, FaSVG } from '@button-inc/bcgov-theme/fontawesome';
-import bcgovLogoSVG from '@button-inc/bcgov-theme/esm/svg/bcgov_logo';
-import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
+import { isFunction } from 'lodash';
+import { MediaRule } from 'components/ResponsiveContainer';
+import { Col, Container, Nav, Navbar, Row } from 'react-bootstrap';
+import { MAIN_NAV_APP_BAR_BOTTOM_BORDER_COLOR, MAIN_NAV_APP_BAR_COLOR, SUB_NAV_APP_BAR_COLOR } from 'styles/theme';
+import Image from 'next/image';
+import { NavCollapseSVG } from 'components/NavCollapseSVG';
 
 const mediaRules: MediaRule[] = [
   {
@@ -48,43 +47,95 @@ function Navigation(props: any) {
   const context = { mobileBreakPoint };
 
   return (
-    <BaseNavigation>
-      <BaseHeader>
-        <BaseHeader.Group className="banner">
-          <ResponsiveContainer rules={mediaRules}>
-            <BannerLogo onClick={onBannerClick}>{bcgovLogoSVG}</BannerLogo>
-          </ResponsiveContainer>
-        </BaseHeader.Group>
-        <BaseHeader.Item collapse={mobileBreakPoint}>
-          <Title>{isFunction(title) ? title(context) : title}</Title>
-        </BaseHeader.Item>
+    // <BaseNavigation>
+    //   <BaseHeader>
+    //     <BaseHeader.Group className="banner">
+    //       <ResponsiveContainer rules={mediaRules}>
+    //         <BannerLogo onClick={onBannerClick}>{bcgovLogoSVG}</BannerLogo>
+    //       </ResponsiveContainer>
+    //     </BaseHeader.Group>
+    //     <BaseHeader.Item collapse={mobileBreakPoint}>
+    //       <Title>{isFunction(title) ? title(context) : title}</Title>
+    //     </BaseHeader.Item>
 
-        {rightSide && (
-          <BaseHeader.Item
-            collapse={mobileBreakPoint}
-            style={{ marginLeft: 'auto', marginBottom: 'auto', marginTop: 'auto' }}
-          >
-            {rightSide}
-          </BaseHeader.Item>
-        )}
+    //     {rightSide && (
+    //       <BaseHeader.Item
+    //         collapse={mobileBreakPoint}
+    //         style={{ marginLeft: 'auto', marginBottom: 'auto', marginTop: 'auto' }}
+    //       >
+    //         {rightSide}
+    //       </BaseHeader.Item>
+    //     )}
 
-        <BaseHeader.Item
-          expand={mobileBreakPoint}
-          style={{ marginLeft: 'auto', fontSize: '2rem', marginBottom: 'auto', marginTop: 'auto' }}
+    //     <BaseHeader.Item
+    //       expand={mobileBreakPoint}
+    //       style={{ marginLeft: 'auto', fontSize: '2rem', marginBottom: 'auto', marginTop: 'auto' }}
+    //     >
+    //       <BaseNavigation.Toggle>
+    //         <FaSVG>
+    //           <path fill="currentColor" d={Bars} />
+    //         </FaSVG>
+    //       </BaseNavigation.Toggle>
+    //     </BaseHeader.Item>
+    //   </BaseHeader>
+
+    //   <BaseHeader header="sub" collapse={mobileBreakPoint}>
+    //     {children}
+    //   </BaseHeader>
+    //   <BaseNavigation.Sidebar>{mobileMenu ? mobileMenu() : children}</BaseNavigation.Sidebar>
+    // </BaseNavigation>
+
+    <Navbar expand="lg" className="py-0">
+      <Container fluid className="px-0 flex-column">
+        <Row
+          className="w-100 align-items-center py-2"
+          style={{
+            background: MAIN_NAV_APP_BAR_COLOR,
+            borderBottom: `2px solid ${MAIN_NAV_APP_BAR_BOTTOM_BORDER_COLOR}`,
+            paddingLeft: '2rem',
+          }}
         >
-          <BaseNavigation.Toggle>
-            <FaSVG>
-              <path fill="currentColor" d={Bars} />
-            </FaSVG>
-          </BaseNavigation.Toggle>
-        </BaseHeader.Item>
-      </BaseHeader>
+          <Col xs="auto">
+            <Navbar.Brand href="#">
+              <Image
+                src="/bc_logo_header.svg"
+                alt="BC Government Logo"
+                width={150}
+                height={50}
+                onClick={onBannerClick}
+              />
+            </Navbar.Brand>
+          </Col>
 
-      <BaseHeader header="sub" collapse={mobileBreakPoint}>
-        {children}
-      </BaseHeader>
-      <BaseNavigation.Sidebar>{mobileMenu ? mobileMenu() : children}</BaseNavigation.Sidebar>
-    </BaseNavigation>
+          <Col className="d-none d-lg-block" style={{ whiteSpace: 'nowrap' }}>
+            <Title>{isFunction(title) ? title(context) : title}</Title>
+          </Col>
+
+          <Col className="text-end mx-5 d-none d-lg-block">{rightSide}</Col>
+
+          <Col xs="auto" className="ms-auto d-lg-none">
+            <Navbar.Toggle aria-controls="main-navbar-nav" className="border-0">
+              <NavCollapseSVG />
+            </Navbar.Toggle>
+          </Col>
+        </Row>
+        <Row className="w-100 align-items-center">
+          <Navbar.Collapse
+            id="main-navbar-nav"
+            className="w-100 d-lg-flex justify-content-center py-2"
+            style={{ background: SUB_NAV_APP_BAR_COLOR }}
+          >
+            <Nav className="w-100 px-2 pt-2 d-none d-lg-flex" data-testid="desktop-nav">
+              {children}
+            </Nav>
+
+            <Nav className="d-lg-none flex-column mt-2" style={{ background: SUB_NAV_APP_BAR_COLOR }}>
+              {mobileMenu}
+            </Nav>
+          </Navbar.Collapse>
+        </Row>
+      </Container>
+    </Navbar>
   );
 }
 

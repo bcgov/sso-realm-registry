@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faClose } from '@fortawesome/free-solid-svg-icons';
 import { ModalConfig } from 'context/modal';
-import Button from '@button-inc/bcgov-theme/Button';
+import Button from './Button';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import { useState } from 'react';
 
@@ -121,16 +121,16 @@ export default function GlobalModal({ setModalConfig, modalConfig }: Props) {
             <div className="button-container">
               {/* Include empty span if missing for layout purposes */}
               {showCancelButton ? (
-                <Button variant="secondary" onClick={clearModal}>
+                <button className="secondary" onClick={clearModal}>
                   Cancel
-                </Button>
+                </button>
               ) : (
                 <span />
               )}
               {showConfirmButton && (
-                <Button onClick={onConfirmClick} disabled={waiting}>
+                <button onClick={onConfirmClick} disabled={waiting} className="primary">
                   {waiting ? <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" /> : 'Confirm'}
-                </Button>
+                </button>
               )}
             </div>
           )}
