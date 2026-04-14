@@ -1,10 +1,197 @@
+:root {
+  --field-top-spacing: 20px;
+}
+
 html,
 body {
   padding: 0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans,
-    Helvetica Neue, sans-serif;
+  font-family: 'BCSans', Verdana, Arial, sans-serif;
+  font-size: 16px !important;
   color: #292929;
+}
+
+/* See https://www2.gov.bc.ca/gov/content/digital/design-system/foundations/typography#styles */
+h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+h4 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+h5 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+h6 {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+label {
+  /*This diverges from the design guide, but 12px is barely readable.*/
+  font-size: 1rem;
+}
+
+.text-large {
+  font-size: 1.125rem;
+}
+
+.text-small {
+  font-size: 0.875rem;
+}
+
+button {
+  border-radius: 0.222em;
+  border-width: 0;
+  font-family: 'BC Sans', Verdana, Arial, sans-serif;
+  padding: 0.66em 1.77em;
+  text-align: center;
+  text-decoration: none;
+  font-weight: 700;
+  display: inline-block;
+  cursor: pointer;
+  box-shadow: 0px 0px 0px 2px transparent inset, 0px 0em 0px 0px rgba(34, 36, 38, 0.15) inset;
+
+  &.primary {
+    background-color: #013366;
+    color: #fff;
+
+    &:hover {
+      text-decoration: underline;
+      background-color: #1e5189;
+    }
+
+    &:focus {
+      outline: 4px solid #2e5dd7;
+      outline-offset: 1px;
+    }
+
+    &:active {
+      opacity: 1;
+    }
+  }
+
+  &.primary-inverse {
+    background-color: #fff;
+    box-shadow: 0px 0px 0px 2px #313132 inset !important;
+    color: #313132;
+
+    &:hover {
+      text-decoration: underline;
+      background-color: #f2f2f2;
+    }
+
+    &:focus {
+      outline: 4px solid #3b99fc;
+      outline-offset: 1px;
+    }
+
+    &:active {
+      background-color: #fff;
+    }
+  }
+
+  &.secondary {
+    background: none;
+    box-shadow: 0px 0px 0px 2px #003366 inset !important;
+    color: #003366;
+
+    &:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+      background-color: #003366;
+      color: #ffffff;
+    }
+
+    &:focus {
+      outline-offset: 1px;
+      outline: 4px solid #3b99fc;
+    }
+
+    &:active {
+      opacity: 1;
+    }
+  }
+
+  &.secondary-inverse {
+    background: none;
+    box-shadow: 0px 0px 0px 2px #fff inset !important;
+    color: #fff;
+
+    &:hover {
+      text-decoration: underline;
+      background-color: #fff;
+      color: #313132;
+    }
+
+    &:focus {
+      outline-offset: 1px;
+      outline: 4px solid #3b99fc;
+    }
+
+    &:active {
+      background-color: #f2f2f2;
+      color: #313132;
+    }
+  }
+
+  &.danger {
+    background: #ce3e39;
+    color: #fff;
+
+    &:hover {
+      text-decoration: underline;
+      background-color: #a2312d;
+    }
+
+    &:focus {
+      outline-offset: 1px;
+      outline: 4px solid #3b99fc;
+    }
+  }
+
+  &:disabled {
+    background-color: #edebe9;
+    box-shadow: 0px 0px 0px 2px #fff inset !important;
+    color: #9f9d9c;
+    cursor: not-allowed;
+    &:hover {
+      text-decoration: none;
+      background-color: #edebe9;
+    }
+  }
+
+  &.callout {
+    background-color: #fcba19;
+    &:hover {
+      text-decoration: none;
+      background-color: #f9c462;
+    }
+  }
+
+  &.wide {
+    min-width: 190px;
+  }
+
+  &.short {
+    padding-top: 0.39rem;
+    padding-bottom: 0.39rem;
+  }
 }
 
 a {
@@ -15,26 +202,268 @@ a {
   box-sizing: border-box;
 }
 
+fieldset {
+  border: none !important;
+}
+
+legend {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.pg-menu-item,
+.pg-menu-item > span {
+  display: flex;
+  align-items: center;
+}
+
+/* RJSF overrides */
+
+#root_newToSso > .radio,
+#root_usesTeam > .radio,
+#root_projectLead > .radio {
+  display: inline;
+  margin-right: 10px;
+}
+
+.checkboxes-grid .checkboxes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 0.5em;
+}
+
+/* Relative spacing the textarea is pushed over */
+:root {
+  --textarea-spacer: 5em;
+}
+
+/* Blank out description to prevent blocking */
+.other-details > div:first-child {
+  width: 0;
+}
+
+.other-details textarea {
+  width: calc(100% - var(--textarea-spacer));
+}
+
+.other-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative;
+  bottom: 2.4em;
+  left: var(--textarea-spacer);
+  height: 0;
+  margin-bottom: 3em;
+}
+
+.other-details::after {
+  content: '100 characters max.';
+  grid-column: 2;
+  margin-left: auto;
+  position: relative;
+  right: var(--textarea-spacer);
+  color: #abafb2;
+}
+
+.radio > label > span > input {
+  margin: 10px 5px 0 0;
+}
+
+.checkbox > label > span > span {
+  margin-left: 5px;
+}
+
+#root_agreeWithTerms + span,
+#root_confirmSocial + span {
+  font-weight: bold;
+  margin-left: 5px;
+}
+
+.form-group.field:not(.field-object) {
+  margin-top: var(--field-top-spacing);
+}
+
+span.required {
+  display: none;
+}
+
+li.text-danger {
+  max-width: 380px;
+}
+
+label.control-label,
+label.pg-input-label,
+label.pg-textarea-label {
+  font-weight: bold;
+}
+
+[type='checkbox'] + span {
+  margin-left: 5px;
+}
+
+.form-group.field.field-boolean {
+  margin: 0;
+}
+
+.form-group.field.field-boolean > legend {
+  margin-top: var(--field-top-spacing);
+}
+
+/* override spacing for first array field element */
+.field-array > div > div:nth-of-type(1) .field {
+  margin-top: 0 !important;
+}
+
+/* override default input width */
+.short-field-string {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+}
+
+textarea#root_bceidBody {
+  width: 600px;
+}
+
+.field-string .pg-input .pg-input-input {
+  width: 100%;
+  padding-right: 30px;
+}
+
+.pg-input-input:read-only {
+  background-color: #eaeaea;
+  cursor: not-allowed;
+}
+
+.pg-select-input:disabled {
+  cursor: not-allowed;
+  background-color: #eaeaea;
+  margin: -5px;
+}
+
+.pg-footer-footer {
+  height: unset !important;
+}
+
+ul.error-detail {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.pg-select > label {
+  display: none;
+}
+
+.pg-modal-header {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.multiselect {
+  position: relative;
+  outline: none;
+}
+
 .underline {
   text-decoration: underline;
 }
 
-svg[role='button'].disabled {
-  cursor: not-allowed;
-  color: #cacaca;
+.strong {
+  font-weight: bold;
 }
 
-.h1,
-.h2,
-.h3,
-.h4,
-.h5,
-.h6,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  color: #292929;
+.normal {
+  font-weight: 400;
+}
+
+.pg-modal-container {
+  z-index: 1000;
+}
+
+.text-blue {
+  color: blue;
+}
+
+.line-height-200 {
+  line-height: 200%;
+}
+
+.link {
+  font-size: 1rem;
+  color: #1a5a96;
+}
+
+.link:hover {
+  color: blue;
+  text-decoration: none;
+}
+
+.link::after {
+  content: url('data:image/svg+xml;utf8,<svg focusable="false" role="img" color="%231a5a96" title="fa icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="15px" class="sc-kgflAQ diecks"><path fill="currentColor" d="M432,320H400a16,16,0,0,0-16,16V448H64V128H208a16,16,0,0,0,16-16V80a16,16,0,0,0-16-16H48A48,48,0,0,0,0,112V464a48,48,0,0,0,48,48H400a48,48,0,0,0,48-48V336A16,16,0,0,0,432,320ZM488,0h-128c-21.37,0-32.05,25.91-17,41l35.73,35.73L135,320.37a24,24,0,0,0,0,34L157.67,377a24,24,0,0,0,34,0L435.28,133.32,471,169c15,15,41,4.5,41-17V24A24,24,0,0,0,488,0Z"></path></svg>');
+}
+
+::part(iframe) {
+  margin: auto;
+  display: flex;
+  min-height: 700px;
+}
+
+.comments-container {
+  max-height: 300px;
+  overflow-y: scroll;
+}
+
+.hidden-title {
+  display: none;
+}
+
+.modal-open {
+  padding-right: 0 !important;
+}
+
+.navbar-toggler:focus,
+.navbar-toggler:active,
+.navbar-toggler:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
+}
+
+.nav-link.active {
+  background: linear-gradient(orange, orange) bottom /* left or right or else */ no-repeat;
+  background-size: calc(100% - 2rem) 4px;
+}
+
+input:focus {
+  outline: 4px solid #3b99fc;
+  outline-offset: 1px;
+}
+
+.alert-info {
+  background-color: #d9eaf7;
+  border-color: #afd3ee;
+  color: #313132;
+
+  & a {
+    color: #1a5a96;
+  }
+}
+
+.alert-warning {
+  background-color: #f9f1c6;
+  border-color: #faebcc;
+  color: #6c4a00;
+
+  & a {
+    color: #66512c;
+  }
+}
+
+.alert {
+  --bs-alert-margin-bottom: none;
 }

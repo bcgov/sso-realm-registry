@@ -39,8 +39,9 @@ export default function BottomAlertProvider({ children }: Props) {
             variant={state.variant || 'success'}
             fadeOut={state.fadeOut || 10000}
             closable={isBoolean(state.closable) ? state.closable : true}
-            content={state.content || ``}
-          />
+          >
+            {state.content}
+          </FadingAlert>
         </BottomAlertWrapper>
       )}
     </BottomAlertContext.Provider>

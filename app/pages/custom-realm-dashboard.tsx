@@ -309,7 +309,6 @@ function CustomRealmDashboard({ alert }: Props) {
         <title>Custom Realm Dashboard</title>
       </Head>
       <Container>
-        <h1>Custom Realm Dashboard</h1>
         {loading ? (
           <AlignCenter>
             <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />

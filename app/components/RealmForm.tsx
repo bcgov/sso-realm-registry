@@ -2,18 +2,15 @@ import { CustomRealmFormData, PrimaryEndUser } from 'types/realm-profile';
 import styled from 'styled-components';
 import React, { useState, ChangeEvent, useEffect, Dispatch, SetStateAction } from 'react';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
-import Button from '@button-inc/bcgov-theme/Button';
 import { ValidationError } from 'yup';
-import cloneDeep from 'lodash.clonedeep';
+import { cloneDeep, kebabCase, debounce } from 'lodash';
 import { getMinistries, getDivisions, getBranches } from 'services/meta';
 import InfoPopover from 'components/InfoPopover';
 import { Ministry } from 'types/realm-profile';
 import * as yup from 'yup';
-import kebabCase from 'lodash.kebabcase';
 import AsyncSelect from 'react-select/async';
 import { getIdirUserId, getIdirUsersByEmail } from 'services/azure';
 import { realmTakenError } from 'pages/custom-realm-form';
-import debounce from 'lodash.debounce';
 
 const SForm = styled.form<{ collapse: boolean }>`
   display: grid;
@@ -139,6 +136,8 @@ const ButtonContainer = styled.div`
   width: 100%;
   display: flex;
   justify-content: space-between;
+  padding-top: 1em;
+  gap: 1em;
   button {
     width: 8em;
   }
@@ -665,12 +664,12 @@ export default function RealmForm({
       {updatedMessage && <p>{updatedMessage}</p>}
 
       <ButtonContainer className="button-container">
-        <Button variant="secondary" onClick={onCancel} disabled={submittingForm}>
+        <button className="secondary" onClick={onCancel} disabled={submittingForm}>
           Cancel
-        </Button>
-        <Button onClick={handleSubmit} disabled={submittingForm}>
+        </button>
+        <button onClick={handleSubmit} disabled={submittingForm} className="primary">
           {submittingForm ? <SpinnerGrid color="#fff" height={15} width={15} wrapperClass="d-block" /> : 'Submit'}
-        </Button>
+        </button>
       </ButtonContainer>
     </>
   );

@@ -2,8 +2,6 @@ import React from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import styled from 'styled-components';
-import Grid from '@button-inc/bcgov-theme/Grid';
-import Button from '@button-inc/bcgov-theme/Button';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import squid from 'svg/squid.svg';
 import fishes from 'svg/fishes.svg';
@@ -13,6 +11,7 @@ import { formatWikiURL } from 'utils/helpers';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faClose } from '@fortawesome/free-solid-svg-icons';
+import { Col, Row } from 'react-bootstrap';
 
 const JumbotronH1 = styled.h1`
   font-size: 48px;
@@ -41,21 +40,8 @@ const Container = styled.div`
 `;
 
 const mediaRules: MediaRule[] = [
-  {
-    maxWidth: 900,
-    marginTop: 10,
-    marginLeft: 10,
-    marginRight: 10,
-    marginUnit: 'px',
-    horizontalAlign: 'none',
-  },
-  {
-    marginTop: 40,
-    marginLeft: 2.5,
-    marginRight: 2.5,
-    marginUnit: 'rem',
-    horizontalAlign: 'none',
-  },
+  { maxWidth: 900, marginTop: 10, marginLeft: 10, marginRight: 10, marginUnit: 'px', horizontalAlign: 'none' },
+  { marginTop: 40, marginLeft: 2.5, marginRight: 2.5, marginUnit: 'rem', horizontalAlign: 'none' },
 ];
 
 const GRID_PADDING = '1rem';
@@ -192,10 +178,7 @@ const Home = () => {
   const session = useSession();
 
   const handleLogin = async () => {
-    signIn('keycloak', {
-      callbackUrl: '/my-dashboard',
-      redirect: true,
-    });
+    signIn('keycloak', { callbackUrl: '/my-dashboard', redirect: true });
   };
 
   const handleDashboard = async () => {
@@ -212,56 +195,54 @@ const Home = () => {
         <title>Home</title>
       </Head>
       <ResponsiveContainer rules={mediaRules}>
-        <Grid cols={10} gutter={[5, 2]} style={{ overflowX: 'hidden' }}>
-          <Grid.Row collapse="800">
-            <Grid.Col span={4}>
-              <Container>
-                <div>
-                  <JumbotronH1>Keycloak Realm Registry</JumbotronH1>
-                  <JumbotronP>
-                    Use this self-service tool to
-                    <br />
-                    view, and edit some,
-                    <br />
-                    information about your
-                    <br />
-                    Custom realm.
-                  </JumbotronP>
-                  {session ? (
-                    <Button size="medium" onClick={handleDashboard}>
-                      My Dashboard
-                    </Button>
-                  ) : (
-                    <Button size="medium" onClick={handleLogin}>
-                      Login
-                    </Button>
-                  )}
-                </div>
-                <div className="custom-realm-info">
-                  <p className="large-font">Do you want to request a new Custom Realm?</p>
-                  <p>
-                    Over 90% of our clients benefit from our Standard Service, please visit our{' '}
-                    <NextLink target="_blank" href={formatWikiURL()}>
-                      information
-                    </NextLink>{' '}
-                    to ensure this is not a fit for you. To maintain our{' '}
-                    <NextLink target="_blank" href={formatWikiURL('Alerts-and-Us#service-levels')}>
-                      service levels
-                    </NextLink>
-                    , we need to evaluate every single custom realm request coming to us. Please fill out the form to
-                    start the conversation with us.
-                  </p>
-                  <strong className="custom-realm-link">
-                    <NextLink href="/custom-realm-form">Request a Custom Realm</NextLink>
-                  </strong>
-                </div>
-              </Container>
-            </Grid.Col>
-            <Grid.Col span={6}>
-              <SplashImage />
-            </Grid.Col>
-          </Grid.Row>
-        </Grid>
+        <Row>
+          <Col xs={12} md={5}>
+            <Container>
+              <div>
+                <JumbotronH1>Keycloak Realm Registry</JumbotronH1>
+                <JumbotronP>
+                  Use this self-service tool to
+                  <br />
+                  view, and edit some,
+                  <br />
+                  information about your
+                  <br />
+                  Custom realm.
+                </JumbotronP>
+                {session ? (
+                  <button onClick={handleDashboard} className="primary">
+                    My Dashboard
+                  </button>
+                ) : (
+                  <button onClick={handleLogin} className="primary">
+                    Login
+                  </button>
+                )}
+              </div>
+              <div className="custom-realm-info">
+                <p className="large-font">Do you want to request a new Custom Realm?</p>
+                <p>
+                  Over 90% of our clients benefit from our Standard Service, please visit our{' '}
+                  <NextLink target="_blank" href={formatWikiURL()}>
+                    information
+                  </NextLink>{' '}
+                  to ensure this is not a fit for you. To maintain our{' '}
+                  <NextLink target="_blank" href={formatWikiURL('Alerts-and-Us#service-levels')}>
+                    service levels
+                  </NextLink>
+                  , we need to evaluate every single custom realm request coming to us. Please fill out the form to
+                  start the conversation with us.
+                </p>
+                <strong className="custom-realm-link">
+                  <NextLink href="/custom-realm-form">Request a Custom Realm</NextLink>
+                </strong>
+              </div>
+            </Container>
+          </Col>
+          <Col>
+            <SplashImage />
+          </Col>
+        </Row>
       </ResponsiveContainer>
     </>
   );

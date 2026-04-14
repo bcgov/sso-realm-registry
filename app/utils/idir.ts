@@ -1,8 +1,7 @@
 import { promisify } from 'util';
 import soapRequest from 'easy-soap-request';
 import { parseString } from 'xml2js';
-import get from 'lodash.get';
-import map from 'lodash.map';
+import { get, map } from 'lodash';
 
 export const parseStringSync = promisify(parseString);
 

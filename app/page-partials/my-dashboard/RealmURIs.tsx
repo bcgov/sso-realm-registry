@@ -1,8 +1,8 @@
 import { useContext } from 'react';
 import styled from 'styled-components';
-import Link from '@button-inc/bcgov-theme/Link';
 import { RealmProfile } from 'types/realm-profile';
 import { DomainsContext } from 'pages/my-dashboard';
+import Link from 'components/Link';
 
 const Title = styled.div`
   font-weight: 700;
@@ -24,19 +24,19 @@ export default function RealmURIs({ realm }: Props) {
   return (
     <>
       <Title>Development</Title>
-      <Link href={devURL} external>
+      <Link external href={devURL} title="Development Realm Admin Console">
         {devURL}
       </Link>
       <br />
       <br />
       <Title>Test</Title>
-      <Link href={testURL} external>
+      <Link external href={testURL} title="Test Realm Admin Console">
         {testURL}
       </Link>
       <br />
       <br />
       <Title>Production</Title>
-      <Link href={prodURL} external>
+      <Link external href={prodURL} title="Production Realm Admin Console">
         {prodURL}
       </Link>
     </>

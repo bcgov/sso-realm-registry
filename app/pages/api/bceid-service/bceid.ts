@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { promisify } from 'util';
 import soapRequest from 'easy-soap-request';
 import { parseString } from 'xml2js';
-import get from 'lodash.get';
+import { get } from 'lodash';
 import { getIdirUserGuid } from 'utils/jwt';
 
 const parseStringSync = promisify(parseString);

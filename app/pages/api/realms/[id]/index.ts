@@ -5,7 +5,7 @@ import { RoleEnum, adminOnlyFields, checkAdminRole, createEvent, getUpdatedPrope
 import prisma from 'utils/prisma';
 import { EventEnum, StatusEnum, getUpdateRealmSchemaByRole } from 'validators/create-realm';
 import { ValidationError } from 'yup';
-import omit from 'lodash.omit';
+import { omit } from 'lodash';
 import {
   offboardRealmAdmin,
   onboardNewRealmAdmin,
