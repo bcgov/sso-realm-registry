@@ -142,8 +142,9 @@ const migrateUsers = async () => {
   const realms = JSON.parse(fs.readFileSync('./realm-users.json', 'utf-8'));
 
   for (const env of ['dev']) {
+    const envKey = `${env.toUpperCase()}_KC_URL`;
     const kcAdminClient = new KcAdminClient({
-      baseUrl: `${process.env[`${env.toUpperCase()}_KC_URL`]}/auth`,
+      baseUrl: `${process.env[envKey]}/auth`,
       realmName: 'master',
     });
 

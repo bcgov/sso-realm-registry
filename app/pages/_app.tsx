@@ -1,6 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/globals.css';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { AppProps } from 'next/app';
 import Layout from 'layout/Layout';
 import { SessionProvider, signOut, signIn } from 'next-auth/react';
@@ -33,8 +33,10 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     });
   };
 
+  const modalContextValue = useMemo(() => ({ modalConfig, setModalConfig }), [modalConfig]);
+
   return (
-    <ModalContext.Provider value={{ modalConfig, setModalConfig }}>
+    <ModalContext.Provider value={modalContextValue}>
       <SessionProvider session={session}>
         {modalConfig.show && <Modal modalConfig={modalConfig} setModalConfig={setModalConfig} />}
         <Layout onLoginClick={handleLogin} onLogoutClick={handleLogout}>
