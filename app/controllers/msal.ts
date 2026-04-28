@@ -1,7 +1,42 @@
-import { ConfidentialClientApplication, IConfidentialClientApplication, ProtocolMode } from '@azure/msal-node';
+import { ConfidentialClientApplication, IConfidentialClientApplication } from '@azure/msal-node';
 import axios from 'axios';
 
 let msalInstance: IConfidentialClientApplication;
+
+export interface MsGraphUserValue {
+  mailNickname: string;
+  displayName: string;
+  mail: string;
+  givenName: string;
+  surname: string;
+  companyName: string;
+  department: string;
+  jobTitle: string;
+  mobilePhone: string;
+  /** Extended attributes, see annotations for details. */
+  onPremisesExtensionAttributes: {
+    extensionAttribute1?: string | null;
+    extensionAttribute2?: string | null;
+    extensionAttribute3?: string | null;
+    extensionAttribute4?: string | null;
+    extensionAttribute5?: string | null;
+    extensionAttribute6?: string | null;
+    extensionAttribute7?: string | null;
+    extensionAttribute8?: string | null;
+    extensionAttribute9?: string | null;
+    extensionAttribute10?: string | null;
+    extensionAttribute11?: string | null;
+    /** This attribute will be the internal IDIR guid */
+    extensionAttribute12?: string | null;
+    extensionAttribute13?: string | null;
+    extensionAttribute14?: string | null;
+    extensionAttribute15?: string | null;
+  };
+}
+
+export interface MsGraphUserResponse {
+  value: MsGraphUserValue[];
+}
 
 const msalConfig = {
   auth: {
@@ -63,3 +98,27 @@ export async function callAzureGraphApi({
     return error;
   }
 }
+
+export const fetchIdirUser = async ({ userId }: { userId: string }) => {
+  const response = (await callAzureGraphApi({
+    pathSegments: ['users'],
+    query: {
+      $filter: `mailNickname eq '${userId}'`,
+      $select: 'onPremisesExtensionAttributes,displayName,mail,givenName,surname',
+    },
+  })) as MsGraphUserResponse;
+  if (!response?.value?.length) {
+    return false;
+  }
+  const result = response.value[0];
+  if (!result) throw new Error(`No user found with userId ${userId}`);
+
+  return {
+    guid: result.onPremisesExtensionAttributes.extensionAttribute12 as string,
+    userId,
+    displayName: result.displayName,
+    email: result.mail,
+    firstName: result.givenName,
+    lastName: result.surname,
+  };
+};

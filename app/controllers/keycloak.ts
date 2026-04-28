@@ -13,7 +13,7 @@ import GroupRepresentation from '@keycloak/keycloak-admin-client/lib/defs/groupR
 export const removeUserAsRealmAdmin = async (emails: (string | null)[], env: string, realm: string) => {
   const kcCore = new KeycloakCore(env);
   const kcAdminClient = await kcCore.getAdminClient();
-  const definedEmails = emails.filter((name) => name) as string[];
+  const definedEmails = emails.filter(Boolean) as string[];
 
   const userPromises = definedEmails.map((email) =>
     kcAdminClient.users.find({
@@ -24,7 +24,7 @@ export const removeUserAsRealmAdmin = async (emails: (string | null)[], env: str
 
   const users = await Promise.all(userPromises);
 
-  const userIds = users.map((user) => user?.[0]?.id).filter((user) => user) as string[];
+  const userIds = users.map((user) => user?.[0]?.id).filter(Boolean) as string[];
 
   if (userIds.length === 0) {
     console.info(`No users found as admin for realm ${realm}.`);
@@ -52,38 +52,34 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
     for (const env of envs) {
       const kcCore = new KeycloakCore(env);
       const kcAdminClient = await kcCore.getAdminClient();
-      let idirRealmUser;
       let masterRealmUser;
       const [userGuid, userIdp] = username.toLowerCase().split('@');
 
-      let idirRealmUsers = await kcAdminClient.users.find({
+      let azureidirRealmUsers = await kcAdminClient.users.find({
         realm: userIdp,
         username: userGuid,
         max: 1,
       });
 
-      if (idirRealmUsers.length === 0) {
+      if (azureidirRealmUsers.length === 0) {
         // create user in realm
-        idirRealmUser = await kcAdminClient.users.create({
+        const azureidirRealmUser = await kcAdminClient.users.create({
           realm: userIdp,
           username: userGuid,
-          emailVerified: true,
           enabled: true,
         });
 
         // assign federated links to user
         await kcAdminClient.users.addToFederatedIdentity({
           realm: userIdp,
-          id: idirRealmUser.id!,
+          id: azureidirRealmUser.id,
           federatedIdentityId: userIdp,
           federatedIdentity: {
-            userId: userGuid.toUpperCase(),
-            userName: userGuid.toUpperCase(),
+            userId: userGuid.toLowerCase(), // after user gets logged in it gets updated to actual sub from entra by keycloak authenticator
+            userName: userGuid.toLowerCase(),
             identityProvider: userIdp,
           },
         });
-      } else {
-        idirRealmUser = idirRealmUsers[0];
       }
 
       const masterRealmUsers = await kcAdminClient.users.find({
@@ -97,19 +93,18 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
         masterRealmUser = await kcAdminClient.users.create({
           realm: 'master',
           username,
-          emailVerified: true,
           enabled: true,
         });
 
         // assign federated links to user for idp
         await kcAdminClient.users.addToFederatedIdentity({
           realm: 'master',
-          id: masterRealmUser.id!,
-          federatedIdentityId: 'idir',
+          id: masterRealmUser.id,
+          federatedIdentityId: 'azureidir',
           federatedIdentity: {
-            userId: idirRealmUser.id,
+            userId: userGuid,
             userName: userGuid,
-            identityProvider: 'idir',
+            identityProvider: 'azureidir',
           },
         });
       } else {
@@ -235,11 +230,11 @@ export const createCustomRealm = async (realmName: string, env: string) => {
 
           return customRealm;
         }
-      } else throw Error('Failed to find custom realm');
+      } else throw new Error('Failed to find custom realm');
     }
   } catch (err) {
     console.error(err);
-    throw Error('Failed to create custom realm and its master realm resources');
+    throw new Error('Failed to create custom realm and its master realm resources');
   }
 };
 
@@ -255,9 +250,7 @@ export const deleteCustomRealm = async (realmName: string, env: string) => {
         realm: realm.realm as string,
       });
     }
-    const masterRealmResources = getRealmPermissionsByRole(realmName as string).find(
-      (role) => role.realmName === 'master',
-    );
+    const masterRealmResources = getRealmPermissionsByRole(realmName).find((role) => role.realmName === 'master');
 
     if (masterRealmResources) {
       const masterRealmCliClients = await kcAdminClient.clients.find({
@@ -302,7 +295,7 @@ export const deleteCustomRealm = async (realmName: string, env: string) => {
     }
   } catch (err) {
     console.error(err);
-    throw Error('Failed to delete custom realm and its master realm resources');
+    throw new Error('Failed to delete custom realm and its master realm resources');
   }
 };
 
@@ -323,19 +316,17 @@ export const manageCustomRealm = async (realmName: string, envs: string[], actio
           }
           break;
         case 'restore':
-          if (process.env.APP_ENV === 'production' && realm && realm.enabled === false) {
+          if (process.env.APP_ENV === 'production' && realm?.enabled === false) {
             await kcAdminClient.realms.update({ realm: realmName }, { enabled: true });
-          } else {
-            if (!realm) await createCustomRealm(realmName, env);
-          }
+          } else if (!realm) await createCustomRealm(realmName, env);
           break;
         default:
-          throw Error(`Invalid action: ${action}`);
+          throw new Error(`Invalid action: ${action}`);
       }
     }
   } catch (err) {
     console.error(err);
-    throw Error(`Failed to ${action} custom realm at this time`);
+    throw new Error(`Failed to ${action} custom realm at this time`);
   }
 };
 
@@ -375,7 +366,7 @@ const createOpenIdClient = async (
     } else console.error(`Failed to find realm: ${realmName}`);
   } catch (err) {
     console.error(err);
-    throw Error(`Failed to create openid client: ${clientConfig.clientId}`);
+    throw new Error(`Failed to create openid client: ${clientConfig.clientId}`);
   }
 };
 
@@ -428,7 +419,7 @@ const createRealmRole = async (
     return role;
   } catch (err) {
     console.error(err);
-    throw Error(`Failed to create realm role: ${roleName}`);
+    throw new Error(`Failed to create realm role: ${roleName}`);
   }
 };
 
@@ -453,6 +444,6 @@ const createRealmGroup = async (
     return group;
   } catch (err) {
     console.error(err);
-    throw Error(`Failed to create group: ${groupName}`);
+    throw new Error(`Failed to create group: ${groupName}`);
   }
 };

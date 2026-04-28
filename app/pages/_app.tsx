@@ -1,9 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/globals.css';
-import React, { useState, createContext } from 'react';
-import { useRouter } from 'next/router';
+import { useState, useMemo } from 'react';
 import type { AppProps } from 'next/app';
-import Head from 'next/head';
 import Layout from 'layout/Layout';
 import { SessionProvider, signOut, signIn } from 'next-auth/react';
 import Modal from 'components/Modal';
@@ -11,7 +9,6 @@ import { ModalContext, ModalConfig } from 'context/modal';
 import '@fortawesome/fontawesome-svg-core/styles.css';
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
-  const router = useRouter();
   const [modalConfig, setModalConfig] = useState<ModalConfig>({
     show: false,
     title: '',
@@ -19,10 +16,14 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   });
 
   const handleLogin = async () => {
-    signIn('keycloak', {
-      callbackUrl: '/my-dashboard',
-      redirect: true,
-    });
+    signIn(
+      'keycloak',
+      {
+        callbackUrl: '/my-dashboard',
+        redirect: true,
+      },
+      { kc_idp_hint: 'azureidir' },
+    );
   };
 
   const handleLogout = async () => {
@@ -32,8 +33,10 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     });
   };
 
+  const modalContextValue = useMemo(() => ({ modalConfig, setModalConfig }), [modalConfig]);
+
   return (
-    <ModalContext.Provider value={{ modalConfig, setModalConfig }}>
+    <ModalContext.Provider value={modalContextValue}>
       <SessionProvider session={session}>
         {modalConfig.show && <Modal modalConfig={modalConfig} setModalConfig={setModalConfig} />}
         <Layout onLoginClick={handleLogin} onLogoutClick={handleLogout}>
