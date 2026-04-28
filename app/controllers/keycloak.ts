@@ -81,8 +81,6 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
             identityProvider: userIdp,
           },
         });
-      } else {
-        azureidirRealmUser = azureidirRealmUsers[0];
       }
 
       const masterRealmUsers = await kcAdminClient.users.find({
