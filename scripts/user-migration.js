@@ -48,10 +48,7 @@ const createAzureIdirMasterUser = async (kcAdminClient, idirUser, realmAdminRole
   return azureIdirMasterUser;
 };
 
-const processIdirUser = async (kcAdminClient, realm, users, realmAdminRole) => {
-  const idirUser = users.find((u) => u.username.toLowerCase().endsWith('@idir'));
-  if (!idirUser) return;
-
+const processIdirUser = async (kcAdminClient, realm, idirUser, realmAdminRole) => {
   const idirUserRealmRoleMappings = await kcAdminClient.users.listRealmRoleMappings({
     realm: 'master',
     id: idirUser.id,
@@ -69,10 +66,44 @@ const processIdirUser = async (kcAdminClient, realm, users, realmAdminRole) => {
     await createAzureIdirRealmUser(kcAdminClient, realm, idirUser);
   }
 
-  let azureIdirMasterUser = users.find((u) => u.username.toLowerCase().endsWith('@azureidir'));
+  let azureIdirMasterUser;
 
-  if (!azureIdirMasterUser) {
+  let azureIdirMasterUsers = await kcAdminClient.users.find({
+    realm: 'master',
+    username: `${getBasename(idirUser.username)}@azureidir`,
+    max: 1,
+  });
+
+  if (!azureIdirMasterUsers || azureIdirMasterUsers.length === 0) {
     azureIdirMasterUser = await createAzureIdirMasterUser(kcAdminClient, idirUser, realmAdminRole);
+  } else {
+    azureIdirMasterUser = azureIdirMasterUsers[0];
+
+    const federatedIdentities = await kcAdminClient.users.listFederatedIdentities({
+      realm: 'master',
+      id: azureIdirMasterUser.id,
+    });
+
+    if (federatedIdentities.length > 0) {
+      for (const identity of federatedIdentities) {
+        await kcAdminClient.users.delFromFederatedIdentity({
+          realm: 'master',
+          id: azureIdirMasterUser.id,
+          federatedIdentityId: identity.identityProvider,
+        });
+      }
+    }
+
+    await kcAdminClient.users.addToFederatedIdentity({
+      realm: 'master',
+      id: azureIdirMasterUser.id,
+      federatedIdentityId: 'azureidir',
+      federatedIdentity: {
+        userId: getBasename(idirUser.username).toLowerCase(),
+        userName: getBasename(idirUser.username).toLowerCase(),
+        identityProvider: 'azureidir',
+      },
+    });
   }
 
   const azureIdirMasterUserRealmRoleMappings = await kcAdminClient.users.listRealmRoleMappings({
@@ -105,10 +136,11 @@ const processEmailForRealm = async (kcAdminClient, realm, email, realmAdminRole)
   const users = await kcAdminClient.users.find({
     realm: 'master',
     email,
+    username: '@idir',
   });
 
   if (users.length !== 0) {
-    await processIdirUser(kcAdminClient, realm, users, realmAdminRole);
+    await processIdirUser(kcAdminClient, realm, users[0], realmAdminRole);
   }
 };
 
@@ -141,7 +173,7 @@ const authenticateClient = async (kcAdminClient, env) => {
 const migrateUsers = async () => {
   const realms = JSON.parse(fs.readFileSync('./realm-users.json', 'utf-8'));
 
-  for (const env of ['dev']) {
+  for (const env of ['dev', 'test', 'prod']) {
     const envKey = `${env.toUpperCase()}_KC_URL`;
     const kcAdminClient = new KcAdminClient({
       baseUrl: `${process.env[envKey]}/auth`,
@@ -151,7 +183,7 @@ const migrateUsers = async () => {
     await authenticateClient(kcAdminClient, env);
 
     for (const realm of realms) {
-      await processRealm(kcAdminClient, realm);
+      if (realm.approved && !realm.archived && realm.status === 'applied') await processRealm(kcAdminClient, realm);
     }
   }
 };
