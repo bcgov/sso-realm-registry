@@ -13,7 +13,7 @@ import GroupRepresentation from '@keycloak/keycloak-admin-client/lib/defs/groupR
 export const removeUserAsRealmAdmin = async (emails: (string | null)[], env: string, realm: string) => {
   const kcCore = new KeycloakCore(env);
   const kcAdminClient = await kcCore.getAdminClient();
-  const definedEmails = emails.filter((name) => name) as string[];
+  const definedEmails = emails.filter(Boolean) as string[];
 
   const userPromises = definedEmails.map((email) =>
     kcAdminClient.users.find({
@@ -24,7 +24,7 @@ export const removeUserAsRealmAdmin = async (emails: (string | null)[], env: str
 
   const users = await Promise.all(userPromises);
 
-  const userIds = users.map((user) => user?.[0]?.id).filter((user) => user) as string[];
+  const userIds = users.map((user) => user?.[0]?.id).filter(Boolean) as string[];
 
   if (userIds.length === 0) {
     console.info(`No users found as admin for realm ${realm}.`);
@@ -52,7 +52,6 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
     for (const env of envs) {
       const kcCore = new KeycloakCore(env);
       const kcAdminClient = await kcCore.getAdminClient();
-      let azureidirRealmUser;
       let masterRealmUser;
       const [userGuid, userIdp] = username.toLowerCase().split('@');
 
@@ -64,7 +63,7 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
 
       if (azureidirRealmUsers.length === 0) {
         // create user in realm
-        azureidirRealmUser = await kcAdminClient.users.create({
+        const azureidirRealmUser = await kcAdminClient.users.create({
           realm: userIdp,
           username: userGuid,
           enabled: true,
@@ -319,9 +318,7 @@ export const manageCustomRealm = async (realmName: string, envs: string[], actio
         case 'restore':
           if (process.env.APP_ENV === 'production' && realm?.enabled === false) {
             await kcAdminClient.realms.update({ realm: realmName }, { enabled: true });
-          } else {
-            if (!realm) await createCustomRealm(realmName, env);
-          }
+          } else if (!realm) await createCustomRealm(realmName, env);
           break;
         default:
           throw new Error(`Invalid action: ${action}`);
