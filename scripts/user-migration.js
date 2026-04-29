@@ -111,22 +111,14 @@ const processIdirUser = async (kcAdminClient, realm, idirUser, realmAdminRole) =
     id: azureIdirMasterUser.id,
   });
 
-  const azureidirUserHasRealmAdminRole = azureIdirMasterUserRealmRoleMappings.find(
+  const azureidirMasterUserHasRealmAdminRole = azureIdirMasterUserRealmRoleMappings.find(
     (role) => role.id === realmAdminRole?.id,
   );
 
-  if (!azureidirUserHasRealmAdminRole) {
+  if (!azureidirMasterUserHasRealmAdminRole) {
     await kcAdminClient.users.addRealmRoleMappings({
       realm: 'master',
       id: azureIdirMasterUser.id,
-      roles: [{ id: realmAdminRole?.id, name: realmAdminRole?.name }],
-    });
-  }
-
-  if (idirUserHasRealmAdminRole) {
-    await kcAdminClient.users.delRealmRoleMappings({
-      realm: 'master',
-      id: idirUser.id,
       roles: [{ id: realmAdminRole?.id, name: realmAdminRole?.name }],
     });
   }
