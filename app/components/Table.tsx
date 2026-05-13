@@ -10,11 +10,11 @@ import type { ColumnDef } from '@tanstack/react-table';
 import Pagination from 'react-bootstrap/Pagination';
 import styled from 'styled-components';
 import Select from 'react-select';
-import Grid from '@button-inc/bcgov-theme/Grid';
 import StyledTable from 'html-components/Table';
 import { useState } from 'react';
 import { rankItem } from '@tanstack/match-sorter-utils';
 import SearchBar from './SearchBar';
+import { Row, Col } from 'react-bootstrap';
 
 const StyledPagination = styled(Pagination)`
   margin: 0 !important;
@@ -119,45 +119,43 @@ const Table = <T extends object>({ data, columns, noDataFoundMessage = 'no data 
           )}
         </tbody>
       </StyledTable>
-      <Grid cols={12}>
-        <Grid.Row collapse="992" gutter={[]} align="center">
-          <Grid.Col span={8}>
-            <StyledPagination>
-              <Pagination.Item
-                key="prev"
-                disabled={!table.getCanPreviousPage()}
-                onClick={() => {
-                  table.previousPage();
-                }}
-              >
-                Previous
-              </Pagination.Item>
-              <Pagination.Item
-                key="next"
-                disabled={!table.getCanNextPage()}
-                onClick={() => {
-                  table.nextPage();
-                }}
-              >
-                Next
-              </Pagination.Item>
-              <PageInfo>{`${table.getState().pagination.pageIndex + 1} of ${table.getPageCount()}`}</PageInfo>
-            </StyledPagination>
-          </Grid.Col>
-          <Grid.Col span={4}>
-            <div style={{ textAlign: 'right' }} data-testid="page-select">
-              <StyledSelect
-                menuPosition="fixed"
-                value={table.getState().pagination.pageSize}
-                options={numOfItemsPerPage()}
-                onChange={(e: any) => {
-                  table.setPageSize(Number(e.value));
-                }}
-              ></StyledSelect>
-            </div>
-          </Grid.Col>
-        </Grid.Row>
-      </Grid>
+      <Row>
+        <Col span={8}>
+          <StyledPagination>
+            <Pagination.Item
+              key="prev"
+              disabled={!table.getCanPreviousPage()}
+              onClick={() => {
+                table.previousPage();
+              }}
+            >
+              Previous
+            </Pagination.Item>
+            <Pagination.Item
+              key="next"
+              disabled={!table.getCanNextPage()}
+              onClick={() => {
+                table.nextPage();
+              }}
+            >
+              Next
+            </Pagination.Item>
+            <PageInfo>{`${table.getState().pagination.pageIndex + 1} of ${table.getPageCount()}`}</PageInfo>
+          </StyledPagination>
+        </Col>
+        <Col span={4}>
+          <div style={{ textAlign: 'right' }} data-testid="page-select">
+            <StyledSelect
+              menuPosition="fixed"
+              value={table.getState().pagination.pageSize}
+              options={numOfItemsPerPage()}
+              onChange={(e: any) => {
+                table.setPageSize(Number(e.value));
+              }}
+            ></StyledSelect>
+          </div>
+        </Col>
+      </Row>
     </>
   );
 };

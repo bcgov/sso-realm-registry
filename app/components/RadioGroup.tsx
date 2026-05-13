@@ -1,6 +1,15 @@
-import React, { useState } from 'react';
 import styled from 'styled-components';
-import RadioButton from '@button-inc/bcgov-theme/RadioButton';
+
+const RadioButton = ({ label, name, onChange }: { label: string; name: string; onChange: () => void }) => {
+  return (
+    <div>
+      <input type="radio" id={`${name}-${label}`} name={name} onChange={onChange} />
+      <label htmlFor={`${name}-${label}`} className="px-1">
+        {label}
+      </label>
+    </div>
+  );
+};
 
 const HoritonzalRadioButton = styled(RadioButton)`
   display: inline-block;
@@ -15,22 +24,20 @@ interface RadioGroupOptions {
 interface Props {
   groupId: string;
   options: RadioGroupOptions[];
-  direction: 'horizontal' | 'vertical';
   onChange: (v1: string, v2: string) => void;
   style?: any;
+  direction?: 'horizontal' | 'vertical';
 }
 
-function RadioGroup({ groupId, options, direction, onChange, style = {} }: Props) {
+function RadioGroup({ groupId, options, onChange, direction, style = {} }: Props) {
   const handleChange = (value: string) => {
     onChange(groupId, value);
   };
 
-  const Radio = direction === 'horizontal' ? HoritonzalRadioButton : RadioButton;
-
   return (
-    <div style={{ display: direction === 'horizontal' ? 'inline-block' : 'block', ...style }}>
+    <div style={{ display: 'flex', flexDirection: direction === 'horizontal' ? 'row' : 'column', ...style }}>
       {options.map(({ name, value }) => {
-        return <Radio key={value} label={name} name={groupId} onChange={() => handleChange(value)} />;
+        return <RadioButton key={value} label={name} name={groupId} onChange={() => handleChange(value)} />;
       })}
     </div>
   );

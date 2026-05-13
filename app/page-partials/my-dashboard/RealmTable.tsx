@@ -1,10 +1,11 @@
 import React from 'react';
 import { RealmProfile } from 'types/realm-profile';
-import Link from '@button-inc/bcgov-theme/Link';
 import { StatusEnum } from 'validators/create-realm';
 import { ActionButton } from 'components/ActionButton';
-import { faEdit, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faExternalLink, faEye } from '@fortawesome/free-solid-svg-icons';
 import { Table } from '@bcgov-sso/common-react-components';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Link from 'components/Link';
 
 interface Props {
   realms: RealmProfile[];
@@ -56,9 +57,11 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
     {
       header: 'Rocket Chat Channel',
       cell: (row: any) => (
-        <Link href={row.renderValue() as string} external>
-          Link
-        </Link>
+        <div style={{ color: 'blue', fontSize: '1rem', textDecoration: 'underline' }}>
+          <Link external href={row.renderValue() as string} title="Rocket Chat Channel">
+            Link
+          </Link>
+        </div>
       ),
       accessorKey: 'rcChannel',
       enableColumnFilter: false,

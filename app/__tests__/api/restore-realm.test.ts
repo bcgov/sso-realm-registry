@@ -62,7 +62,7 @@ const realm = {
   purpose: 'purpose',
   primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
   environments: ['dev', 'test', 'prod'],
-  preferredAdminLoginMethod: 'idir',
+  preferredAdminLoginMethod: 'azureidir',
   productOwnerEmail: PO_EMAIL,
   productOwnerIdirUserId: 'po',
   technicalContactEmail: TECHNICAL_CONTACT_EMAIL,

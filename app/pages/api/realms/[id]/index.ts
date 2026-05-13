@@ -5,7 +5,7 @@ import { RoleEnum, adminOnlyFields, checkAdminRole, createEvent, getUpdatedPrope
 import prisma from 'utils/prisma';
 import { EventEnum, StatusEnum, getUpdateRealmSchemaByRole } from 'validators/create-realm';
 import { ValidationError } from 'yup';
-import omit from 'lodash.omit';
+import { omit } from 'lodash';
 import {
   offboardRealmAdmin,
   onboardNewRealmAdmin,
@@ -14,7 +14,7 @@ import {
   sendUpdateEmail,
 } from 'utils/mailer';
 import { addUserAsRealmAdmin, manageCustomRealm, removeUserAsRealmAdmin } from 'controllers/keycloak';
-import { generateXML, makeSoapRequest, getBceidAccounts } from 'utils/idir';
+import { fetchIdirUser } from 'controllers/msal';
 
 interface ErrorData {
   success: boolean;
@@ -40,13 +40,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (isAdmin) {
         roster = await prisma.roster.findUnique({
           where: {
-            id: parseInt(id as string, 10),
+            id: Number.parseInt(id as string, 10),
           },
         });
       } else {
         roster = await prisma.roster.findUnique({
           where: {
-            id: parseInt(id as string, 10),
+            id: Number.parseInt(id as string, 10),
             OR: [
               {
                 technicalContactIdirUserId: {
@@ -80,15 +80,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       let updatingApprovalStatus = false;
       let allEnvRealmsCreated = false;
 
-      const omitFieldsBeforeApplied = [
-        'productOwnerEmail',
-        'productOwnerIdirUserId',
-        'technicalContactIdirUserId',
-        'technicalContactEmail',
-        'secondTechnicalContactEmail',
-        'secondTechnicalContactIdirUserId',
-      ];
-
       try {
         let lastUpdatedBy = `${session.user.family_name}, ${session.user.given_name}`;
 
@@ -100,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
         currentRequest = await prisma.roster.findUnique({
           where: {
-            id: parseInt(req.query.id as string, 10),
+            id: Number.parseInt(req.query.id as string, 10),
           },
         });
 
@@ -138,21 +129,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           ) {
             updatingApprovalStatus = true;
             await createEvent({
-              realmId: parseInt(req.query.id as string, 10),
+              realmId: Number.parseInt(req.query.id as string, 10),
               eventCode: EventEnum.REQUEST_APPROVE_SUCCESS,
               idirUserId: username,
               details: req.body,
             });
 
             try {
-              await manageCustomRealm(currentRequest?.realm!, currentRequest.environments, 'create');
+              await manageCustomRealm(currentRequest?.realm, currentRequest.environments, 'create');
               allEnvRealmsCreated = true;
             } catch (err) {
               console.error('Error creating custom realm', err);
             }
 
             await createEvent({
-              realmId: parseInt(req.query.id as string, 10),
+              realmId: Number.parseInt(req.query.id as string, 10),
               eventCode: allEnvRealmsCreated ? EventEnum.REQUEST_APPLY_SUCCESS : EventEnum.REQUEST_APPLY_FAILED,
               idirUserId: username,
               details: req.body,
@@ -165,19 +156,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               if (allEnvRealmsCreated) {
                 [currentRequest?.productOwnerIdirUserId, currentRequest?.technicalContactIdirUserId].forEach(
                   async (idirUserId) => {
-                    const samlPayload = generateXML(
-                      'userId',
-                      idirUserId as string,
-                      process.env.IDIR_REQUESTOR_USER_GUID ?? '',
-                    );
-                    const { response }: any = await makeSoapRequest(samlPayload);
-                    const accounts = await getBceidAccounts(response);
+                    const user = await fetchIdirUser({ userId: String(idirUserId) });
 
-                    if (accounts.length > 0) {
+                    if (user) {
                       await addUserAsRealmAdmin(
-                        `${accounts[0].guid}@idir`,
-                        currentRequest?.environments!,
-                        currentRequest?.realm!,
+                        `${user.guid.toLowerCase()}@azureidir`,
+                        currentRequest?.environments,
+                        currentRequest?.realm,
                       );
                     } else {
                       console.error(`No guid found for user ${String(idirUserId)}`);
@@ -197,7 +182,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           ) {
             updatingApprovalStatus = true;
             await createEvent({
-              realmId: parseInt(req.query.id as string, 10),
+              realmId: Number.parseInt(req.query.id as string, 10),
               eventCode: EventEnum.REQUEST_REJECT_SUCCESS,
               idirUserId: username,
               details: req.body,
@@ -211,7 +196,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
           updatedRealm = await prisma.roster.update({
             where: {
-              id: parseInt(req.query.id as string, 10),
+              id: Number.parseInt(req.query.id as string, 10),
             },
             data: {
               ...updateRequest,
@@ -221,7 +206,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         } else {
           updatedRealm = await prisma.roster.update({
             where: {
-              id: parseInt(req.query.id as string, 10),
+              id: Number.parseInt(req.query.id as string, 10),
               OR: [
                 {
                   technicalContactIdirUserId: {
@@ -251,7 +236,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         }
 
         await createEvent({
-          realmId: parseInt(req.query.id as string, 10),
+          realmId: Number.parseInt(req.query.id as string, 10),
           eventCode: EventEnum.REQUEST_UPDATE_SUCCESS,
           idirUserId: username,
           details: getUpdatedProperties(currentRequest, updatedRealm),
@@ -269,11 +254,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           await onboardNewRealmAdmin(
             session,
             updatedRealm,
-            currentRequest.productOwnerEmail!,
+            currentRequest.productOwnerEmail,
             updatedRealm.productOwnerEmail,
             typeOfContactUpdate,
           );
-          await offboardRealmAdmin(session, updatedRealm, currentRequest.productOwnerEmail!, typeOfContactUpdate);
+          await offboardRealmAdmin(session, updatedRealm, currentRequest.productOwnerEmail, typeOfContactUpdate);
         }
 
         if (
@@ -285,21 +270,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           await onboardNewRealmAdmin(
             session,
             updatedRealm,
-            currentRequest.technicalContactEmail!,
+            currentRequest.technicalContactEmail,
             updatedRealm.technicalContactEmail,
             typeOfContactUpdate,
           );
-          await offboardRealmAdmin(session, updatedRealm, currentRequest.technicalContactEmail!, typeOfContactUpdate);
+          await offboardRealmAdmin(session, updatedRealm, currentRequest.technicalContactEmail, typeOfContactUpdate);
         }
         // emails
         await sendUpdateEmail(updatedRealm, session, updatingApprovalStatus);
         if (isAdmin && updatingApprovalStatus && updatedRealm.approved && allEnvRealmsCreated)
-          await sendReadyToUseEmail(currentRequest!);
+          await sendReadyToUseEmail(currentRequest);
 
         return res.send(updatedRealm);
       } catch (err) {
         await createEvent({
-          realmId: parseInt(req.query.id as string, 10),
+          realmId: Number.parseInt(req.query.id as string, 10),
           eventCode: EventEnum.REQUEST_UPDATE_FAILED,
           idirUserId: username,
           details: getUpdatedProperties(currentRequest, updatedRealm),
@@ -317,7 +302,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       try {
         const realm = await prisma.roster.findUnique({
           where: {
-            id: parseInt(id as string, 10),
+            id: Number.parseInt(id as string, 10),
             archived: false,
           },
         });
@@ -337,12 +322,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             status: allEnvRealmsDeleted ? StatusEnum.APPLIED : StatusEnum.APPLYFAILED,
           },
           where: {
-            id: parseInt(id as string, 10),
+            id: Number.parseInt(id as string, 10),
           },
         });
 
         await createEvent({
-          realmId: parseInt(req.query.id as string, 10),
+          realmId: Number.parseInt(req.query.id as string, 10),
           eventCode: allEnvRealmsDeleted ? EventEnum.REQUEST_DELETE_SUCCESS : EventEnum.REQUEST_DELETE_FAILED,
           idirUserId: username,
           details: req.body,
@@ -367,12 +352,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       } catch (err) {
         console.error(err);
         await createEvent({
-          realmId: parseInt(req.query.id as string, 10),
+          realmId: Number.parseInt(req.query.id as string, 10),
           eventCode: EventEnum.REQUEST_DELETE_FAILED,
           idirUserId: username,
           details: req.body,
         });
-        throw Error(`Failed to delete realm with id ${id}`);
+        throw new Error(`Failed to delete realm with id ${id}`);
       }
     } else {
       return res.status(405).json({ success: false, error: 'Not allowed' });

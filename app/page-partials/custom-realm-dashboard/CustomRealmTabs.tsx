@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import React, { useEffect, useState } from 'react';
-import Button from '@button-inc/bcgov-theme/Button';
 import { getRealmEvents } from 'services/events';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { Event } from 'types/event';
@@ -221,10 +220,12 @@ function CutsomRealmTabs({ selectedRow, handleRequestStatusChange, lastUpdateTim
             <>
               <p>To begin the approval process for this Custom Realm, click below.</p>
               <div className="button-container">
-                <Button onClick={() => handleRequestStatusChange('approved', selectedRow)}>Approve Custom Realm</Button>
-                <Button variant="secondary" onClick={() => handleRequestStatusChange('declined', selectedRow)}>
+                <button onClick={() => handleRequestStatusChange('approved', selectedRow)} className="primary">
+                  Approve Custom Realm
+                </button>
+                <button className="secondary" onClick={() => handleRequestStatusChange('declined', selectedRow)}>
                   Decline Custom Realm
-                </Button>
+                </button>
               </div>
             </>
           ) : (

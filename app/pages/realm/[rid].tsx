@@ -120,7 +120,7 @@ function EditRealm({ realm: initialRealm, alert }: { realm: CustomRealmFormData;
 
   return (
     <Container rules={mediaRules}>
-      <h1>Edit Realm Information</h1>
+      <h2>Edit Realm Information</h2>
       <RealmForm
         formData={realm}
         setFormData={setRealm}

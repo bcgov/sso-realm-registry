@@ -18,24 +18,10 @@ export interface MediaRule {
 }
 
 export const defaultRules: MediaRule[] = [
-  {
-    maxWidth: 767,
-    marginTop: 10,
-  },
-  {
-    maxWidth: 991,
-    width: 723,
-    marginTop: 20,
-  },
-  {
-    maxWidth: 1199,
-    width: 933,
-    marginTop: 50,
-  },
-  {
-    width: 1127,
-    marginTop: 80,
-  },
+  { maxWidth: 767, marginTop: 10 },
+  { maxWidth: 991, width: 723, marginTop: 20 },
+  { maxWidth: 1199, width: 933, marginTop: 50 },
+  { width: 1127, marginTop: 80 },
 ];
 
 const getHorizontalMarginStyle = (
@@ -68,7 +54,7 @@ const getHorizontalMarginStyle = (
 const Container = styled.div<{ rules: MediaRule[] }>`
   display: block;
   max-width: 100% !important;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
 
   ${(props) =>

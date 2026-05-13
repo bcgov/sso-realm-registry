@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import Alert from '@button-inc/bcgov-theme/Alert';
+import Alert from 'react-bootstrap/Alert';
 
 interface props {
   variant?: string;
@@ -11,13 +10,13 @@ interface props {
   children?: React.ReactNode;
 }
 
-const FadingAlert = ({ children, variant, size, closable, content, fadeOut }: props) => {
-  const [faded, setFaded] = useState(false);
+const FadingAlert = ({ children, variant, size, closable, fadeOut }: props) => {
+  const [show, setShow] = useState(true);
 
   useEffect(() => {
     const timeout = fadeOut
       ? setTimeout(() => {
-          setFaded(true);
+          setShow(false);
         }, fadeOut)
       : null;
 
@@ -26,10 +25,16 @@ const FadingAlert = ({ children, variant, size, closable, content, fadeOut }: pr
     };
   }, []);
 
-  if (faded) return null;
+  if (!show) return null;
 
   return (
-    <Alert variant={variant} size={size} closable={closable} content={content}>
+    <Alert
+      variant={variant}
+      onClose={() => setShow(false)}
+      className="mb-0"
+      style={{ color: '#a12622' }}
+      dismissible={closable}
+    >
       {children}
     </Alert>
   );
