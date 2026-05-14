@@ -76,13 +76,7 @@ const productOwnerAllowedFields = [
   'productOwnerIdirUserId',
 ];
 
-const adminAllowedFields = [
-  ...productOwnerAllowedFields,
-  'rcChannel',
-  'rcChannelOwnedBy',
-  'materialToSend',
-  'approved',
-];
+const adminAllowedFields = [...productOwnerAllowedFields, 'materialToSend', 'approved'];
 
 const allFields = Object.keys(CustomRealmProfiles[0]);
 const technicalContactRestrictedFields = allFields.filter((field) => !technicalContactAllowedFields.includes(field));

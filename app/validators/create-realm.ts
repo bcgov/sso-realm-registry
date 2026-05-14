@@ -97,8 +97,6 @@ export const getUpdateRealmSchemaByRole = (role: string = '') => {
         .object()
         .shape({
           approved: yup.string().optional().nullable(),
-          rcChannel: yup.string().optional().nullable(),
-          rcChannelOwnedBy: yup.string().optional().nullable(),
           materialToSend: yup.string().optional().nullable(),
         })
         .concat(productOwnerFields);
