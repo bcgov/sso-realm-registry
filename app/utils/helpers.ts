@@ -32,7 +32,7 @@ export const allowedPoFields: string[] = allowedTechContactFields.concat([
 
 export const allowedFormFields: string[] = allowedPoFields.concat(['realm', 'environments', 'purpose']);
 
-export const adminOnlyFields: string[] = ['rcChannel', 'rcChannelOwnedBy', 'materialToSend'];
+export const adminOnlyFields: string[] = ['materialToSend'];
 
 export const checkAdminRole = (user: any) => {
   const roles = user?.client_roles || [];

@@ -72,4 +72,8 @@ CREATE TABLE IF NOT EXISTS
         details jsonb,
         PRIMARY KEY (id),
         CONSTRAINT fk_realm_id FOREIGN KEY (realm_id) REFERENCES public.rosters (id) ON DELETE CASCADE
-    )
+    );
+
+ ALTER TABLE public.rosters
+   DROP COLUMN IF EXISTS rc_channel,
+   DROP COLUMN IF EXISTS rc_channel_owned_by;
