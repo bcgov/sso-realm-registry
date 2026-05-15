@@ -2,6 +2,7 @@ import { sendEmail } from 'utils/ches';
 import { Session } from 'next-auth';
 import { Roster } from '@prisma/client';
 import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv, formatWikiURL } from './helpers';
+import { MICROSOFT_TEAMS_CHANNEL_LINK } from './constants';
 
 const subjectPrefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
 export const ssoTeamEmail = 'bcgov.sso@gov.bc.ca';
@@ -63,7 +64,7 @@ const emailFooter = `
                 <path d="M6.50928 13H6.51828M10 13H10.009M13.491 13H13.5" stroke="#0e3468" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            <a href="https://chat.developer.gov.bc.ca/channel/sso" style="padding-left: 4px; color: #0e3468;">Rocket.Chat</a>
+            <a href="${MICROSOFT_TEAMS_CHANNEL_LINK}" style="padding-left: 4px; color: #0e3468;">Our Microsoft Teams Channel.</a>
         </div>
         <div style="display: flex; align-items: center; ">
             <svg width="22px" height="22px" viewBox="0 0 32 32" enable-background="new 0 0 32 32" id="Stock_cut"
@@ -412,7 +413,7 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
                 </ol>
               </li>
             </ol>
-            <p>If you have any questions or require further assistance, feel free to reach out to us by Rocket.Chat or email at: <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a></p>
+            <p>If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at: <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a></p>
             </main>
           ${emailFooter}
           `,
@@ -514,7 +515,7 @@ export const onboardNewRealmAdmin = async (
           </li>
         </ol>
         <p>
-          If you have any questions or require further assistance, feel free to reach out to us by Rocket.Chat or email at:
+          If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at:
           <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
         </p>
         ${emailFooter}
@@ -556,7 +557,7 @@ export const offboardRealmAdmin = async (session: Session, realm: Roster, oldCon
           </li>
         </ol>
         <p>
-          If you have any questions or require further assistance, feel free to reach out to us by Rocket.Chat or email at:
+          If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at:
           <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
         </p>
         ${emailFooter}
