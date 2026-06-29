@@ -46,8 +46,6 @@ export interface CustomRealmFormData {
   secondTechnicalContactIdirUserId: string;
   secondTechnicalContactEmail: string;
   approved?: boolean | null;
-  rcChannel?: string;
-  rcChannelOwnedBy?: string;
   materialToSend?: string;
   status?: Status;
   archived?: boolean;

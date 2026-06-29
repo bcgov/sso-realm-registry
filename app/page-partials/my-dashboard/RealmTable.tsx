@@ -5,7 +5,6 @@ import { ActionButton } from 'components/ActionButton';
 import { faEdit, faExternalLink, faEye } from '@fortawesome/free-solid-svg-icons';
 import { Table } from '@bcgov-sso/common-react-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Link from 'components/Link';
 
 interface Props {
   realms: RealmProfile[];
@@ -51,19 +50,6 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
     {
       header: 'Second Technical Contact',
       accessorKey: 'secondTechnicalContact',
-      enableColumnFilter: false,
-      enableSorting: false,
-    },
-    {
-      header: 'Rocket Chat Channel',
-      cell: (row: any) => (
-        <div style={{ color: 'blue', fontSize: '1rem', textDecoration: 'underline' }}>
-          <Link external href={row.renderValue() as string} title="Rocket Chat Channel">
-            Link
-          </Link>
-        </div>
-      ),
-      accessorKey: 'rcChannel',
       enableColumnFilter: false,
       enableSorting: false,
     },
@@ -122,8 +108,6 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
               ? `${r.secondTechnicalContactEmail} (${r.secondTechnicalContactIdirUserId})`
               : '',
             status: getStatus(r.status, r.approved),
-            rcChannel: r.rcChannel,
-            rcChannelOwnedBy: r.rcChannelOwnedBy,
             approved: r.approved,
           };
         })}

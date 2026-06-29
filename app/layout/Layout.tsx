@@ -12,6 +12,7 @@ import { formatWikiURL } from 'utils/helpers';
 import { useIdleTimer } from 'react-idle-timer';
 import { ModalContext } from 'context/modal';
 import { Nav } from 'react-bootstrap';
+import { MICROSOFT_TEAMS_CHANNEL_LINK } from 'utils/constants';
 import {
   NAV_APP_BAR_TEXT_COLOR,
   NAV_APP_BAR_MENU_ITEM_DIVIDER_COLOR,
@@ -157,7 +158,7 @@ const RightMenuItems = () => (
   <>
     <li style={{ margin: '5px 0', color: '#fff' }}>Need help?</li>
     <HoverItem>
-      <a href="https://chat.developer.gov.bc.ca/channel/sso" target="_blank" title="Rocket Chat">
+      <a href={MICROSOFT_TEAMS_CHANNEL_LINK} target="_blank" title="Our Microsoft Teams Channel.">
         <FontAwesomeIcon size="2x" icon={faCommentDots} />
       </a>
     </HoverItem>
@@ -277,8 +278,8 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
 
     const helpLinks = [
       {
-        href: 'https://chat.developer.gov.bc.ca/channel/sso',
-        title: 'Rocket Chat',
+        href: MICROSOFT_TEAMS_CHANNEL_LINK,
+        title: 'Our Microsoft Teams Channel.',
         icon: faCommentDots,
       },
       {

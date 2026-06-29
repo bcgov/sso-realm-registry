@@ -215,8 +215,6 @@ describe('Form Validation', () => {
     expect(inputs.secondTechContactEmailInput!.disabled).toBe(false);
     expect(inputs.secondTechContactIdirInput.disabled).toBe(true);
 
-    expect(screen.queryByTestId('rc-channel-input', { exact: false })).toBeNull();
-    expect(screen.queryByTestId('rc-channel-owner-input', { exact: false })).toBeNull();
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).toBeNull();
   });
 
@@ -246,8 +244,6 @@ describe('Form Validation', () => {
     expect(inputs.secondTechContactEmailInput!.disabled).toBe(false);
     expect(inputs.secondTechContactIdirInput.disabled).toBe(true);
 
-    expect(screen.queryByTestId('rc-channel-input', { exact: false })).toBeNull();
-    expect(screen.queryByTestId('rc-channel-owner-input', { exact: false })).toBeNull();
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).toBeNull();
   });
 
@@ -277,8 +273,6 @@ describe('Form Validation', () => {
     expect(inputs.secondTechContactEmailInput!.disabled).toBe(false);
     expect(inputs.secondTechContactIdirInput.disabled).toBe(true);
 
-    expect(screen.queryByTestId('rc-channel-input', { exact: false })).not.toBeNull();
-    expect(screen.queryByTestId('rc-channel-owner-input', { exact: false })).not.toBeNull();
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).not.toBeNull();
   });
 });

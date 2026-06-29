@@ -616,36 +616,6 @@ export default function RealmForm({
 
         {/* Below fields hidden instead of disabled if not in schema */}
 
-        {schemaFields.includes('rcChannel') && (
-          <div className="input-wrapper first-col">
-            <label htmlFor="rcChannel">Rocket.Chat Channel</label>
-            <input
-              id="rcChannel"
-              data-testid="rc-channel-input"
-              type="text"
-              placeholder="Rocket.Chat Channel"
-              value={formData.rcChannel}
-              name="rcChannel"
-              onChange={handleFormInputChange}
-            />
-          </div>
-        )}
-
-        {schemaFields.includes('rcChannelOwnedBy') && (
-          <div className="input-wrapper second-col">
-            <label htmlFor="rcChannelOwnedBy">Rocket.Chat Channel Owner</label>
-            <input
-              type="text"
-              id="rcChannelOwnedBy"
-              data-testid="rc-channel-owner-input"
-              placeholder="Rocket.Chat Channel Owner"
-              value={formData.rcChannelOwnedBy}
-              name="rcChannelOwnedBy"
-              onChange={handleFormInputChange}
-            />
-          </div>
-        )}
-
         {schemaFields.includes('materialToSend') && (
           <div className="input-wrapper first-col">
             <label htmlFor="materialToSend">SSO team notes</label>
