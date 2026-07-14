@@ -1,10 +1,7 @@
 import prisma from './prisma';
 import { diff } from 'deep-diff';
 
-export const formatWikiURL = (page?: string) =>
-  `https://mvp.developer.gov.bc.ca/docs/default/component/css-docs/${
-    page ?? ''
-  }?utm_source=sso-wiki&utm_medium=web&utm_campaign=retirement-notice-sso`;
+export const formatDocURL = (page?: string) => `https://bcgov.github.io/sso-docs/${page ?? ''}`;
 
 export enum RoleEnum {
   ADMIN = 'admin',
