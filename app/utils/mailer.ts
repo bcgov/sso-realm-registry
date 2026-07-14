@@ -1,7 +1,7 @@
 import { sendEmail } from 'utils/ches';
 import { Session } from 'next-auth';
 import { Roster } from '@prisma/client';
-import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv, formatWikiURL } from './helpers';
+import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv, formatDocURL } from './helpers';
 import { MICROSOFT_TEAMS_CHANNEL_LINK } from './constants';
 
 const subjectPrefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
@@ -106,7 +106,7 @@ const emailFooter = `
                         stroke="#0e3468" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </g>
             </svg>
-            <a href="${formatWikiURL()}" style="padding-left: 4px; color: #0e3468;">Knowledge Base</a>
+            <a href="${formatDocURL()}" style="padding-left: 4px; color: #0e3468;">Knowledge Base</a>
         </div>
         <div style="display: flex; align-items: center;">
             <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -342,7 +342,7 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
                 </ul>
               </li>
               <li>
-                <p>You must have your identity provider configured. Please follow these <a href="https://stackoverflow.developer.gov.bc.ca/questions/864">instructions</a></strong></p>
+                <p>You must have your identity provider configured. Please follow these <a href="https://bcgov.github.io/sso-docs/advanced/custom-realms/guides/setup-idps-mappers">instructions</a></strong></p>
               </li>
               <li>
                 <p> User friendly URLS and configure additional realm admins. To add yourself and others as realm admins via a user friendly url:</p>
