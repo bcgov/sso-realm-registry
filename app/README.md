@@ -2,6 +2,31 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
+### Step 0: Running Keycloak for Realm Registy
+
+For a convenient local development environment, there is a docker compose file in the [local-keycloak folder](../local-keycloak/) that runs 3 keycloak instances for the Realm Registries app to run against. This can be run using the usual docker compose commands:
+
+```
+docker-compose build
+docker-compose up
+```
+
+Note that to connect to the local keycloak instances the following env must be set:
+
+```
+DEV_KC_URL=http://localhost:9080
+DEV_KC_USERNAME=admin
+DEV_KC_PASSWORD=admin
+TEST_KC_URL=http://localhost:9081
+TEST_KC_USERNAME=admin
+TEST_KC_PASSWORD=admin
+PROD_KC_URL=http://localhost:9082
+PROD_KC_USERNAME=admin
+PROD_KC_PASSWORD=admin
+```
+
+### Running the local Realm Registry app
+
 In the app folder run:
 
 Run `make local-setup`

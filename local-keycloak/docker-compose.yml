@@ -1,0 +1,96 @@
+services:
+  sso-db:
+    image: postgres:13
+    container_name: sso-db
+    expose:
+      - 5431
+    ports:
+      - 5431:5431
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGPORT: 5431
+    volumes:
+      - ./local/database-init.sql:/docker-entrypoint-initdb.d/database-init.sql
+      - ./.bin/db-setup.sh:/docker-entrypoint-initdb.d/init-user-db.sh
+      - sso-requests-data:/var/lib/postgresql/data
+    networks:
+      - css-net
+
+  dev-keycloak:
+    container_name: dev-keycloak
+    image: ghcr.io/bcgov/sso:7.6.39-build.2
+    depends_on:
+      - sso-db
+    ports:
+      - 9080:9080
+    environment:
+      DB_POSTGRESQL_SERVICE_HOST: sso-db
+      DB_POSTGRESQL_SERVICE_PORT: 5431
+      DB_USERNAME: keycloak
+      DB_PASSWORD: keycloak
+      DB_DATABASE: keycloak
+      SSO_ADMIN_USERNAME: admin
+      SSO_ADMIN_PASSWORD: admin
+      TZ: America/Vancouver
+      JAVA_OPTS_APPEND: '-Djboss.socket.binding.port-offset=1000 -Djboss.persistent.log.dir=/opt/eap'
+      KC_HEALTH_ENABLED: 'true'
+    networks:
+      css-net:
+        aliases: ['dev-keycloak.localtest.me']
+
+  test-keycloak:
+    container_name: test-keycloak
+    image: ghcr.io/bcgov/sso:7.6.39-build.2
+    depends_on:
+      - sso-db
+    ports:
+      - 9081:9081
+    environment:
+      DB_POSTGRESQL_SERVICE_HOST: sso-db
+      DB_POSTGRESQL_SERVICE_PORT: 5431
+      DB_USERNAME: keycloak
+      DB_PASSWORD: keycloak
+      DB_DATABASE: keycloak-test
+      SSO_ADMIN_USERNAME: admin
+      SSO_ADMIN_PASSWORD: admin
+      TZ: America/Vancouver
+      JAVA_OPTS_APPEND: '-Djboss.socket.binding.port-offset=1001 -Djboss.persistent.log.dir=/opt/eap'
+      KC_HEALTH_ENABLED: 'true'
+    networks:
+      css-net:
+        aliases: ['test-keycloak.localtest.me']
+
+  prod-keycloak:
+    container_name: prod-keycloak
+    image: ghcr.io/bcgov/sso:7.6.39-build.2
+    depends_on:
+      - sso-db
+    ports:
+      - 9082:9082
+    environment:
+      DB_POSTGRESQL_SERVICE_HOST: sso-db
+      DB_POSTGRESQL_SERVICE_PORT: 5431
+      DB_USERNAME: keycloak
+      DB_PASSWORD: keycloak
+      DB_DATABASE: keycloak-prod
+      SSO_ADMIN_USERNAME: admin
+      SSO_ADMIN_PASSWORD: admin
+      TZ: America/Vancouver
+      JAVA_OPTS_APPEND: '-Djboss.socket.binding.port-offset=1002 -Djboss.persistent.log.dir=/opt/eap'
+      KC_HEALTH_ENABLED: 'true'
+    networks:
+      css-net:
+        aliases: ['prod-keycloak.localtest.me']
+
+volumes:
+  sso-requests-data:
+    driver: local
+  sso-kc-terraform-dev:
+    driver: local
+  sso-kc-terraform-test:
+    driver: local
+  sso-kc-terraform-prod:
+    driver: local
+networks:
+  css-net: {}
