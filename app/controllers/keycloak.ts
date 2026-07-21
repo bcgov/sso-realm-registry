@@ -54,7 +54,7 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
     let masterRealmUser;
     const [userGuid, userIdp] = username.toLowerCase().split('@');
 
-    let azureidirRealmUsers = await kcAdminClient.users.find({
+    const azureidirRealmUsers = await kcAdminClient.users.find({
       realm: userIdp,
       username: userGuid,
       max: 1,
@@ -99,11 +99,11 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
       await kcAdminClient.users.addToFederatedIdentity({
         realm: 'master',
         id: masterRealmUser.id,
-        federatedIdentityId: 'azureidir',
+        federatedIdentityId: userIdp,
         federatedIdentity: {
           userId: userGuid,
           userName: userGuid,
-          identityProvider: 'azureidir',
+          identityProvider: userIdp,
         },
       });
     } else {
