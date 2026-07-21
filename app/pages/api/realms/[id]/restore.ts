@@ -73,7 +73,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     try {
       if (allEnvRealmsRestored) {
         for (const idirUserId of [realm?.productOwnerIdirUserId, realm?.technicalContactIdirUserId]) {
-          const samlPayload = generateXML('userId', idirUserId as string, process.env.IDIR_REQUESTOR_USER_GUID ?? '');
+          if (!idirUserId) {
+            const msg = `Missing IDIR user ID on realm ${realm?.realm} during restore`;
+            console.error(msg);
+            await sendKeycloakErrorEmail(realm?.realm!, `add realm admin on restore`, msg);
+            continue;
+          }
+          const samlPayload = generateXML('userId', idirUserId, process.env.IDIR_REQUESTOR_USER_GUID ?? '');
           const { response }: any = await makeSoapRequest(samlPayload);
           const accounts = await getBceidAccounts(response);
 

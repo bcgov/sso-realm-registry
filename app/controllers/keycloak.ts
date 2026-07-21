@@ -112,7 +112,11 @@ export const addUserAsRealmAdmin = async (username: string, envs: string[], real
 
     const role = await kcAdminClient.roles.findOneByName({ realm: 'master', name: `${realmName}-realm-admin` });
 
-    const roleMapping: RoleMappingPayload = { id: role?.id as string, name: role?.name as string };
+    if (!role?.id || !role?.name) {
+      throw new Error(`Realm admin role '${realmName}-realm-admin' not found in master realm`);
+    }
+
+    const roleMapping: RoleMappingPayload = { id: role.id, name: role.name };
 
     await kcAdminClient.users.addRealmRoleMappings({
       realm: 'master',

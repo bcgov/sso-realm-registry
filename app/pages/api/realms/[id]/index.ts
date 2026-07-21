@@ -155,28 +155,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
             try {
               if (allEnvRealmsCreated) {
+                const { realm: realmName, environments } = currentRequest;
+                if (!realmName || !environments?.length) {
+                  throw new Error(`Missing realm name or environments for realm ID ${req.query.id}`);
+                }
                 for (const idirUserId of [
                   currentRequest?.productOwnerIdirUserId,
                   currentRequest?.technicalContactIdirUserId,
                 ]) {
-                  if (!idirUserId) throw new Error(`Missing IDIR user ID on realm ${currentRequest?.realm}`);
+                  if (!idirUserId) throw new Error(`Missing IDIR user ID on realm ${realmName}`);
                   const user = await fetchIdirUser({ userId: idirUserId });
                   if (user) {
-                    await addUserAsRealmAdmin(
-                      `${user.guid.toLowerCase()}@azureidir`,
-                      currentRequest?.environments,
-                      currentRequest?.realm,
-                    );
+                    await addUserAsRealmAdmin(`${user.guid.toLowerCase()}@azureidir`, environments, realmName);
                   } else {
-                    const msg = `No guid found for user ${String(idirUserId)}`;
+                    const msg = `No guid found for user ${idirUserId}`;
                     console.error(msg);
-                    await sendKeycloakErrorEmail(currentRequest?.realm, `add realm admin for ${idirUserId}`, msg);
+                    await sendKeycloakErrorEmail(realmName, `add realm admin for ${idirUserId}`, msg);
                   }
                 }
               }
             } catch (err) {
               console.error('failed to create realm admins', err);
-              await sendKeycloakErrorEmail(currentRequest?.realm, 'add realm admins on approval', err);
+              await sendKeycloakErrorEmail(currentRequest?.realm ?? 'unknown', 'add realm admins on approval', err);
             }
 
             // when request is pending and gets rejected
