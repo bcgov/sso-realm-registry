@@ -519,7 +519,7 @@ export const sendKeycloakErrorEmail = async (realmName: string, operation: strin
   } else {
     errorMessage = String(error);
   }
-  const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const escapeHtml = (s: string) => s.replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;');
   return sendEmail({
     to: [ssoTeamEmail],
     subject: `${subjectPrefix}ACTION REQUIRED: Keycloak sync failure for realm ${realmName}`,

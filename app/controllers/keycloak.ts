@@ -6,7 +6,7 @@ import GroupRepresentation from '@keycloak/keycloak-admin-client/lib/defs/groupR
 
 /**
  * Function to remove access at the master realm level as administrator of a custom realm. Custom realm owners access control comes from the role <realmname>-realm-admin. Removes this role from supplied usernames if found.
- * @param emails Usernames to remove
+ * @param usernames Usernames to remove
  * @param env The environment to cleanup
  * @param realm The realm name you want to remove access to
  */

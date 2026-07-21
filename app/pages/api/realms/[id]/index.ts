@@ -291,6 +291,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
           try {
             const oldPOUsername = await resolveKeycloakUsername(currentRequest.productOwnerIdirUserId);
+            if (!oldPOUsername) {
+              throw new Error(
+                `Could not resolve Keycloak username for old product owner (IDIR ID: ${currentRequest.productOwnerIdirUserId})`,
+              );
+            }
             await Promise.all(
               currentRequest.environments.map((env: string) =>
                 removeUserAsRealmAdmin([oldPOUsername], env, currentRequest.realm),
@@ -337,6 +342,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
           try {
             const oldTCUsername = await resolveKeycloakUsername(currentRequest.technicalContactIdirUserId);
+            if (!oldTCUsername) {
+              throw new Error(
+                `Could not resolve Keycloak username for old technical contact (IDIR ID: ${currentRequest.technicalContactIdirUserId})`,
+              );
+            }
             await Promise.all(
               currentRequest.environments.map((env: string) =>
                 removeUserAsRealmAdmin([oldTCUsername], env, currentRequest.realm),
@@ -409,9 +419,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           return res.status(422).send('Unable to process the delete request at this time');
         }
 
+        const resolveUsernameForDelete = async (idirUserId: string | null, role: string): Promise<string | null> => {
+          try {
+            const username = await resolveKeycloakUsername(idirUserId);
+            if (!username) {
+              await sendKeycloakErrorEmail(
+                realm.realm as string,
+                `remove ${role} as realm admin on delete`,
+                `Could not resolve Keycloak username for ${role} (IDIR ID: ${idirUserId ?? 'null'})`,
+              );
+            }
+            return username;
+          } catch (err) {
+            await sendKeycloakErrorEmail(realm.realm as string, `remove ${role} as realm admin on delete`, err);
+            return null;
+          }
+        };
         const [poUsername, tcUsername] = await Promise.all([
-          resolveKeycloakUsername(realm.productOwnerIdirUserId).catch(() => null),
-          resolveKeycloakUsername(realm.technicalContactIdirUserId).catch(() => null),
+          resolveUsernameForDelete(realm.productOwnerIdirUserId, 'product owner'),
+          resolveUsernameForDelete(realm.technicalContactIdirUserId, 'technical contact'),
         ]);
         await Promise.all(
           realm.environments.map((env) => removeUserAsRealmAdmin([poUsername, tcUsername], env, realm.realm as string)),
