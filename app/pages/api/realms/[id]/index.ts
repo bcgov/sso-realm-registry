@@ -439,9 +439,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           resolveUsernameForDelete(realm.productOwnerIdirUserId, 'product owner'),
           resolveUsernameForDelete(realm.technicalContactIdirUserId, 'technical contact'),
         ]);
-        await Promise.all(
-          realm.environments.map((env) => removeUserAsRealmAdmin([poUsername, tcUsername], env, realm.realm as string)),
-        );
+        try {
+          await Promise.all(
+            realm.environments.map((env) =>
+              removeUserAsRealmAdmin([poUsername, tcUsername], env, realm.realm as string),
+            ),
+          );
+        } catch (err) {
+          console.error('Failed to remove realm admins after deletion', err);
+          await sendKeycloakErrorEmail(realm.realm as string, 'remove realm admins after deletion', err);
+        }
 
         await sendDeletionCompleteEmail(realm);
         return res.status(200).send('Success');

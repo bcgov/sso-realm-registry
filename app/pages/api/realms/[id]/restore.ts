@@ -6,7 +6,7 @@ import prisma from 'utils/prisma';
 import { EventEnum, StatusEnum } from 'validators/create-realm';
 import { sendRestoreEmail, sendKeycloakErrorEmail } from 'utils/mailer';
 import { addUserAsRealmAdmin, manageCustomRealm } from 'controllers/keycloak';
-import { generateXML, makeSoapRequest, getBceidAccounts } from 'utils/idir';
+import { fetchIdirUser } from 'controllers/msal';
 
 interface ErrorData {
   success: boolean;
@@ -79,17 +79,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             await sendKeycloakErrorEmail(realm?.realm!, `add realm admin on restore`, msg);
             continue;
           }
-          const samlPayload = generateXML('userId', idirUserId, process.env.IDIR_REQUESTOR_USER_GUID ?? '');
-          const { response }: any = await makeSoapRequest(samlPayload);
-          const accounts = await getBceidAccounts(response);
-
-          if (accounts.length > 0 && accounts[0].guid) {
-            await addUserAsRealmAdmin(`${accounts[0].guid}@idir`, realm?.environments!, realm?.realm!);
+          const user = await fetchIdirUser({ userId: idirUserId });
+          if (user && user.guid) {
+            await addUserAsRealmAdmin(`${user.guid.toLowerCase()}@azureidir`, realm?.environments!, realm?.realm!);
           } else {
-            const msg =
-              accounts.length > 0
-                ? `No GUID in account record for user ${idirUserId}`
-                : `No guid found for user ${idirUserId}`;
+            const msg = `No GUID found for user ${idirUserId} during restore`;
             console.error(msg);
             await sendKeycloakErrorEmail(realm?.realm!, `add realm admin for ${idirUserId} on restore`, msg);
           }

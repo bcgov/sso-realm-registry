@@ -27,11 +27,9 @@ jest.mock('../../controllers/keycloak', () => {
   };
 });
 
-jest.mock('../../utils/idir', () => {
+jest.mock('../../controllers/msal', () => {
   return {
-    generateXML: jest.fn(),
-    makeSoapRequest: jest.fn(() => Promise.resolve({ response: null })),
-    getBceidAccounts: jest.fn(() => Promise.resolve([{ guid: 'test-guid' }])),
+    fetchIdirUser: jest.fn(() => Promise.resolve({ guid: 'test-guid' })),
   };
 });
 
