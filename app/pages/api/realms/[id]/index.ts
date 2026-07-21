@@ -159,7 +159,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                   currentRequest?.productOwnerIdirUserId,
                   currentRequest?.technicalContactIdirUserId,
                 ]) {
-                  const user = await fetchIdirUser({ userId: String(idirUserId) });
+                  if (!idirUserId) throw new Error(`Missing IDIR user ID on realm ${currentRequest?.realm}`);
+                  const user = await fetchIdirUser({ userId: idirUserId });
                   if (user) {
                     await addUserAsRealmAdmin(
                       `${user.guid.toLowerCase()}@azureidir`,
@@ -257,12 +258,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           typeOfContactUpdate = 'Product Owner';
 
           try {
-            const newPOUser = await fetchIdirUser({ userId: String(updatedRealm.productOwnerIdirUserId) });
+            const newPOUser = await fetchIdirUser({ userId: updatedRealm.productOwnerIdirUserId! });
             if (newPOUser) {
               await addUserAsRealmAdmin(
                 `${newPOUser.guid.toLowerCase()}@azureidir`,
                 currentRequest.environments,
                 currentRequest.realm,
+              );
+              await onboardNewRealmAdmin(
+                session,
+                updatedRealm,
+                currentRequest.productOwnerEmail,
+                updatedRealm.productOwnerEmail,
+                typeOfContactUpdate,
               );
             } else {
               const msg = `No GUID found for new product owner ${updatedRealm.productOwnerIdirUserId}`;
@@ -280,19 +288,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 removeUserAsRealmAdmin([currentRequest.productOwnerEmail], env, currentRequest.realm),
               ),
             );
+            await offboardRealmAdmin(session, updatedRealm, currentRequest.productOwnerEmail, typeOfContactUpdate);
           } catch (err) {
             console.error('Failed to remove old product owner as realm admin in Keycloak', err);
             await sendKeycloakErrorEmail(currentRequest.realm, 'remove old product owner as realm admin', err);
           }
-
-          await onboardNewRealmAdmin(
-            session,
-            updatedRealm,
-            currentRequest.productOwnerEmail,
-            updatedRealm.productOwnerEmail,
-            typeOfContactUpdate,
-          );
-          await offboardRealmAdmin(session, updatedRealm, currentRequest.productOwnerEmail, typeOfContactUpdate);
         }
 
         if (
@@ -303,12 +303,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           typeOfContactUpdate = 'Technical Contact';
 
           try {
-            const newTCUser = await fetchIdirUser({ userId: String(updatedRealm.technicalContactIdirUserId) });
+            const newTCUser = await fetchIdirUser({ userId: updatedRealm.technicalContactIdirUserId! });
             if (newTCUser) {
               await addUserAsRealmAdmin(
                 `${newTCUser.guid.toLowerCase()}@azureidir`,
                 currentRequest.environments,
                 currentRequest.realm,
+              );
+              await onboardNewRealmAdmin(
+                session,
+                updatedRealm,
+                currentRequest.technicalContactEmail,
+                updatedRealm.technicalContactEmail,
+                typeOfContactUpdate,
               );
             } else {
               const msg = `No GUID found for new technical contact ${updatedRealm.technicalContactIdirUserId}`;
@@ -326,19 +333,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 removeUserAsRealmAdmin([currentRequest.technicalContactEmail], env, currentRequest.realm),
               ),
             );
+            await offboardRealmAdmin(session, updatedRealm, currentRequest.technicalContactEmail, typeOfContactUpdate);
           } catch (err) {
             console.error('Failed to remove old technical contact as realm admin in Keycloak', err);
             await sendKeycloakErrorEmail(currentRequest.realm, 'remove old technical contact as realm admin', err);
           }
-
-          await onboardNewRealmAdmin(
-            session,
-            updatedRealm,
-            currentRequest.technicalContactEmail,
-            updatedRealm.technicalContactEmail,
-            typeOfContactUpdate,
-          );
-          await offboardRealmAdmin(session, updatedRealm, currentRequest.technicalContactEmail, typeOfContactUpdate);
         }
         // emails
         await sendUpdateEmail(updatedRealm, session, updatingApprovalStatus);

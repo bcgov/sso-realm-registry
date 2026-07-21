@@ -48,81 +48,77 @@ export const removeUserAsRealmAdmin = async (emails: (string | null)[], env: str
 };
 
 export const addUserAsRealmAdmin = async (username: string, envs: string[], realmName: string) => {
-  try {
-    for (const env of envs) {
-      const kcCore = new KeycloakCore(env);
-      const kcAdminClient = await kcCore.getAdminClient();
-      let masterRealmUser;
-      const [userGuid, userIdp] = username.toLowerCase().split('@');
+  for (const env of envs) {
+    const kcCore = new KeycloakCore(env);
+    const kcAdminClient = await kcCore.getAdminClient();
+    let masterRealmUser;
+    const [userGuid, userIdp] = username.toLowerCase().split('@');
 
-      let azureidirRealmUsers = await kcAdminClient.users.find({
+    let azureidirRealmUsers = await kcAdminClient.users.find({
+      realm: userIdp,
+      username: userGuid,
+      max: 1,
+    });
+
+    if (azureidirRealmUsers.length === 0) {
+      // create user in realm
+      const azureidirRealmUser = await kcAdminClient.users.create({
         realm: userIdp,
         username: userGuid,
-        max: 1,
+        enabled: true,
       });
 
-      if (azureidirRealmUsers.length === 0) {
-        // create user in realm
-        const azureidirRealmUser = await kcAdminClient.users.create({
-          realm: userIdp,
-          username: userGuid,
-          enabled: true,
-        });
-
-        // assign federated links to user
-        await kcAdminClient.users.addToFederatedIdentity({
-          realm: userIdp,
-          id: azureidirRealmUser.id,
-          federatedIdentityId: userIdp,
-          federatedIdentity: {
-            userId: userGuid.toLowerCase(), // after user gets logged in it gets updated to actual sub from entra by keycloak authenticator
-            userName: userGuid.toLowerCase(),
-            identityProvider: userIdp,
-          },
-        });
-      }
-
-      const masterRealmUsers = await kcAdminClient.users.find({
-        realm: 'master',
-        username,
-        max: 1,
-      });
-
-      if (masterRealmUsers.length === 0) {
-        // create user in master realm
-        masterRealmUser = await kcAdminClient.users.create({
-          realm: 'master',
-          username,
-          enabled: true,
-        });
-
-        // assign federated links to user for idp
-        await kcAdminClient.users.addToFederatedIdentity({
-          realm: 'master',
-          id: masterRealmUser.id,
-          federatedIdentityId: 'azureidir',
-          federatedIdentity: {
-            userId: userGuid,
-            userName: userGuid,
-            identityProvider: 'azureidir',
-          },
-        });
-      } else {
-        masterRealmUser = masterRealmUsers[0];
-      }
-
-      const role = await kcAdminClient.roles.findOneByName({ realm: 'master', name: `${realmName}-realm-admin` });
-
-      const roleMapping: RoleMappingPayload = { id: role?.id as string, name: role?.name as string };
-
-      await kcAdminClient.users.addRealmRoleMappings({
-        realm: 'master',
-        id: masterRealmUser.id as string,
-        roles: [roleMapping],
+      // assign federated links to user
+      await kcAdminClient.users.addToFederatedIdentity({
+        realm: userIdp,
+        id: azureidirRealmUser.id,
+        federatedIdentityId: userIdp,
+        federatedIdentity: {
+          userId: userGuid.toLowerCase(), // after user gets logged in it gets updated to actual sub from entra by keycloak authenticator
+          userName: userGuid.toLowerCase(),
+          identityProvider: userIdp,
+        },
       });
     }
-  } catch (err) {
-    console.error(err);
+
+    const masterRealmUsers = await kcAdminClient.users.find({
+      realm: 'master',
+      username,
+      max: 1,
+    });
+
+    if (masterRealmUsers.length === 0) {
+      // create user in master realm
+      masterRealmUser = await kcAdminClient.users.create({
+        realm: 'master',
+        username,
+        enabled: true,
+      });
+
+      // assign federated links to user for idp
+      await kcAdminClient.users.addToFederatedIdentity({
+        realm: 'master',
+        id: masterRealmUser.id,
+        federatedIdentityId: 'azureidir',
+        federatedIdentity: {
+          userId: userGuid,
+          userName: userGuid,
+          identityProvider: 'azureidir',
+        },
+      });
+    } else {
+      masterRealmUser = masterRealmUsers[0];
+    }
+
+    const role = await kcAdminClient.roles.findOneByName({ realm: 'master', name: `${realmName}-realm-admin` });
+
+    const roleMapping: RoleMappingPayload = { id: role?.id as string, name: role?.name as string };
+
+    await kcAdminClient.users.addRealmRoleMappings({
+      realm: 'master',
+      id: masterRealmUser.id as string,
+      roles: [roleMapping],
+    });
   }
 };
 

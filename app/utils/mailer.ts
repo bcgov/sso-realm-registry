@@ -511,7 +511,14 @@ export const offboardRealmAdmin = async (session: Session, realm: Roster, oldCon
 };
 
 export const sendKeycloakErrorEmail = async (realmName: string, operation: string, error: unknown) => {
-  const errorMessage = error instanceof Error ? error.message : String(error);
+  let errorMessage: string;
+  if (error instanceof Error) {
+    errorMessage = error.stack ?? error.message;
+  } else if (typeof error === 'object' && error !== null) {
+    errorMessage = JSON.stringify(error, null, 2);
+  } else {
+    errorMessage = String(error);
+  }
   return sendEmail({
     to: [ssoTeamEmail],
     subject: `${subjectPrefix}ACTION REQUIRED: Keycloak sync failure for realm ${realmName}`,

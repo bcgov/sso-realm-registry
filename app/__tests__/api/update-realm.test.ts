@@ -1,9 +1,9 @@
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/realms/[id]';
 import prisma from 'utils/prisma';
-import { CustomRealmProfiles, CustomRealms, MockHttpRequest } from '../fixtures';
+import { CustomRealmProfiles, CustomRealms, MockHttpRequest, roster } from '../fixtures';
 import { getServerSession } from 'next-auth';
-import { manageCustomRealm } from 'controllers/keycloak';
+import { addUserAsRealmAdmin, manageCustomRealm, removeUserAsRealmAdmin } from 'controllers/keycloak';
 import { createEvent } from 'utils/helpers';
 import { EventEnum } from 'validators/create-realm';
 import { createMockSendEmail } from './utils/mocks';
@@ -31,6 +31,7 @@ jest.mock('../../controllers/keycloak.ts', () => {
     createCustomRealm: jest.fn(() => true),
     disableCustomRealm: jest.fn(() => true),
     addUserAsRealmAdmin: jest.fn(() => true),
+    removeUserAsRealmAdmin: jest.fn(() => true),
     manageCustomRealm: jest.fn(() => true),
   };
 });
@@ -309,5 +310,134 @@ describe('approval and rejection', () => {
     );
     expect(emailList[0].to.length).toBe(3);
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
+  });
+});
+
+describe('Contact update Keycloak sync', () => {
+  const appliedRoster = {
+    ...roster,
+    approved: true,
+    status: 'applied',
+    productOwnerEmail: 'old-po@test.com',
+    productOwnerIdirUserId: 'old-po-idir',
+    technicalContactEmail: 'old-tc@test.com',
+    technicalContactIdirUserId: 'old-tc-idir',
+    environments: ['dev', 'test', 'prod'],
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (getServerSession as jest.Mock).mockImplementation(() => ({
+      expires: new Date(Date.now() + 2 * 86400).toISOString(),
+      user: { username: 'admin', given_name: 'Admin', family_name: 'User', client_roles: ['sso-admin'] },
+      status: 'authenticated',
+    }));
+  });
+
+  it('calls addUserAsRealmAdmin and removeUserAsRealmAdmin when product owner email changes', async () => {
+    (prisma.roster.findUnique as jest.Mock).mockResolvedValue(appliedRoster);
+    (prisma.roster.update as jest.Mock).mockResolvedValue({
+      ...appliedRoster,
+      productOwnerEmail: 'new-po@test.com',
+      productOwnerIdirUserId: 'new-po-idir',
+    });
+
+    const emailList = createMockSendEmail();
+
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: { ...appliedRoster, productOwnerEmail: 'new-po@test.com', productOwnerIdirUserId: 'new-po-idir' },
+      query: { id: 1 },
+    });
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(addUserAsRealmAdmin).toHaveBeenCalledTimes(1);
+    expect(addUserAsRealmAdmin).toHaveBeenCalledWith(
+      'test-guid@azureidir',
+      appliedRoster.environments,
+      appliedRoster.realm,
+    );
+    expect(removeUserAsRealmAdmin).toHaveBeenCalledTimes(3); // once per environment
+    // onboard email sent after successful Keycloak add
+    expect(emailList.some((e) => e.subject?.includes('New Realm Admin access has been granted'))).toBe(true);
+    // offboard email sent after successful Keycloak remove
+    expect(emailList.some((e) => e.subject?.includes('Previous Realm Admin access has been revoked'))).toBe(true);
+  });
+
+  it('sends error email to SSO team and skips onboard email when addUserAsRealmAdmin fails for product owner change', async () => {
+    (prisma.roster.findUnique as jest.Mock).mockResolvedValue(appliedRoster);
+    (prisma.roster.update as jest.Mock).mockResolvedValue({
+      ...appliedRoster,
+      productOwnerEmail: 'new-po@test.com',
+      productOwnerIdirUserId: 'new-po-idir',
+    });
+    (addUserAsRealmAdmin as jest.Mock).mockRejectedValueOnce(new Error('Keycloak unavailable'));
+
+    const emailList = createMockSendEmail();
+
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: { ...appliedRoster, productOwnerEmail: 'new-po@test.com', productOwnerIdirUserId: 'new-po-idir' },
+      query: { id: 1 },
+    });
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    // error email should go to SSO team
+    expect(emailList.some((e) => e.to?.includes(ssoTeamEmail) && e.subject?.includes('ACTION REQUIRED'))).toBe(true);
+    // onboard email must NOT be sent
+    expect(emailList.some((e) => e.subject?.includes('New Realm Admin access has been granted'))).toBe(false);
+  });
+
+  it('calls addUserAsRealmAdmin and removeUserAsRealmAdmin when technical contact email changes', async () => {
+    (prisma.roster.findUnique as jest.Mock).mockResolvedValue(appliedRoster);
+    (prisma.roster.update as jest.Mock).mockResolvedValue({
+      ...appliedRoster,
+      technicalContactEmail: 'new-tc@test.com',
+      technicalContactIdirUserId: 'new-tc-idir',
+    });
+
+    const emailList = createMockSendEmail();
+
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: { ...appliedRoster, technicalContactEmail: 'new-tc@test.com', technicalContactIdirUserId: 'new-tc-idir' },
+      query: { id: 1 },
+    });
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(addUserAsRealmAdmin).toHaveBeenCalledTimes(1);
+    expect(removeUserAsRealmAdmin).toHaveBeenCalledTimes(3);
+    expect(emailList.some((e) => e.subject?.includes('New Realm Admin access has been granted'))).toBe(true);
+    expect(emailList.some((e) => e.subject?.includes('Previous Realm Admin access has been revoked'))).toBe(true);
+  });
+
+  it('sends error email to SSO team and skips onboard email when addUserAsRealmAdmin fails for technical contact change', async () => {
+    (prisma.roster.findUnique as jest.Mock).mockResolvedValue(appliedRoster);
+    (prisma.roster.update as jest.Mock).mockResolvedValue({
+      ...appliedRoster,
+      technicalContactEmail: 'new-tc@test.com',
+      technicalContactIdirUserId: 'new-tc-idir',
+    });
+    (addUserAsRealmAdmin as jest.Mock).mockRejectedValueOnce(new Error('Keycloak unavailable'));
+
+    const emailList = createMockSendEmail();
+
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: { ...appliedRoster, technicalContactEmail: 'new-tc@test.com', technicalContactIdirUserId: 'new-tc-idir' },
+      query: { id: 1 },
+    });
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(emailList.some((e) => e.to?.includes(ssoTeamEmail) && e.subject?.includes('ACTION REQUIRED'))).toBe(true);
+    expect(emailList.some((e) => e.subject?.includes('New Realm Admin access has been granted'))).toBe(false);
   });
 });
