@@ -444,83 +444,34 @@ export const onboardNewRealmAdmin = async (
           We're reaching out to update you on changes to the ${contactType} details within the ${
       realm.realm
     } Custom realm. As of
-          ${new Date().toLocaleDateString()}, ${username} has modified the contact information in the Realm Registry, replacing ${oldContact} with the
-          updated information for the ${realm.realm}. We want to ensure you're informed about these recent updates.
+          ${new Date().toLocaleDateString()}, ${username} has modified the contact information in the Realm Registry, replacing ${oldContact} with
+          ${newContact} for the ${realm.realm} realm. We want to ensure you're informed about these recent updates.
         </p>
-        <p>To ensure a smooth transition, please follow instructions below to make ${newContact} the Realm Admin</p>
-        <strong>Grant Realm Admin Access to the new team members</strong>
-        <p>To add others as realm admins via a user friendly URL:</p>
-        <ol type="a">
-          <li>
-            <p>Ask your new team member to login at</p>
-            <ul>
-            <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
+        <p>
+          <strong>Realm admin access has been automatically granted</strong> to ${newContact}. The new ${contactType} can now
+          log in directly to the realm admin console using the links below:
+        </p>
+        <ul>
+          <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
       'dev',
       realmName,
     )}</a></code></p></li>
-            <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
+          <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
       'test',
       realmName,
     )}</a></code></p></li>
-            <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
+          <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
       'prod',
       realmName,
     )}</a></code></p></li>
-            </ul>
-          </li>
-          <li>
-            <p>They will see a forbidden message <code>Forbidden: You don't have access to the requested resource</code></p>
-          </li>
-          <li>
-            <p>You or one of the existing Realm Admins will need to add the user that logged in. See image below.</p>
-            <img src="${
-              process.env.SSO_LOGOUT_REDIRECT_URI
-            }/onboard-realm-admin.png" alt="OnBoardNewRealmAdmin" style="width:650px">
-          </li>
-          <li>
-            <p>Once you&rsquo;ve done this, you and your realm admins can access your realm via a more user friendly url</p>
-            <p>
-              <span style="color: #ff0000"><strong>PLEASE SAVE THIS USER FRIENDLY LINK</strong></span> as User Friendly Realm
-              Admin Links
-            </p>
-            <ul>
-              <li>
-                <p>
-                  <code
-                    ><a href="${generateRealmLinksByEnv('dev', realmName)}"
-                      >${generateRealmLinksByEnv('dev', realmName)}</a
-                    ></code
-                  >
-                </p>
-              </li>
-              <li>
-                <p>
-                  <code
-                    ><a href="${generateRealmLinksByEnv('test', realmName)}"
-                      >${generateRealmLinksByEnv('test', realmName)}</a
-                    ></code
-                  >
-                </p>
-              </li>
-              <li>
-                <p>
-                  <code
-                    ><a href="${generateRealmLinksByEnv('prod', realmName)}"
-                      >${generateRealmLinksByEnv('prod', realmName)}</a
-                    ></code
-                  >
-                </p>
-              </li>
-            </ul>
-          </li>
-        </ol>
+        </ul>
         <p>
           If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at:
           <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
         </p>
         ${emailFooter}
         `,
-    subject: `${subjectPrefix}Important: Custom Realm ${realm.realm} contact information has been updated. Action required to Onboard New Realm Admin.`,
+    subject: `${subjectPrefix}Custom Realm ${realm.realm} contact information has been updated. New Realm Admin access has been granted.`,
   });
 };
 
@@ -541,27 +492,38 @@ export const offboardRealmAdmin = async (session: Session, realm: Roster, oldCon
       realm.realm
     } Custom realm. As of
           ${new Date().toLocaleDateString()}, ${username} has modified the contact information in the Realm Registry, replacing ${oldContact} with the
-          updated information for the ${realm.realm}. We want to ensure you're informed about these recent updates.
+          updated information for the ${
+            realm.realm
+          } realm. We want to ensure you're informed about these recent updates.
         </p>
-        <p>Please follow instructions below to remove ${oldContact} as the Realm Admin</p>
-        <strong>Offboarding instructions to remove an existing realm admin</strong>
-        <ol type="a">
-          <li>
-            <p>We recommend deleting the offboarded team member from your custom realm. See image below.</p>
-            <img src="${
-              process.env.SSO_LOGOUT_REDIRECT_URI
-            }/offboard-realm-admin.png" alt="OffBoardRealmAdmin" style="width:650px">
-          </li>
-          <li>
-            <p>As you and your realm admins may have configured the user to a realm level role or realm level group, please remove the user accordingly.</p>
-          </li>
-        </ol>
+        <p>
+          <strong>Realm admin access for ${oldContact} has been automatically revoked.</strong> The previous ${contactType} no
+          longer has admin access to the ${realm.realm} realm.
+        </p>
         <p>
           If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at:
           <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
         </p>
         ${emailFooter}
         `,
-    subject: `${subjectPrefix}Important: Custom Realm ${realm.realm} contact information has been updated. Action required to Offboard existing Realm Admin.`,
+    subject: `${subjectPrefix}Custom Realm ${realm.realm} contact information has been updated. Previous Realm Admin access has been revoked.`,
+  });
+};
+
+export const sendKeycloakErrorEmail = async (realmName: string, operation: string, error: unknown) => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  return sendEmail({
+    to: [ssoTeamEmail],
+    subject: `${subjectPrefix}ACTION REQUIRED: Keycloak sync failure for realm ${realmName}`,
+    body: `
+      ${emailHeader}
+      <main>
+        <p>A Keycloak operation failed for realm <strong>${realmName}</strong> and requires manual intervention.</p>
+        <p><strong>Operation:</strong> ${operation}</p>
+        <p><strong>Error:</strong> ${errorMessage}</p>
+        <p>Please review the application logs for more detail and manually apply the change in Keycloak if needed.</p>
+      </main>
+      ${emailFooter}
+    `,
   });
 };

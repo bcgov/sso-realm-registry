@@ -20,6 +20,7 @@ jest.mock('../../utils/helpers', () => {
 jest.mock('../../controllers/keycloak', () => {
   return {
     removeUserAsRealmAdmin: jest.fn(),
+    addUserAsRealmAdmin: jest.fn(() => true),
     createCustomRealm: jest.fn(() => true),
     manageCustomRealm: jest.fn(() => true),
     deleteCustomRealm: jest.fn(() => true),
@@ -30,7 +31,7 @@ jest.mock('../../utils/idir', () => {
   return {
     generateXML: jest.fn(),
     makeSoapRequest: jest.fn(() => Promise.resolve({ response: null })),
-    getBceidAccounts: jest.fn(() => Promise.resolve([])),
+    getBceidAccounts: jest.fn(() => Promise.resolve([{ guid: 'test-guid' }])),
   };
 });
 

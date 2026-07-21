@@ -35,6 +35,12 @@ jest.mock('../../controllers/keycloak.ts', () => {
   };
 });
 
+jest.mock('../../controllers/msal', () => {
+  return {
+    fetchIdirUser: jest.fn(() => Promise.resolve({ guid: 'test-guid' })),
+  };
+});
+
 jest.mock('next-auth/next', () => {
   return {
     __esModule: true,
