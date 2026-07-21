@@ -71,27 +71,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
 
     try {
-      if (allEnvRealmsRestored) {
-        for (const idirUserId of [realm?.productOwnerIdirUserId, realm?.technicalContactIdirUserId]) {
+      const realmName = realm.realm;
+      const environments = realm.environments;
+      if (!realmName || !environments?.length) {
+        await sendKeycloakErrorEmail('unknown', 'add realm admins on restore', 'Missing realm name or environments');
+      } else {
+        for (const idirUserId of [realm.productOwnerIdirUserId, realm.technicalContactIdirUserId]) {
           if (!idirUserId) {
-            const msg = `Missing IDIR user ID on realm ${realm?.realm} during restore`;
+            const msg = `Missing IDIR user ID on realm ${realmName} during restore`;
             console.error(msg);
-            await sendKeycloakErrorEmail(realm?.realm!, `add realm admin on restore`, msg);
+            await sendKeycloakErrorEmail(realmName, `add realm admin on restore`, msg);
             continue;
           }
           const user = await fetchIdirUser({ userId: idirUserId });
           if (user && user.guid) {
-            await addUserAsRealmAdmin(`${user.guid.toLowerCase()}@azureidir`, realm?.environments!, realm?.realm!);
+            await addUserAsRealmAdmin(`${user.guid.toLowerCase()}@azureidir`, environments, realmName);
           } else {
             const msg = `No GUID found for user ${idirUserId} during restore`;
             console.error(msg);
-            await sendKeycloakErrorEmail(realm?.realm!, `add realm admin for ${idirUserId} on restore`, msg);
+            await sendKeycloakErrorEmail(realmName, `add realm admin for ${idirUserId} on restore`, msg);
           }
         }
       }
     } catch (err) {
       console.error('failed to create realm admins on restore', err);
-      await sendKeycloakErrorEmail(realm?.realm!, 'add realm admins on restore', err);
+      await sendKeycloakErrorEmail(realm.realm ?? 'unknown', 'add realm admins on restore', err);
     }
 
     //emails

@@ -15,6 +15,8 @@ export const removeUserAsRealmAdmin = async (usernames: (string | null)[], env: 
   const kcAdminClient = await kcCore.getAdminClient();
   const definedUsernames = usernames.filter(Boolean) as string[];
 
+  if (definedUsernames.length === 0) return;
+
   const userPromises = definedUsernames.map((username) =>
     kcAdminClient.users.find({
       realm: 'master',
