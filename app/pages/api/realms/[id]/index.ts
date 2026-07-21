@@ -24,6 +24,13 @@ interface ErrorData {
 
 type Data = ErrorData | string;
 
+/** Looks up an IDIR user and returns their Keycloak username (guid@idp), or null if not found. */
+const resolveKeycloakUsername = async (idirUserId: string | null, idp = 'azureidir'): Promise<string | null> => {
+  if (!idirUserId) return null;
+  const user = await fetchIdirUser({ userId: idirUserId });
+  return user && user.guid ? `${user.guid.toLowerCase()}@${idp}` : null;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   let username: string;
   let currentRequest: any;
@@ -165,10 +172,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 ]) {
                   if (!idirUserId) throw new Error(`Missing IDIR user ID on realm ${realmName}`);
                   const user = await fetchIdirUser({ userId: idirUserId });
-                  if (user) {
+                  if (user && user.guid) {
                     await addUserAsRealmAdmin(`${user.guid.toLowerCase()}@azureidir`, environments, realmName);
                   } else {
-                    const msg = `No guid found for user ${idirUserId}`;
+                    const msg = `No GUID found for user ${idirUserId}`;
                     console.error(msg);
                     await sendKeycloakErrorEmail(realmName, `add realm admin for ${idirUserId}`, msg);
                   }
@@ -259,7 +266,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
           try {
             const newPOUser = await fetchIdirUser({ userId: updatedRealm.productOwnerIdirUserId! });
-            if (newPOUser) {
+            if (newPOUser && newPOUser.guid) {
               await addUserAsRealmAdmin(
                 `${newPOUser.guid.toLowerCase()}@azureidir`,
                 currentRequest.environments,
@@ -283,9 +290,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           }
 
           try {
+            const oldPOUsername = await resolveKeycloakUsername(currentRequest.productOwnerIdirUserId);
             await Promise.all(
               currentRequest.environments.map((env: string) =>
-                removeUserAsRealmAdmin([currentRequest.productOwnerEmail], env, currentRequest.realm),
+                removeUserAsRealmAdmin([oldPOUsername], env, currentRequest.realm),
               ),
             );
             await offboardRealmAdmin(session, updatedRealm, currentRequest.productOwnerEmail, typeOfContactUpdate);
@@ -304,7 +312,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
           try {
             const newTCUser = await fetchIdirUser({ userId: updatedRealm.technicalContactIdirUserId! });
-            if (newTCUser) {
+            if (newTCUser && newTCUser.guid) {
               await addUserAsRealmAdmin(
                 `${newTCUser.guid.toLowerCase()}@azureidir`,
                 currentRequest.environments,
@@ -328,9 +336,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           }
 
           try {
+            const oldTCUsername = await resolveKeycloakUsername(currentRequest.technicalContactIdirUserId);
             await Promise.all(
               currentRequest.environments.map((env: string) =>
-                removeUserAsRealmAdmin([currentRequest.technicalContactEmail], env, currentRequest.realm),
+                removeUserAsRealmAdmin([oldTCUsername], env, currentRequest.realm),
               ),
             );
             await offboardRealmAdmin(session, updatedRealm, currentRequest.technicalContactEmail, typeOfContactUpdate);
@@ -400,14 +409,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           return res.status(422).send('Unable to process the delete request at this time');
         }
 
+        const [poUsername, tcUsername] = await Promise.all([
+          resolveKeycloakUsername(realm.productOwnerIdirUserId).catch(() => null),
+          resolveKeycloakUsername(realm.technicalContactIdirUserId).catch(() => null),
+        ]);
         await Promise.all(
-          realm.environments.map((env) => {
-            return removeUserAsRealmAdmin(
-              [realm.productOwnerEmail, realm.technicalContactEmail],
-              env,
-              realm.realm as string,
-            );
-          }),
+          realm.environments.map((env) => removeUserAsRealmAdmin([poUsername, tcUsername], env, realm.realm as string)),
         );
 
         await sendDeletionCompleteEmail(realm);

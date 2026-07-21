@@ -358,6 +358,7 @@ describe('Contact update Keycloak sync', () => {
       'test-guid@azureidir',
       appliedRoster.environments,
       appliedRoster.realm,
+      'new-po@test.com',
     );
     expect(removeUserAsRealmAdmin).toHaveBeenCalledTimes(3); // once per environment
     // onboard email sent after successful Keycloak add

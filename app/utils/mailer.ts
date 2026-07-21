@@ -519,15 +519,18 @@ export const sendKeycloakErrorEmail = async (realmName: string, operation: strin
   } else {
     errorMessage = String(error);
   }
+  const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return sendEmail({
     to: [ssoTeamEmail],
     subject: `${subjectPrefix}ACTION REQUIRED: Keycloak sync failure for realm ${realmName}`,
     body: `
       ${emailHeader}
       <main>
-        <p>A Keycloak operation failed for realm <strong>${realmName}</strong> and requires manual intervention.</p>
-        <p><strong>Operation:</strong> ${operation}</p>
-        <p><strong>Error:</strong> ${errorMessage}</p>
+        <p>A Keycloak operation failed for realm <strong>${escapeHtml(
+          realmName,
+        )}</strong> and requires manual intervention.</p>
+        <p><strong>Operation:</strong> ${escapeHtml(operation)}</p>
+        <pre style="background:#f4f4f4;padding:1em;overflow:auto">${escapeHtml(errorMessage)}</pre>
         <p>Please review the application logs for more detail and manually apply the change in Keycloak if needed.</p>
       </main>
       ${emailFooter}

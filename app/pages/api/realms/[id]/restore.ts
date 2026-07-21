@@ -83,10 +83,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           const { response }: any = await makeSoapRequest(samlPayload);
           const accounts = await getBceidAccounts(response);
 
-          if (accounts.length > 0) {
+          if (accounts.length > 0 && accounts[0].guid) {
             await addUserAsRealmAdmin(`${accounts[0].guid}@idir`, realm?.environments!, realm?.realm!);
           } else {
-            const msg = `No guid found for user ${String(idirUserId)}`;
+            const msg =
+              accounts.length > 0
+                ? `No GUID in account record for user ${idirUserId}`
+                : `No guid found for user ${idirUserId}`;
             console.error(msg);
             await sendKeycloakErrorEmail(realm?.realm!, `add realm admin for ${idirUserId} on restore`, msg);
           }

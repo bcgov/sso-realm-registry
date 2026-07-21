@@ -27,6 +27,12 @@ jest.mock('../../controllers/keycloak', () => {
   };
 });
 
+jest.mock('../../controllers/msal', () => {
+  return {
+    fetchIdirUser: jest.fn(() => Promise.resolve({ guid: 'test-guid' })),
+  };
+});
+
 jest.mock('next-auth/next', () => {
   return {
     __esModule: true,
@@ -94,10 +100,10 @@ describe('Delete Realms', () => {
 
     expect(res.statusCode).toBe(200);
     expect(manageCustomRealm).toHaveBeenCalledTimes(1);
-    // PO email and technical contact email removed in each realm
+    // PO and TC usernames (guid@azureidir) removed in each environment
     CustomRealmProfiles[0].environments.forEach((env) => {
       expect(removeUserAsRealmAdmin).toHaveBeenCalledWith(
-        [CustomRealmProfiles[0].productOwnerEmail, CustomRealmProfiles[0].technicalContactEmail],
+        ['test-guid@azureidir', 'test-guid@azureidir'],
         env,
         CustomRealmProfiles[0].realm,
       );

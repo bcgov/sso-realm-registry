@@ -10,15 +10,16 @@ import GroupRepresentation from '@keycloak/keycloak-admin-client/lib/defs/groupR
  * @param env The environment to cleanup
  * @param realm The realm name you want to remove access to
  */
-export const removeUserAsRealmAdmin = async (emails: (string | null)[], env: string, realm: string) => {
+export const removeUserAsRealmAdmin = async (usernames: (string | null)[], env: string, realm: string) => {
   const kcCore = new KeycloakCore(env);
   const kcAdminClient = await kcCore.getAdminClient();
-  const definedEmails = emails.filter(Boolean) as string[];
+  const definedUsernames = usernames.filter(Boolean) as string[];
 
-  const userPromises = definedEmails.map((email) =>
+  const userPromises = definedUsernames.map((username) =>
     kcAdminClient.users.find({
       realm: 'master',
-      email,
+      username,
+      max: 1,
     }),
   );
 
