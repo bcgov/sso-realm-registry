@@ -314,7 +314,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             ? syncResult.success
               ? null
               : new Date()
-            : (updatedRealm.accessSyncFailedAt ?? null),
+            : updatedRealm.accessSyncFailedAt ?? null,
         });
       } catch (err) {
         await createEvent({

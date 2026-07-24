@@ -223,10 +223,10 @@ export const sendDeletedUserEmail = async (realms: Roster[], userId: string) => 
           <main>
             <p>
               The user with ID ${userId} no longer had an active IDIR, and is listed as having the ${
-                deletedUserRoles.length > 1 ? 'roles' : 'role'
-              } ${deletedUserRoles.map((roles) => roles[1]).join(' and ')} on the custom realm ${
-                realm.realm
-              }. Please update your realm information.
+          deletedUserRoles.length > 1 ? 'roles' : 'role'
+        } ${deletedUserRoles.map((roles) => roles[1]).join(' and ')} on the custom realm ${
+          realm.realm
+        }. Please update your realm information.
             </p>
           </main>
           ${emailFooter}
@@ -353,21 +353,21 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
                     <ul>
                       <li>
                       <p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
-                        'dev',
-                        realmName,
-                      )}</a></code></p>
+      'dev',
+      realmName,
+    )}</a></code></p>
                       </li>
                       <li>
                       <p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
-                        'test',
-                        realmName,
-                      )}</a></code></p>
+      'test',
+      realmName,
+    )}</a></code></p>
                       </li>
                       <li>
                       <p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
-                        'prod',
-                        realmName,
-                      )}</a></code></p>
+      'prod',
+      realmName,
+    )}</a></code></p>
                       </li>
                       </ul>
                   </li>
@@ -398,17 +398,17 @@ export const sendReadyToUseEmail = async (realm: Roster) => {
                     <p><span style="color: #ff0000;"><strong>PLEASE SAVE THIS USER FRIENDLY LINK</strong></span> as User Friendly Realm Admin Links</p>
                     <ul>
                       <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
-                        'dev',
-                        realmName,
-                      )}</a></code></p></li>
+      'dev',
+      realmName,
+    )}</a></code></p></li>
                       <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
-                        'test',
-                        realmName,
-                      )}</a></code></p></li>
+      'test',
+      realmName,
+    )}</a></code></p></li>
                       <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
-                        'prod',
-                        realmName,
-                      )}</a></code></p></li>
+      'prod',
+      realmName,
+    )}</a></code></p></li>
                       </ul>
                   </li>
                 </ol>

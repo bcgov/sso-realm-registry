@@ -34,7 +34,7 @@ export const managedContacts = [
   },
 ] as const;
 
-export type ManagedContact = (typeof managedContacts)[number];
+export type ManagedContact = typeof managedContacts[number];
 
 export interface RealmAccessSyncResult {
   success: boolean;
