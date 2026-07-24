@@ -38,6 +38,9 @@ export enum EventEnum {
   REQUEST_DELETE_SUCCESS = 'request-delete-success',
   REQUEST_RESTORE_SUCCESS = 'request-restore-success',
   REQUEST_RESTORE_FAILED = 'request-restore-failed',
+  REQUEST_ACCESS_SYNC_SUCCESS = 'request-access-sync-success',
+  REQUEST_ACCESS_SYNC_FAILED = 'request-access-sync-failed',
+  REQUEST_ACCESS_REVOKE_SKIPPED = 'request-access-revoke-skipped',
 }
 
 export enum EnvironmentsEnum {

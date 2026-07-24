@@ -1,7 +1,5 @@
 import KcAdminClient from '@keycloak/keycloak-admin-client';
 import RealmRepresentation from '@keycloak/keycloak-admin-client/lib/defs/realmRepresentation.js';
-import { flatten, compact } from 'lodash';
-import validator from 'validator';
 
 class KeycloakCore {
   private _url: string = '';
@@ -9,7 +7,6 @@ class KeycloakCore {
   private _password: string = '';
 
   private _cachedRealms: RealmRepresentation[] = [];
-  private _cachedNames: any = {};
   private _cachedIDPNames: any = {};
   private _adminClient!: KcAdminClient;
 
@@ -59,66 +56,6 @@ class KeycloakCore {
 
     this._cachedRealms = await adminClient.realms.find({});
     return this._cachedRealms;
-  }
-
-  public async findIdirUser(idirUsername: string) {
-    const adminClient = await this.getAdminClient();
-    if (!adminClient) return null;
-
-    const users = await adminClient.users.find({
-      realm: 'idir',
-      username: idirUsername,
-    });
-
-    const user = users.find((user) => user.username?.toLowerCase() === idirUsername?.toLowerCase());
-    if (!user) return null;
-
-    return user;
-  }
-
-  public async findUser(username: string) {
-    const adminClient = await this.getAdminClient();
-    if (!adminClient) return [];
-
-    try {
-      const realmNames = (await this.getRealms()).map((realm) => realm.realm) || [];
-
-      let users = await Promise.all(
-        realmNames.map((realm) => {
-          const getProms = (query: any) =>
-            adminClient.users
-              .find(query)
-              .then((users) => users.map((user) => ({ ...user, realm })))
-              .catch((err) => {
-                handleError(err);
-                return null;
-              });
-
-          if (validator.isEmail(username)) return getProms({ realm, email: username, exact: true });
-          else return getProms({ realm, username: realm !== 'idir' ? `${username}@idir` : username, exact: true });
-        }),
-      );
-
-      return compact(flatten(users));
-    } catch (err) {
-      handleError(err);
-      return [];
-    }
-  }
-
-  public async getIdirUserName(idirUsername: string) {
-    try {
-      if (this._cachedNames[idirUsername]) return this._cachedNames[idirUsername];
-      const user = await this.findIdirUser(idirUsername);
-      if (!user) return null;
-
-      const name = `${user.firstName} ${user.lastName}`;
-      this._cachedNames[idirUsername] = name;
-      return name;
-    } catch (err) {
-      handleError(err);
-      return null;
-    }
   }
 
   public async getIDPs(realm: string) {

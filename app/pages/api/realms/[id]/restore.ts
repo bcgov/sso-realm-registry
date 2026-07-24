@@ -4,9 +4,9 @@ import { authOptions } from '../../auth/[...nextauth]';
 import { checkAdminRole, createEvent } from 'utils/helpers';
 import prisma from 'utils/prisma';
 import { EventEnum, StatusEnum } from 'validators/create-realm';
-import { sendRestoreEmail } from 'utils/mailer';
-import { addUserAsRealmAdmin, manageCustomRealm } from 'controllers/keycloak';
-import { generateXML, makeSoapRequest, getBceidAccounts } from 'utils/idir';
+import { sendAccessSyncFailedEmail, sendRestoreEmail } from 'utils/mailer';
+import { manageCustomRealm } from 'controllers/keycloak';
+import { syncRealmAccess } from 'controllers/realm-access';
 
 interface ErrorData {
   success: boolean;
@@ -70,22 +70,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(422).send('Unable to process the restore request at this time');
     }
 
-    try {
-      if (allEnvRealmsRestored) {
-        [realm?.productOwnerIdirUserId, realm?.technicalContactIdirUserId].forEach(async (idirUserId) => {
-          const samlPayload = generateXML('userId', idirUserId as string, process.env.IDIR_REQUESTOR_USER_GUID ?? '');
-          const { response }: any = await makeSoapRequest(samlPayload);
-          const accounts = await getBceidAccounts(response);
+    const syncResult = await syncRealmAccess(parseInt(req.query.id as string, 10), username);
 
-          if (accounts.length > 0) {
-            await addUserAsRealmAdmin(`${accounts[0].guid}@idir`, realm?.environments!, realm?.realm!);
-          } else {
-            console.error(`No guid found for user ${String(idirUserId)}`);
-          }
-        });
-      }
-    } catch (err) {
-      console.error('failed to create realm admins', err);
+    if (!syncResult.success) {
+      await sendAccessSyncFailedEmail(realm, syncResult);
     }
 
     //emails

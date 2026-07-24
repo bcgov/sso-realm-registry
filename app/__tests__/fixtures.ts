@@ -104,6 +104,9 @@ export const roster: Roster = {
   prNumber: 1,
   requestor: 'user',
   archived: false,
+  productOwnerGuid: null,
+  technicalContactGuid: null,
+  accessSyncFailedAt: null,
 };
 
 export interface MockHttpRequest {

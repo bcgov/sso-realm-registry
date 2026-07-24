@@ -3,17 +3,44 @@ import styled from 'styled-components';
 import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import { ModalContext } from 'context/modal';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
-import { getRealmProfiles, deleteRealmRequest, updateRealmProfile, restoreRealmProfile } from 'services/realm';
+import {
+  getRealmProfiles,
+  deleteRealmRequest,
+  updateRealmProfile,
+  restoreRealmProfile,
+  syncRealmAccess,
+} from 'services/realm';
 import CustomRealmTabs from 'page-partials/custom-realm-dashboard/CustomRealmTabs';
 import { StatusEnum } from 'validators/create-realm';
 import { Table } from '@bcgov-sso/common-react-components';
-import { faTrash, faTrashRestoreAlt } from '@fortawesome/free-solid-svg-icons';
+import { faRotateRight, faTrash, faTrashRestoreAlt, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import Head from 'next/head';
 
 const Container = styled.div`
   padding: 0 1.5em;
+`;
+
+const AccessSyncBanner = styled.div`
+  background: rgb(249, 241, 199);
+  border-left: 6px solid rgb(252, 186, 25);
+  padding: 0.75em 1em;
+  margin-bottom: 1em;
+
+  .icon {
+    padding-right: 0.5em;
+    color: rgb(252, 186, 25);
+  }
+`;
+
+const AccessSyncFailedBadge = styled.span`
+  background: rgb(213, 68, 61);
+  color: white;
+  border-radius: 0.3em;
+  font-size: 0.85em;
+  padding: 0.2em 0.5em;
+  white-space: nowrap;
 `;
 
 interface Props {
@@ -130,6 +157,36 @@ function CustomRealmDashboard({ alert }: Props) {
     });
   };
 
+  const handleSyncAccessRequest = (id: number) => {
+    const handleConfirm = async () => {
+      const [result, err] = await syncRealmAccess(String(id));
+      if (err || !result?.success) {
+        return alert.show({
+          variant: 'danger',
+          fadeOut: 3500,
+          closable: true,
+          content: `Realm admin access for request id ${id} could not be synchronized. Please try again.`,
+        });
+      }
+      alert.show({
+        variant: 'success',
+        fadeOut: 3500,
+        closable: true,
+        content: `Synchronized realm admin access for request id ${id}.`,
+      });
+      await fetchRealms();
+    };
+
+    setModalConfig({
+      show: true,
+      title: 'Retry Realm Admin Access Sync',
+      body: `This grants master realm access to the current Product Owner and Technical Contact, and removes it from the contacts they replaced. Continue?`,
+      showCancelButton: true,
+      showConfirmButton: true,
+      onConfirm: handleConfirm,
+    });
+  };
+
   const handleRequestStatusChange = (approval: 'approved' | 'declined', realm: CustomRealmFormData) => {
     const realmId = realm.id;
     const approving = approval === 'approved';
@@ -235,6 +292,21 @@ function CustomRealmDashboard({ alert }: Props) {
       },
     },
     {
+      header: 'Access Sync',
+      accessorKey: 'accessSyncFailedAt',
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: (info: any) => {
+        const failedAt = info.renderValue();
+        if (!failedAt) return 'In Sync';
+        return (
+          <AccessSyncFailedBadge title={`Last failed at ${new Date(failedAt).toLocaleString()}`}>
+            Failed
+          </AccessSyncFailedBadge>
+        );
+      },
+    },
+    {
       header: 'Archived',
       accessorKey: 'archived',
       filterFn: listFilter,
@@ -254,8 +326,23 @@ function CustomRealmDashboard({ alert }: Props) {
         const deleteDisabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
         const restoreDisabled =
           ![StatusEnum.APPLIED].includes(props.row.original.status) || props.row.original.archived === false;
+        const syncAccessDisabled = !props.row.original.accessSyncFailedAt;
         return (
           <div style={{ display: 'flex', justifyContent: 'center', columnGap: '0.5rem' }}>
+            <FontAwesomeIcon
+              onClick={() => {
+                if (!syncAccessDisabled) handleSyncAccessRequest(props.row.getValue('id'));
+              }}
+              icon={faRotateRight}
+              className={`delete-icon ${syncAccessDisabled ? 'disabled' : ''}`}
+              role="button"
+              data-testid="sync-access-btn"
+              title={
+                syncAccessDisabled
+                  ? 'Realm admin access is in sync'
+                  : 'Retry the realm admin access sync for this realm'
+              }
+            />
             <FontAwesomeIcon
               onClick={() => {
                 if (!deleteDisabled) handleDeleteRequest(props.row.getValue('id'));
@@ -303,6 +390,8 @@ function CustomRealmDashboard({ alert }: Props) {
     if (useLoading) setLoading(false);
   };
 
+  const accessSyncFailedRealms = realmRequests.filter((realm) => realm.accessSyncFailedAt);
+
   return (
     <>
       <Head>
@@ -314,7 +403,23 @@ function CustomRealmDashboard({ alert }: Props) {
             <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />
           </AlignCenter>
         ) : (
-          <Table columns={columns} data={realmRequests} variant="mini" enablePagination onRowSelect={handleRowSelect} />
+          <>
+            {accessSyncFailedRealms.length > 0 && (
+              <AccessSyncBanner data-testid="access-sync-banner">
+                <FontAwesomeIcon icon={faTriangleExclamation} className="icon" />
+                Realm admin access could not be synchronized for{' '}
+                <strong>{accessSyncFailedRealms.map((realm) => realm.realm).join(', ')}</strong>. The registered
+                contacts may not have the access they expect. Retry the sync from the actions column.
+              </AccessSyncBanner>
+            )}
+            <Table
+              columns={columns}
+              data={realmRequests}
+              variant="mini"
+              enablePagination
+              onRowSelect={handleRowSelect}
+            />
+          </>
         )}
 
         {selectedRow && (

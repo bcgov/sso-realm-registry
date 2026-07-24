@@ -33,6 +33,9 @@ model Roster {
   approved                         Boolean?  @map("approved")
   requestor                        String?   @map("requestor") @db.VarChar(100)
   archived                         Boolean?  @map("archived")
+  productOwnerGuid                 String?   @map("product_owner_guid") @db.VarChar(1000)
+  technicalContactGuid             String?   @map("technical_contact_guid") @db.VarChar(1000)
+  accessSyncFailedAt               DateTime? @map("access_sync_failed_at") @db.Timestamptz(6)
   events                           Event[]
 
   @@map("rosters")

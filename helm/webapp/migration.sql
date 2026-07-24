@@ -77,3 +77,12 @@ CREATE TABLE IF NOT EXISTS
  ALTER TABLE public.rosters
    DROP COLUMN IF EXISTS rc_channel,
    DROP COLUMN IF EXISTS rc_channel_owned_by;
+
+ALTER TABLE public.rosters
+ADD COLUMN IF NOT EXISTS product_owner_guid VARCHAR(1000);
+
+ALTER TABLE public.rosters
+ADD COLUMN IF NOT EXISTS technical_contact_guid VARCHAR(1000);
+
+ALTER TABLE public.rosters
+ADD COLUMN IF NOT EXISTS access_sync_failed_at TIMESTAMP WITH TIME ZONE;

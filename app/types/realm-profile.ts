@@ -49,6 +49,8 @@ export interface CustomRealmFormData {
   materialToSend?: string;
   status?: Status;
   archived?: boolean;
+  /** Set while the realm's keycloak admin access has not converged on its registered contacts */
+  accessSyncFailedAt?: string | null;
 }
 
 export interface Ministry {

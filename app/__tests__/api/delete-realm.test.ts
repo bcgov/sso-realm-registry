@@ -73,11 +73,20 @@ describe('Delete Realm Permissions', () => {
   });
 });
 
+const PRODUCT_OWNER_GUID = 'po-guid';
+const TECHNICAL_CONTACT_GUID = 'tc-guid';
+
 describe('Delete Realms', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (prisma.roster.findUnique as jest.Mock).mockImplementation(() => {
-      return Promise.resolve({ ...CustomRealmProfiles[0], id: 1, archived: true });
+      return Promise.resolve({
+        ...CustomRealmProfiles[0],
+        id: 1,
+        archived: true,
+        productOwnerGuid: PRODUCT_OWNER_GUID,
+        technicalContactGuid: TECHNICAL_CONTACT_GUID,
+      });
     });
   });
 
@@ -94,15 +103,13 @@ describe('Delete Realms', () => {
 
     expect(res.statusCode).toBe(200);
     expect(manageCustomRealm).toHaveBeenCalledTimes(1);
-    // PO email and technical contact email removed in each realm
-    CustomRealmProfiles[0].environments.forEach((env) => {
-      expect(removeUserAsRealmAdmin).toHaveBeenCalledWith(
-        [CustomRealmProfiles[0].productOwnerEmail, CustomRealmProfiles[0].technicalContactEmail],
-        env,
-        CustomRealmProfiles[0].realm,
-      );
-    });
-    expect(removeUserAsRealmAdmin).toHaveBeenCalledTimes(3);
+    // Access is keyed by the guids access was granted to, and revoked across every environment
+    expect(removeUserAsRealmAdmin).toHaveBeenCalledTimes(1);
+    expect(removeUserAsRealmAdmin).toHaveBeenCalledWith(
+      [PRODUCT_OWNER_GUID, TECHNICAL_CONTACT_GUID],
+      CustomRealmProfiles[0].environments,
+      CustomRealmProfiles[0].realm,
+    );
     expect(emailList.length).toBe(1);
     expect(emailList[0].subject).toContain(
       `Notification: Custom Realm ${CustomRealmProfiles[0].realm} has now been Deleted.`,
