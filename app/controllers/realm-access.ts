@@ -4,12 +4,7 @@ import prisma from 'utils/prisma';
 import { createEvent } from 'utils/helpers';
 import { EventEnum } from 'validators/create-realm';
 import { fetchIdirUser } from 'controllers/msal';
-import {
-  addUserAsRealmAdmin,
-  buildMasterUsername,
-  ensureMasterRealmAdminGroup,
-  removeUserAsRealmAdmin,
-} from 'controllers/keycloak';
+import { addUserAsRealmAdmin, buildMasterUsername, removeUserAsRealmAdmin } from 'controllers/keycloak';
 
 /**
  * The contacts that receive master realm access. The second technical contact is registry
@@ -113,8 +108,6 @@ export const syncRealmAccess = async (realmId: number, idirUserId?: string): Pro
 
   for (const env of envs) {
     try {
-      await ensureMasterRealmAdminGroup(env, realmName);
-
       for (const guid of desiredGuids) {
         await addUserAsRealmAdmin(buildMasterUsername(guid), [env], realmName);
       }

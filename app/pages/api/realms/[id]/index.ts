@@ -371,11 +371,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           return res.status(422).send('Unable to process the delete request at this time');
         }
 
-        await removeUserAsRealmAdmin(
-          [realm.productOwnerGuid, realm.technicalContactGuid],
-          realm.environments,
-          realm.realm as string,
+        // On legacy rows the guid columns are null, so resolve the current contacts through Graph
+        // before revoking. The master `<realm>-realm-admin` role includes `manage-realm`, which
+        // would let a lingering admin re-enable the realm themselves, so the cleanup must run even
+        // when the row predates the guid columns.
+        const revokeGuids = await Promise.all(
+          [
+            { guid: realm.productOwnerGuid, idirUserId: realm.productOwnerIdirUserId },
+            { guid: realm.technicalContactGuid, idirUserId: realm.technicalContactIdirUserId },
+          ].map(async ({ guid, idirUserId }) => guid ?? (await resolveIdirGuid(idirUserId))),
         );
+
+        await removeUserAsRealmAdmin(revokeGuids, realm.environments, realm.realm as string);
 
         await sendDeletionCompleteEmail(realm);
         return res.status(200).send('Success');

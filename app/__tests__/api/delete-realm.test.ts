@@ -3,6 +3,7 @@ import deleteHandler from '../../pages/api/realms/[id]';
 import prisma from 'utils/prisma';
 import { CustomRealmProfiles, MockHttpRequest } from '../fixtures';
 import { manageCustomRealm, removeUserAsRealmAdmin } from 'controllers/keycloak';
+import { fetchIdirUser } from 'controllers/msal';
 import { ssoTeamEmail } from 'utils/mailer';
 import { createMockSendEmail, mockAdminSession, mockSession } from './utils/mocks';
 import { createEvent } from 'utils/helpers';
@@ -24,6 +25,12 @@ jest.mock('../../controllers/keycloak', () => {
     disableCustomRealm: jest.fn(() => true),
     deleteCustomRealm: jest.fn(() => true),
     manageCustomRealm: jest.fn(() => true),
+  };
+});
+
+jest.mock('../../controllers/msal', () => {
+  return {
+    fetchIdirUser: jest.fn(),
   };
 });
 
@@ -123,6 +130,44 @@ describe('Delete Realms', () => {
     );
     expect(emailList[0].to.length).toBe(3);
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
+  });
+
+  it('resolves the guid through Graph on a legacy null-guid row before revoking', async () => {
+    mockAdminSession();
+    (prisma.roster.findUnique as jest.Mock).mockImplementation(() =>
+      Promise.resolve({
+        ...CustomRealmProfiles[0],
+        id: 1,
+        archived: true,
+        productOwnerGuid: null,
+        technicalContactGuid: null,
+      }),
+    );
+    (fetchIdirUser as jest.Mock).mockImplementation(({ userId }: { userId: string }) =>
+      Promise.resolve({ guid: `${userId}-resolved`, userId }),
+    );
+
+    const { req, res }: MockHttpRequest = createMocks({ method: 'DELETE', query: { id: 1 } });
+    await deleteHandler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(removeUserAsRealmAdmin).toHaveBeenCalledWith(
+      [
+        `${CustomRealmProfiles[0].productOwnerIdirUserId}-resolved`,
+        `${CustomRealmProfiles[0].technicalContactIdirUserId}-resolved`,
+      ],
+      CustomRealmProfiles[0].environments,
+      CustomRealmProfiles[0].realm,
+    );
+  });
+
+  it('skips Graph resolution when the guid is already recorded', async () => {
+    mockAdminSession();
+    const { req, res }: MockHttpRequest = createMocks({ method: 'DELETE', query: { id: 1 } });
+    await deleteHandler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(fetchIdirUser).not.toHaveBeenCalled();
   });
 
   it('does not send email if deleting realm in all environments fails', async () => {
