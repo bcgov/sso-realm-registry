@@ -34,7 +34,7 @@
     "jws": "^4.0.1",
     "lodash": "^4.18.1",
     "mustache": "^4.2.0",
-    "next": "16.2.9",
+    "next": "16.2.11",
     "next-auth": "^4.24.14",
     "octokit": "^5.0.5",
     "pg": "^8.20.0",
@@ -101,8 +101,11 @@
     "minimatch": ">=3.1.2",
     "@types/react": "19.2.14",
     "flatted": "3.4.2",
+    "axios": "1.18.1",
     "axios/form-data": "4.0.6",
-    "next/postcss": "8.5.16",
-    "next-auth/uuid": "11.1.1"
+    "next/postcss": "8.5.18",
+    "next-auth/uuid": "11.1.1",
+    "ws": "8.21.1",
+    "brace-expansion": "5.0.8"
   }
 }
