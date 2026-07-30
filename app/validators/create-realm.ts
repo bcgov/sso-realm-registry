@@ -1,4 +1,5 @@
 import { RoleEnum } from 'utils/helpers';
+import { MAX_ADDITIONAL_USERS } from 'utils/constants';
 import * as yup from 'yup';
 
 export enum ActionEnum {
@@ -47,16 +48,36 @@ export enum EnvironmentsEnum {
 }
 
 /**
- * Shared fields all roles can update
+ * A membership slot. The client only ever identifies a person: `azureId` for a fresh
+ * pick out of the directory search, `userId` for a member that was already saved.
+ * Anything else in the payload (guid, username, email) is stripped, because the stored
+ * guid is the direct provisioning key for realm admin access.
+ */
+export const memberSchema = yup
+  .object()
+  .shape({
+    userId: yup.number().integer().positive().optional(),
+    azureId: yup.string().optional(),
+  })
+  .test('member-identified', '${path} must be selected', (value) => Boolean(value?.userId || value?.azureId));
+
+/**
+ * Shared fields all roles can update. Product owner and technical lead are symmetric on
+ * membership: either may change any slot, so membership lives here rather than in the
+ * product owner branch.
  */
 const commonSchema = yup.object().shape({
   ministry: yup.string().optional().nullable(),
   division: yup.string().optional().nullable(),
   branch: yup.string().optional().nullable(),
-  technicalContactIdirUserId: yup.string().required().min(2),
-  technicalContactEmail: yup.string().required().email(),
-  secondTechnicalContactEmail: yup.string().email().optional(),
-  secondTechnicalContactIdirUserId: yup.string().optional(),
+  productOwner: memberSchema,
+  technicalLead: memberSchema,
+  additionalUsers: yup
+    .array()
+    .of(memberSchema)
+    .max(MAX_ADDITIONAL_USERS, `additionalUsers may contain at most ${MAX_ADDITIONAL_USERS} people`)
+    .optional()
+    .default([]),
 });
 
 export const createRealmSchema = yup
@@ -74,8 +95,6 @@ export const createRealmSchema = yup
     purpose: yup.string().min(2).required(),
     productName: yup.string().required(),
     primaryEndUsers: yup.array().required().min(1),
-    productOwnerEmail: yup.string().required().email(),
-    productOwnerIdirUserId: yup.string().required().min(2),
   })
   .concat(commonSchema);
 
@@ -86,8 +105,6 @@ export const getUpdateRealmSchemaByRole = (role: string = '') => {
       productName: yup.string().required(),
       purpose: yup.string().min(2).required(),
       primaryEndUsers: yup.array().optional(),
-      productOwnerEmail: yup.string().email().required(),
-      productOwnerIdirUserId: yup.string().required(),
     })
     .concat(commonSchema);
 

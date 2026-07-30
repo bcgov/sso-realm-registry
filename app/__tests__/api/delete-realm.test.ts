@@ -1,12 +1,13 @@
 import { createMocks } from 'node-mocks-http';
 import deleteHandler from '../../pages/api/realms/[id]';
 import prisma from 'utils/prisma';
-import { CustomRealmProfiles, MockHttpRequest } from '../fixtures';
-import { manageCustomRealm, removeUserAsRealmAdmin } from 'controllers/keycloak';
+import { CustomRealmProfiles, MockHttpRequest, buildMembers } from '../fixtures';
+import { manageCustomRealm } from 'controllers/keycloak';
 import { ssoTeamEmail } from 'utils/mailer';
 import { createMockSendEmail, mockAdminSession, mockSession } from './utils/mocks';
 import { createEvent } from 'utils/helpers';
 import { EventEnum } from 'validators/create-realm';
+import { revokeAllRealmAccess } from 'controllers/user-access';
 
 jest.mock('../../utils/helpers', () => {
   return {
@@ -19,11 +20,22 @@ jest.mock('utils/ches');
 
 jest.mock('../../controllers/keycloak', () => {
   return {
-    removeUserAsRealmAdmin: jest.fn(() => true),
     createCustomRealm: jest.fn(() => true),
-    disableCustomRealm: jest.fn(() => true),
     deleteCustomRealm: jest.fn(() => true),
     manageCustomRealm: jest.fn(() => true),
+    syncUserAccess: jest.fn(() => true),
+  };
+});
+
+const members = buildMembers();
+
+jest.mock('../../controllers/user-access', () => {
+  const actual = jest.requireActual('../../controllers/user-access');
+  return {
+    ...actual,
+    getUserRoleOnRealm: jest.fn(() => Promise.resolve(null)),
+    getRealmMembers: jest.fn(() => Promise.resolve(members)),
+    revokeAllRealmAccess: jest.fn(() => Promise.resolve([])),
   };
 });
 
@@ -94,25 +106,16 @@ describe('Delete Realms', () => {
 
     expect(res.statusCode).toBe(200);
     expect(manageCustomRealm).toHaveBeenCalledTimes(1);
-    // PO email and technical contact email removed in each realm
-    CustomRealmProfiles[0].environments.forEach((env) => {
-      expect(removeUserAsRealmAdmin).toHaveBeenCalledWith(
-        [CustomRealmProfiles[0].productOwnerEmail, CustomRealmProfiles[0].technicalContactEmail],
-        env,
-        CustomRealmProfiles[0].realm,
-      );
-    });
-    expect(removeUserAsRealmAdmin).toHaveBeenCalledTimes(3);
+
+    // Every member loses realm admin access, in every environment.
+    expect(revokeAllRealmAccess).toHaveBeenCalledTimes(1);
+
     expect(emailList.length).toBe(1);
     expect(emailList[0].subject).toContain(
       `Notification: Custom Realm ${CustomRealmProfiles[0].realm} has now been Deleted.`,
     );
     expect(emailList[0].to).toEqual(
-      expect.arrayContaining([
-        CustomRealmProfiles[0].productOwnerEmail,
-        CustomRealmProfiles[0].technicalContactEmail,
-        CustomRealmProfiles[0].secondTechnicalContactEmail,
-      ]),
+      expect.arrayContaining([members[0].user.email, members[1].user.email, members[2].user.email]),
     );
     expect(emailList[0].to.length).toBe(3);
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
@@ -135,6 +138,7 @@ describe('Delete Realms', () => {
     expect(createEventArgs.eventCode).toBe(EventEnum.REQUEST_DELETE_FAILED);
     expect(res.statusCode).toBe(422);
     expect(manageCustomRealm).toHaveBeenCalledTimes(1);
+    expect(revokeAllRealmAccess).not.toHaveBeenCalled();
     expect(emailList.length).toBe(0);
   });
 });

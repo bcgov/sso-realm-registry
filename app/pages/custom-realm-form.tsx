@@ -21,12 +21,9 @@ const defaultData: CustomRealmFormData = {
   purpose: '',
   productName: '',
   primaryEndUsers: [],
-  productOwnerEmail: '',
-  productOwnerIdirUserId: '',
-  technicalContactEmail: '',
-  technicalContactIdirUserId: '',
-  secondTechnicalContactIdirUserId: '',
-  secondTechnicalContactEmail: '',
+  productOwner: null,
+  technicalLead: null,
+  additionalUsers: [],
 };
 
 interface Props {

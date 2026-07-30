@@ -1,9 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getIdirUserGuid } from 'utils/jwt';
-import { SearchCriteria, generateXML, getBceidAccounts, makeSoapRequest } from 'utils/idir';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
-import { HttpsProxyAgent } from 'https-proxy-agent';
 import { callAzureGraphApi } from 'controllers/msal';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<any>) {

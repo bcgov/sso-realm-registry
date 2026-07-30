@@ -9,12 +9,24 @@ import { omit } from 'lodash';
 import {
   offboardRealmAdmin,
   onboardNewRealmAdmin,
+  sendAccessSyncFailureEmail,
   sendDeletionCompleteEmail,
   sendReadyToUseEmail,
   sendUpdateEmail,
 } from 'utils/mailer';
-import { addUserAsRealmAdmin, manageCustomRealm, removeUserAsRealmAdmin } from 'controllers/keycloak';
-import { fetchIdirUser } from 'controllers/msal';
+import { manageCustomRealm } from 'controllers/keycloak';
+import {
+  MemberRoleEnum,
+  MemberValidationError,
+  applyMembershipChanges,
+  canEditRealm,
+  getRealmMembers,
+  getUserRoleOnRealm,
+  reconcileRealmAccess,
+  resolveMembership,
+  revokeAllRealmAccess,
+  serializeRoster,
+} from 'controllers/user-access';
 
 interface ErrorData {
   success: boolean;
@@ -22,6 +34,8 @@ interface ErrorData {
 }
 
 type Data = ErrorData | string;
+
+const membershipFields = ['productOwner', 'technicalLead', 'additionalUsers'];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   let username: string;
@@ -32,50 +46,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     username = session?.user?.idir_username || '';
     const isAdmin = checkAdminRole(session?.user);
+    const realmId = Number.parseInt(req.query.id as string, 10);
+
     if (req.method === 'GET') {
-      let roster: any = null;
+      const roster = await prisma.roster.findUnique({ where: { id: realmId } });
+      if (!roster) return res.send(null as any);
 
-      const { id } = req.query;
+      // Additional users may view the realm they hold access to, but not edit it.
+      const memberRole = isAdmin ? null : await getUserRoleOnRealm(realmId, username);
+      if (!isAdmin && !memberRole) return res.send(null as any);
 
-      if (isAdmin) {
-        roster = await prisma.roster.findUnique({
-          where: {
-            id: Number.parseInt(id as string, 10),
-          },
-        });
-      } else {
-        roster = await prisma.roster.findUnique({
-          where: {
-            id: Number.parseInt(id as string, 10),
-            OR: [
-              {
-                technicalContactIdirUserId: {
-                  equals: username,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                secondTechnicalContactIdirUserId: {
-                  equals: username,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                productOwnerIdirUserId: {
-                  equals: username,
-                  mode: 'insensitive',
-                },
-              },
-            ],
-          },
-        });
-      }
-      roster = !isAdmin ? omit(roster, adminOnlyFields) : roster;
-      return res.send(roster);
+      const members = await getRealmMembers(realmId);
+      const payload = serializeRoster(roster, members);
+      return res.send((isAdmin ? payload : omit(payload, adminOnlyFields)) as any);
     } else if (req.method === 'PUT') {
       let updateRequest = req.body;
       let updaterRole = '';
-      let isPO = false;
       let updatedRealm: any;
       let updatingApprovalStatus = false;
       let allEnvRealmsCreated = false;
@@ -91,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
         currentRequest = await prisma.roster.findUnique({
           where: {
-            id: Number.parseInt(req.query.id as string, 10),
+            id: realmId,
           },
         });
 
@@ -99,16 +85,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           return res.status(400).json({ success: false, error: 'Invalid request' });
         }
 
-        isPO = username.toLowerCase() === currentRequest.productOwnerIdirUserId?.toLowerCase();
-        const isTechnicalContact = [
-          currentRequest.technicalContactIdirUserId.toLowerCase(),
-          currentRequest.secondTechnicalContactIdirUserId.toLowerCase(),
-        ].includes(username.toLowerCase());
+        const memberRole = await getUserRoleOnRealm(realmId, username);
+        if (!canEditRealm(memberRole, isAdmin)) return res.status(401).json({ success: false, error: 'unauthorized' });
 
-        if (!isAdmin && !isPO && !isTechnicalContact)
-          return res.status(401).json({ success: false, error: 'unauthorized' });
-
-        updaterRole = isAdmin ? RoleEnum.ADMIN : isPO ? RoleEnum.PRODUCT_OWNER : RoleEnum.TECHNICAL_LEAD;
+        // Product owner and technical lead are symmetric on membership; they differ only
+        // on the product fields, which is why there are still three schema branches.
+        updaterRole = isAdmin
+          ? RoleEnum.ADMIN
+          : memberRole === MemberRoleEnum.PRODUCT_OWNER
+          ? RoleEnum.PRODUCT_OWNER
+          : RoleEnum.TECHNICAL_LEAD;
 
         try {
           updateRequest = getUpdateRealmSchemaByRole(updaterRole).validateSync(updateRequest, {
@@ -120,6 +106,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           return res.status(400).json({ success: false, error: error.errors });
         }
 
+        let desiredMembers;
+        try {
+          desiredMembers = await resolveMembership(updateRequest);
+        } catch (err) {
+          if (err instanceof MemberValidationError) {
+            return res.status(400).json({ success: false, error: [err.message] });
+          }
+          throw err;
+        }
+
         if (isAdmin) {
           // when request is pending and gets approved
           if (
@@ -129,7 +125,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           ) {
             updatingApprovalStatus = true;
             await createEvent({
-              realmId: Number.parseInt(req.query.id as string, 10),
+              realmId,
               eventCode: EventEnum.REQUEST_APPROVE_SUCCESS,
               idirUserId: username,
               details: req.body,
@@ -143,7 +139,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             }
 
             await createEvent({
-              realmId: Number.parseInt(req.query.id as string, 10),
+              realmId,
               eventCode: allEnvRealmsCreated ? EventEnum.REQUEST_APPLY_SUCCESS : EventEnum.REQUEST_APPLY_FAILED,
               idirUserId: username,
               details: req.body,
@@ -151,28 +147,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
             updateRequest.approved = true;
             updateRequest.status = allEnvRealmsCreated ? StatusEnum.APPLIED : StatusEnum.APPLYFAILED;
-
-            try {
-              if (allEnvRealmsCreated) {
-                [currentRequest?.productOwnerIdirUserId, currentRequest?.technicalContactIdirUserId].forEach(
-                  async (idirUserId) => {
-                    const user = await fetchIdirUser({ userId: String(idirUserId) });
-
-                    if (user) {
-                      await addUserAsRealmAdmin(
-                        `${user.guid.toLowerCase()}@azureidir`,
-                        currentRequest?.environments,
-                        currentRequest?.realm,
-                      );
-                    } else {
-                      console.error(`No guid found for user ${String(idirUserId)}`);
-                    }
-                  },
-                );
-              }
-            } catch (err) {
-              console.error('failed to create realm admins', err);
-            }
 
             // when request is pending and gets rejected
           } else if (
@@ -182,7 +156,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           ) {
             updatingApprovalStatus = true;
             await createEvent({
-              realmId: Number.parseInt(req.query.id as string, 10),
+              realmId,
               eventCode: EventEnum.REQUEST_REJECT_SUCCESS,
               idirUserId: username,
               details: req.body,
@@ -193,98 +167,59 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           if (currentRequest.status !== StatusEnum.PENDING) {
             updateRequest = omit(updateRequest, ['approved']);
           }
-
-          updatedRealm = await prisma.roster.update({
-            where: {
-              id: Number.parseInt(req.query.id as string, 10),
-            },
-            data: {
-              ...updateRequest,
-              lastUpdatedBy,
-            },
-          });
-        } else {
-          updatedRealm = await prisma.roster.update({
-            where: {
-              id: Number.parseInt(req.query.id as string, 10),
-              OR: [
-                {
-                  technicalContactIdirUserId: {
-                    equals: username,
-                    mode: 'insensitive',
-                  },
-                },
-                {
-                  secondTechnicalContactIdirUserId: {
-                    equals: username,
-                    mode: 'insensitive',
-                  },
-                },
-                {
-                  productOwnerIdirUserId: {
-                    equals: username,
-                    mode: 'insensitive',
-                  },
-                },
-              ],
-            },
-            data: {
-              ...updateRequest,
-              lastUpdatedBy,
-            },
-          });
         }
 
+        updatedRealm = await prisma.roster.update({
+          where: {
+            id: realmId,
+          },
+          data: {
+            ...omit(updateRequest, membershipFields),
+            lastUpdatedBy,
+          },
+        });
+
+        // The database transaction commits regardless of the Keycloak outcome; failures
+        // leave synced_at / revoked_at null, which is what the sync button picks up.
+        const { changedIds } = await applyMembershipChanges(realmId, desiredMembers);
+
+        // A save typically touches one or two members, so awaiting it is cheap. Approval
+        // is the one path that reconciles everybody.
+        const reconciledAll = updatingApprovalStatus && updateRequest.approved === true && allEnvRealmsCreated;
+        const reconcile = await reconcileRealmAccess(updatedRealm, reconciledAll ? {} : { memberIds: changedIds });
+
+        const members = await getRealmMembers(realmId);
+
         await createEvent({
-          realmId: Number.parseInt(req.query.id as string, 10),
+          realmId,
           eventCode: EventEnum.REQUEST_UPDATE_SUCCESS,
           idirUserId: username,
           details: getUpdatedProperties(currentRequest, updatedRealm),
         });
-        updatedRealm = !isAdmin ? omit(updatedRealm, adminOnlyFields) : updatedRealm;
 
-        let typeOfContactUpdate = '';
-
-        if (
-          currentRequest.approved &&
-          currentRequest.status === StatusEnum.APPLIED &&
-          currentRequest.productOwnerEmail !== updateRequest.productOwnerEmail
-        ) {
-          typeOfContactUpdate = 'Product Owner';
-          await onboardNewRealmAdmin(
-            session,
-            updatedRealm,
-            currentRequest.productOwnerEmail,
-            updatedRealm.productOwnerEmail,
-            typeOfContactUpdate,
-          );
-          await offboardRealmAdmin(session, updatedRealm, currentRequest.productOwnerEmail, typeOfContactUpdate);
+        // Confirmations only go out once access actually changed everywhere, so nobody is
+        // told they have access that was never provisioned. Approval has its own email.
+        if (!updatingApprovalStatus) {
+          for (const member of reconcile.added) {
+            await onboardNewRealmAdmin(session, updatedRealm, member, members);
+          }
+          for (const member of reconcile.removed) {
+            await offboardRealmAdmin(session, updatedRealm, member, members);
+          }
         }
 
-        if (
-          currentRequest.approved &&
-          currentRequest.status === StatusEnum.APPLIED &&
-          currentRequest.technicalContactEmail !== updateRequest.technicalContactEmail
-        ) {
-          typeOfContactUpdate = 'Technical Contact';
-          await onboardNewRealmAdmin(
-            session,
-            updatedRealm,
-            currentRequest.technicalContactEmail,
-            updatedRealm.technicalContactEmail,
-            typeOfContactUpdate,
-          );
-          await offboardRealmAdmin(session, updatedRealm, currentRequest.technicalContactEmail, typeOfContactUpdate);
-        }
-        // emails
-        await sendUpdateEmail(updatedRealm, session, updatingApprovalStatus);
+        // One summary per attempt, so an environment outage cannot flood the inbox.
+        await sendAccessSyncFailureEmail(updatedRealm, reconcile.failures);
+
+        await sendUpdateEmail(updatedRealm, session, updatingApprovalStatus, members);
         if (isAdmin && updatingApprovalStatus && updatedRealm.approved && allEnvRealmsCreated)
-          await sendReadyToUseEmail(currentRequest);
+          await sendReadyToUseEmail(updatedRealm, members);
 
-        return res.send(updatedRealm);
+        const payload = serializeRoster(updatedRealm, members);
+        return res.send((isAdmin ? payload : omit(payload, adminOnlyFields)) as any);
       } catch (err) {
         await createEvent({
-          realmId: Number.parseInt(req.query.id as string, 10),
+          realmId,
           eventCode: EventEnum.REQUEST_UPDATE_FAILED,
           idirUserId: username,
           details: getUpdatedProperties(currentRequest, updatedRealm),
@@ -302,7 +237,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       try {
         const realm = await prisma.roster.findUnique({
           where: {
-            id: Number.parseInt(id as string, 10),
+            id: realmId,
             archived: false,
           },
         });
@@ -322,12 +257,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             status: allEnvRealmsDeleted ? StatusEnum.APPLIED : StatusEnum.APPLYFAILED,
           },
           where: {
-            id: Number.parseInt(id as string, 10),
+            id: realmId,
           },
         });
 
         await createEvent({
-          realmId: Number.parseInt(req.query.id as string, 10),
+          realmId,
           eventCode: allEnvRealmsDeleted ? EventEnum.REQUEST_DELETE_SUCCESS : EventEnum.REQUEST_DELETE_FAILED,
           idirUserId: username,
           details: req.body,
@@ -337,22 +272,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           return res.status(422).send('Unable to process the delete request at this time');
         }
 
-        await Promise.all(
-          realm.environments.map((env) => {
-            return removeUserAsRealmAdmin(
-              [realm.productOwnerEmail, realm.technicalContactEmail],
-              env,
-              realm.realm as string,
-            );
-          }),
-        );
+        const members = await getRealmMembers(realmId);
+        // Membership survives the archive so a restore can re-provision it.
+        const failures = await revokeAllRealmAccess(realm);
+        await sendAccessSyncFailureEmail(realm, failures);
 
-        await sendDeletionCompleteEmail(realm);
+        await sendDeletionCompleteEmail(realm, members);
         return res.status(200).send('Success');
       } catch (err) {
         console.error(err);
         await createEvent({
-          realmId: Number.parseInt(req.query.id as string, 10),
+          realmId,
           eventCode: EventEnum.REQUEST_DELETE_FAILED,
           idirUserId: username,
           details: req.body,

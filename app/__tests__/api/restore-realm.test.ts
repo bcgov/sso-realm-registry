@@ -6,7 +6,8 @@ import { EventEnum, StatusEnum } from 'validators/create-realm';
 import { ssoTeamEmail } from 'utils/mailer';
 import { manageCustomRealm } from 'controllers/keycloak';
 import { createMockSendEmail, mockAdminSession, mockSession, mockUserSession } from './utils/mocks';
-import { MockHttpRequest } from '__tests__/fixtures';
+import { MockHttpRequest, buildMembers } from '__tests__/fixtures';
+import { reconcileRealmAccess } from 'controllers/user-access';
 
 jest.mock('utils/ches');
 
@@ -19,18 +20,21 @@ jest.mock('../../utils/helpers', () => {
 
 jest.mock('../../controllers/keycloak', () => {
   return {
-    removeUserAsRealmAdmin: jest.fn(),
     createCustomRealm: jest.fn(() => true),
     manageCustomRealm: jest.fn(() => true),
     deleteCustomRealm: jest.fn(() => true),
+    syncUserAccess: jest.fn(() => true),
   };
 });
 
-jest.mock('../../utils/idir', () => {
+const members = buildMembers();
+
+jest.mock('../../controllers/user-access', () => {
+  const actual = jest.requireActual('../../controllers/user-access');
   return {
-    generateXML: jest.fn(),
-    makeSoapRequest: jest.fn(() => Promise.resolve({ response: null })),
-    getBceidAccounts: jest.fn(() => Promise.resolve([])),
+    ...actual,
+    getRealmMembers: jest.fn(() => Promise.resolve(members)),
+    reconcileRealmAccess: jest.fn(() => Promise.resolve({ provisioned: true, added: [], removed: [], failures: [] })),
   };
 });
 
@@ -53,8 +57,6 @@ jest.mock('../../pages/api/auth/[...nextauth]', () => {
   };
 });
 
-const PO_EMAIL = 'po@mail.com';
-const TECHNICAL_CONTACT_EMAIL = 'tc@mail.com';
 const realm = {
   id: 2,
   realm: 'realm',
@@ -63,12 +65,6 @@ const realm = {
   primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
   environments: ['dev', 'test', 'prod'],
   preferredAdminLoginMethod: 'azureidir',
-  productOwnerEmail: PO_EMAIL,
-  productOwnerIdirUserId: 'po',
-  technicalContactEmail: TECHNICAL_CONTACT_EMAIL,
-  technicalContactIdirUserId: 'd@e.com',
-  secondTechnicalContactIdirUserId: 'dmsd',
-  secondTechnicalContactEmail: 'a@b.com',
   ministry: 'ministry',
   branch: 'branch',
   division: 'division',
@@ -171,10 +167,31 @@ describe('Restore Realm', () => {
     expect(emailList.length).toBe(1);
     expect(emailList[0].subject).toContain(`Notification: Realm ${realm.realm} Restoration Requested`);
     expect(emailList[0].to).toEqual(
-      expect.arrayContaining([realm.productOwnerEmail, realm.technicalContactEmail, realm.secondTechnicalContactEmail]),
+      expect.arrayContaining([members[0].user.email, members[1].user.email, members[2].user.email]),
     );
     expect(emailList[0].to.length).toBe(3);
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
+  });
+
+  it('Restores access by reconciling stored membership, with no directory lookup', async () => {
+    mockAdminSession();
+    const { req, res }: MockHttpRequest = createMocks({ method: 'POST' });
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    // The stored guid is the provisioning key, so restore is a plain reconcile of everyone.
+    expect(reconcileRealmAccess).toHaveBeenCalledTimes(1);
+    expect((reconcileRealmAccess as jest.Mock).mock.calls[0][1]).toBeUndefined();
+  });
+
+  it('Does not reconcile access when the realm could not be restored', async () => {
+    mockAdminSession();
+    (manageCustomRealm as jest.Mock).mockImplementationOnce(() => Promise.reject());
+    const { req, res }: MockHttpRequest = createMocks({ method: 'POST' });
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(422);
+    expect(reconcileRealmAccess).not.toHaveBeenCalled();
   });
 
   it('Updates the expected realm fields in the database', async () => {
@@ -184,7 +201,6 @@ describe('Restore Realm', () => {
 
     expect(prisma.roster.update).toHaveBeenCalledTimes(1);
     const updateArgs = (prisma.roster.update as jest.Mock).mock.calls[0][0];
-    console.log('🚀 ~ it ~ updateArgs:', updateArgs);
     expect(updateArgs.data).toEqual({
       lastUpdatedBy: 'test, test',
       archived: false,
