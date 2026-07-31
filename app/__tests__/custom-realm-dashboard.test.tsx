@@ -189,6 +189,11 @@ describe('Status update', () => {
 
     const payload = (updateRealmProfile as jest.Mock).mock.calls[0][1];
     expect(payload.approved).toBeTruthy();
+    // The update schema validates membership on every save, so approving has to send the
+    // slots rebuilt from the row's `members` list rather than the list itself.
+    expect(payload.productOwner).toEqual(expect.objectContaining({ userId: expect.any(Number) }));
+    expect(payload.technicalLead).toEqual(expect.objectContaining({ userId: expect.any(Number) }));
+    expect(payload.additionalUsers).toHaveLength(1);
   });
 
   it('Fires expected api request when declining', async () => {
@@ -208,6 +213,8 @@ describe('Status update', () => {
 
     const payload = (updateRealmProfile as jest.Mock).mock.calls[0][1];
     expect(payload.approved).toBeFalsy();
+    expect(payload.productOwner).toEqual(expect.objectContaining({ userId: expect.any(Number) }));
+    expect(payload.technicalLead).toEqual(expect.objectContaining({ userId: expect.any(Number) }));
   });
 
   it('Updates status in table only when successfully approved', async () => {

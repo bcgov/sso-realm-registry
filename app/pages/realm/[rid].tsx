@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import ResponsiveContainer, { MediaRule } from 'components/ResponsiveContainer';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
 import { updateRealmProfile } from 'services/realm';
-import { CustomRealmFormData, RealmMember, RealmMemberProfile, RealmProfile } from 'types/realm-profile';
+import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import styled from 'styled-components';
 import RealmForm from 'components/RealmForm';
 import { getUpdateRealmSchemaByRole } from 'validators/create-realm';
@@ -17,6 +17,7 @@ import prisma from 'utils/prisma';
 // bundle. Keep it that way: the module reaches Graph and the Keycloak admin client.
 import { canEditRealm, getRealmMembers, getUserRoleOnRealm, serializeRoster } from 'controllers/user-access';
 import { MemberRoleEnum } from 'utils/constants';
+import { buildFormData } from 'utils/membership';
 
 const Container = styled(ResponsiveContainer)`
   font-size: 1rem;
@@ -37,7 +38,6 @@ const Container = styled(ResponsiveContainer)`
     border-radius: 0;
     padding: 0.5em 0.6em;
     border-radius: 0.25em;
-    margin-bottom: 1rem;
     width: 100%;
 
     &:focus {
@@ -73,22 +73,6 @@ interface Props {
   alert: BottomAlert;
 }
 
-/** A stored member becomes a form row identified by `userId`, not by name or email. */
-const toFormMember = (member?: RealmMemberProfile): RealmMember | null =>
-  member ? { userId: member.userId, email: member.email ?? '', idirUsername: member.idirUsername } : null;
-
-export const buildFormData = (realm: CustomRealmFormData): CustomRealmFormData => {
-  const members = realm.members ?? [];
-  return {
-    ...realm,
-    productOwner: toFormMember(members.find((member) => member.role === MemberRoleEnum.PRODUCT_OWNER)),
-    technicalLead: toFormMember(members.find((member) => member.role === MemberRoleEnum.TECHNICAL_LEAD)),
-    additionalUsers: members
-      .filter((member) => member.role === MemberRoleEnum.ADDITIONAL)
-      .map((member) => toFormMember(member)),
-  };
-};
-
 function EditPage({ realm, role, alert }: Props) {
   if (!realm) {
     return (
@@ -123,16 +107,27 @@ function EditRealm({
       showConfirmButton: true,
       onConfirm: async () => {
         const [, err] = await updateRealmProfile(rid as string, formData as RealmProfile);
-        if (!err) {
-          router.push('/my-dashboard').then(() => {
-            alert.show({
-              variant: 'success',
-              fadeOut: 2500,
-              closable: true,
-              content: 'Realm profile has been updated successfully',
-            });
+        if (err) {
+          // The server rejects membership the form cannot check on its own, so its
+          // reasons have to reach the requester rather than dying in the console.
+          const reasons = err?.response?.data?.error;
+          return alert.show({
+            variant: 'danger',
+            fadeOut: 10000,
+            closable: true,
+            content: Array.isArray(reasons)
+              ? reasons.join(' ')
+              : 'Failed to update the realm profile. Please try again.',
           });
         }
+        router.push('/my-dashboard').then(() => {
+          alert.show({
+            variant: 'success',
+            fadeOut: 2500,
+            closable: true,
+            content: 'Realm profile has been updated successfully',
+          });
+        });
       },
     });
   };

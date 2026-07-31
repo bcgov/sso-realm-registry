@@ -226,7 +226,7 @@ describe('Form Validation', () => {
     expect((submitRealmRequest as jest.Mock).mock.calls[1][0].additionalUsers).toEqual([]);
   });
 
-  it('Drops additional user rows that were never filled in', async () => {
+  it('Rejects additional user rows that were never filled in', async () => {
     const { container } = render(<CustomRealmForm />);
     await fillRequiredFields(container);
 
@@ -236,7 +236,35 @@ describe('Form Validation', () => {
       submitForm();
     });
 
+    expect(getErrorCount(container)).toBe(1);
+    expect(submitRealmRequest).not.toHaveBeenCalled();
+
+    // Removing the row is how the requester says they did not mean to add anybody.
+    fireEvent.click(screen.getByLabelText('Remove additional user 1'));
+
+    await act(async () => {
+      submitForm();
+    });
+
     expect((submitRealmRequest as jest.Mock).mock.calls[0][0].additionalUsers).toEqual([]);
+  });
+
+  it('Flags only the blank row when other rows are filled in', async () => {
+    const { container } = render(<CustomRealmForm />);
+    await fillRequiredFields(container);
+
+    fireEvent.click(screen.getByText('Add user', { selector: 'button' }));
+    await fillSelectField('additional-user-email', container, 2);
+    fireEvent.click(screen.getByText('Add user', { selector: 'button' }));
+
+    await act(async () => {
+      submitForm();
+    });
+
+    expect(submitRealmRequest).not.toHaveBeenCalled();
+    const rowErrors = container.querySelectorAll('.additional-user-email-1 ~ .error-message');
+    expect(container.querySelectorAll('.error-message').length).toBe(1);
+    expect(rowErrors.length).toBe(1);
   });
 
   it('Caps the additional users at ten', () => {
@@ -262,6 +290,29 @@ describe('Form Validation', () => {
     });
 
     await waitFor(() => screen.getByText(/cannot occupy more than one membership slot/));
+    expect(submitRealmRequest).not.toHaveBeenCalled();
+  });
+
+  it('Reports a duplicate against the slot that has to change', async () => {
+    const { container } = render(<CustomRealmForm />);
+    fillTextInput('Custom Realm name', 'name');
+    fillTextInput('Purpose of Realm', 'purpose');
+    fillTextInput('Product Name', 'name');
+    clickInput('People living in BC');
+    // The same account in both slots, so the technical lead is the one to fix.
+    await fillSelectField('product-owner-email', container, 0);
+    await fillSelectField('technical-contact-email', container, 0);
+
+    await act(async () => {
+      submitForm();
+    });
+
+    const techLeadError = container
+      .querySelector('.technical-contact-email')
+      ?.closest('.input-wrapper')
+      ?.querySelector('.error-message');
+    expect(techLeadError?.textContent).toMatch(/cannot occupy more than one membership slot/);
+    expect(getErrorCount(container)).toBe(1);
     expect(submitRealmRequest).not.toHaveBeenCalled();
   });
 });

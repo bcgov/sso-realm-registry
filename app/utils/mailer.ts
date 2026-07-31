@@ -299,102 +299,11 @@ export const sendReadyToUseEmail = async (realm: Roster, members: MemberWithUser
           ${emailHeader}
             <main>
             <p>Your custom realm ${realm.realm} is ready to be accessed.</p>
-            <p>Please follow the instructions below to add Realm Admins:</p>
-            <ol>
-              <li>
-                <p>You are a Realm Admin: Please save these links below for logging in via the master realm:</p>
-                <ul>
-                  <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                    'dev',
-                    realmName,
-                  )}">${generateMasterRealmLinksByEnv('dev', realmName)}</a></p></code></li>
-                  <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                    'test',
-                    realmName,
-                  )}"></a>${generateMasterRealmLinksByEnv('test', realmName)}</p></code></li>
-                  <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                    'prod',
-                    realmName,
-                  )}">${generateMasterRealmLinksByEnv('prod', realmName)}</a></p></code></li>
-                </ul>
-              </li>
-              <li>
-                <p>You must have your identity provider configured. Please follow these <a href="https://bcgov.github.io/sso-docs/advanced/custom-realms/guides/setup-idps-mappers">instructions</a></strong></p>
-              </li>
-              <li>
-                <p> User friendly URLS and configure additional realm admins. To add yourself and others as realm admins via a user friendly url:</p>
-                <ol type="a">
-                  <li>
-                    <p>Log into your custom realm using below links so that you and other admins can be imported into the custom realm</p>
-                    <ul>
-                      <li>
-                      <p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
-      'dev',
-      realmName,
-    )}</a></code></p>
-                      </li>
-                      <li>
-                      <p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
-      'test',
-      realmName,
-    )}</a></code></p>
-                      </li>
-                      <li>
-                      <p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
-      'prod',
-      realmName,
-    )}</a></code></p>
-                      </li>
-                      </ul>
-                  </li>
-                  <li>
-                    <p>At this point you cannot log in, and might see a loading spinner or a <code>forbidden</code> message. Exit from the browser and continue with next step.</p>
-                  </li>
-                  <li>
-                    <p>One of the existing Realm Admins will need to add the user that logged in to #1 above to the custom realm admin group via the <strong>master</strong> links</p>
-                    <ul>
-                      <li>
-                        <p><code><a href="${generateMasterRealmLinksByEnv(
-                          'dev',
-                          realmName,
-                        )}">${generateMasterRealmLinksByEnv('dev', realmName)}</a></code></p>
-                      </li>
-                      <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                        'test',
-                        realmName,
-                      )}">${generateMasterRealmLinksByEnv('test', realmName)}</a></code></p></li>
-                      <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                        'prod',
-                        realmName,
-                      )}">${generateMasterRealmLinksByEnv('prod', realmName)}</a></code></p></li>
-                    </ul>
-                  </li>
-                  <li>
-                    <p>Once you&rsquo;ve done this, you and your realm admins can access your realm via a more user friendly url</p>
-                    <p><span style="color: #ff0000;"><strong>PLEASE SAVE THIS USER FRIENDLY LINK</strong></span> as User Friendly Realm Admin Links</p>
-                    <ul>
-                      <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
-      'dev',
-      realmName,
-    )}</a></code></p></li>
-                      <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
-      'test',
-      realmName,
-    )}</a></code></p></li>
-                      <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
-      'prod',
-      realmName,
-    )}</a></code></p></li>
-                      </ul>
-                  </li>
-                </ol>
-              </li>
-            </ol>
             <p>If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at: <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a></p>
             </main>
           ${emailFooter}
           `,
-    subject: `${prefix}Important: Custom Realm ${realmName} Created and Action Required for Realm Admin Configuration (email 2 of 2)`,
+    subject: `${prefix}Important: Custom Realm ${realmName} Created`,
   });
 };
 

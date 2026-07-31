@@ -65,6 +65,12 @@ const SForm = styled.form<{ collapse: boolean }>`
   .input-wrapper {
     display: flex;
     flex-direction: column;
+
+    .button-wrapper {
+      display: flex;
+      flex-direction: row;
+      column-gap: 0.5rem;
+    }
   }
 
   .checkbox-wrapper,
@@ -203,6 +209,9 @@ interface Props {
 }
 
 const requiredEmailMessage = 'Fill this in with a proper email.';
+/** A membership slot either failed the schema, or carries a message of its own. */
+const memberErrorMessage = (error: boolean | string | undefined) =>
+  typeof error === 'string' ? error : requiredEmailMessage;
 const twoCharactersRequiredMessage = 'This field must be at least two characters.';
 
 const defaultUserOptions = ['livingInBC', 'businessInBC', 'govEmployees'];
@@ -215,21 +224,39 @@ const otherPrimaryEndUser = (primaryEndUsers: PrimaryEndUser[]) => {
   else return '';
 };
 
-const memberKey = (member: RealmMember | null) =>
-  member?.azureId ?? (member?.userId != null ? `user:${member.userId}` : null);
+/**
+ * A stored member is identified by `userId` and a fresh pick by `azureId`, so the same
+ * person occupying both looks like two different keys. The IDIR username is the one
+ * identity the picker echoes back for either, and it is unique, so key on it first.
+ */
+const memberKey = (member: RealmMember | null) => {
+  if (member?.idirUsername) return `idir:${member.idirUsername.toLowerCase()}`;
+  return member?.azureId ?? (member?.userId != null ? `user:${member.userId}` : null);
+};
 
 /**
  * Best effort duplicate check. The server repeats it against resolved identities, which
- * is what catches the same person picked freshly in one slot and already stored in another.
+ * catches anyone the directory search could not name.
+ *
+ * The error is reported against the slot holding the second occurrence, since that is the
+ * one the requester has to change; a product owner repeated as technical lead has nothing
+ * to do with the additional users.
  */
 const findDuplicateMember = (data: CustomRealmFormData) => {
-  const members = [data.productOwner, data.technicalLead, ...data.additionalUsers];
+  const slots = [
+    { field: 'productOwner', member: data.productOwner },
+    { field: 'technicalLead', member: data.technicalLead },
+    ...data.additionalUsers.map((member, index) => ({ field: `additionalUsers[${index}]`, member })),
+  ];
   const seen = new Set<string>();
 
-  for (const member of members) {
+  for (const { field, member } of slots) {
     const key = memberKey(member);
     if (!key) continue;
-    if (seen.has(key)) return member?.email || member?.idirUsername || 'That user';
+    if (seen.has(key)) {
+      const name = member?.email || member?.idirUsername || 'That user';
+      return { field, message: `${name} cannot occupy more than one membership slot.` };
+    }
     seen.add(key);
   }
 
@@ -331,9 +358,8 @@ export default function RealmForm({
     if (otherPrimaryEndUsersSelected) {
       submission.primaryEndUsers.push(otherPrimaryEndUserDetails);
     }
-    // Rows that were added but never filled in are simply not part of the submission.
-    submission.additionalUsers = submission.additionalUsers.filter(Boolean);
-
+    // A row left blank is validated rather than dropped, so nobody submits believing they
+    // granted access to a person the form quietly discarded. Removing the row is explicit.
     const { valid, errors } = validateForm(submission, validationSchema);
     if (!valid) {
       setFormErrors(errors as any);
@@ -342,9 +368,10 @@ export default function RealmForm({
 
     const duplicate = findDuplicateMember(submission);
     if (duplicate) {
-      setFormErrors({ additionalUsers: `${duplicate} cannot occupy more than one membership slot.` });
+      setFormErrors({ [duplicate.field]: duplicate.message });
       try {
-        document.getElementById('additional-users-section')?.scrollIntoView();
+        // Same id convention as validateForm: the kebab cased field plus `-input`.
+        document.getElementById(`${kebabCase(duplicate.field)}-input`)?.scrollIntoView();
       } catch (e) {}
       return;
     }
@@ -602,7 +629,7 @@ export default function RealmForm({
             isDisabled={!membershipEditable}
           />
 
-          {formErrors.productOwner && <p className="error-message">{requiredEmailMessage}</p>}
+          {formErrors.productOwner && <p className="error-message">{memberErrorMessage(formErrors.productOwner)}</p>}
         </div>
 
         <div className="input-wrapper second-col">
@@ -637,7 +664,7 @@ export default function RealmForm({
             isDisabled={!membershipEditable}
           />
 
-          {formErrors.technicalLead && <p className="error-message">{requiredEmailMessage}</p>}
+          {formErrors.technicalLead && <p className="error-message">{memberErrorMessage(formErrors.technicalLead)}</p>}
         </div>
 
         <div className="input-wrapper second-col">
@@ -655,40 +682,48 @@ export default function RealmForm({
           />
         </div>
 
-        <fieldset className="span-cols" id="additional-users-section" disabled={!membershipEditable}>
-          <legend className="with-info">
-            Additional users
-            <InfoPopover>
-              Everyone listed here gets the same realm admin access as the product owner and technical lead, but cannot
-              edit this form.
-            </InfoPopover>
-          </legend>
-          <p className="help-text">Optional. Up to {MAX_ADDITIONAL_USERS} people.</p>
+        <h3 className="span-cols" id="additional-users-section">
+          Additional users
+        </h3>
+        <p className="help-text span-cols">
+          You can give access to {MAX_ADDITIONAL_USERS} additional people. They will be granted admin access to your
+          realm.{' '}
+        </p>
 
-          {typeof formErrors.additionalUsers === 'string' && (
-            <p className="error-message">{formErrors.additionalUsers}</p>
-          )}
+        {/* Errors that belong to the group rather than a row. */}
+        {formErrors.additionalUsers && (
+          <p className="error-message span-cols">
+            {typeof formErrors.additionalUsers === 'string'
+              ? formErrors.additionalUsers
+              : `You may add at most ${MAX_ADDITIONAL_USERS} people.`}
+          </p>
+        )}
 
-          {formData.additionalUsers.map((additionalUser, index) => (
-            <div className="additional-user-row" key={`additional-user-${index}`}>
-              <div className="input-wrapper">
-                <label htmlFor={`additional-user-${index}-input`}>Additional user {index + 1}&apos;s email</label>
-                <AsyncSelect
-                  inputId={`additional-user-${index}-input`}
-                  name={`additionalUsers[${index}]`}
-                  loadOptions={fuzzySearchIdirUsersByEmail}
-                  onChange={(e: any) => handleAdditionalUserChange(e, index)}
-                  isClearable
-                  noOptionsMessage={() => 'Start typing email...'}
-                  value={memberToOption(additionalUser) ?? null}
-                  className={`additional-user-email additional-user-email-${index}`}
-                  classNamePrefix="additional-user-email"
-                />
-                {formErrors[`additionalUsers[${index}]`] && <p className="error-message">{requiredEmailMessage}</p>}
-              </div>
+        {formData.additionalUsers.map((additionalUser, index) => (
+          <>
+            <div className="input-wrapper first-col" key={`additional-user-${index}`}>
+              {/* The id matches the kebab cased yup path so a blank row can be scrolled to. */}
+              <label htmlFor={`additional-users-${index}-input`}>Additional user {index + 1}&apos;s email</label>
+              <AsyncSelect
+                inputId={`additional-users-${index}-input`}
+                name={`additionalUsers[${index}]`}
+                loadOptions={fuzzySearchIdirUsersByEmail}
+                onChange={(e: any) => handleAdditionalUserChange(e, index)}
+                isClearable
+                noOptionsMessage={() => 'Start typing email...'}
+                value={memberToOption(additionalUser) ?? null}
+                className={`additional-user-email additional-user-email-${index}`}
+                classNamePrefix="additional-user-email"
+                isDisabled={!membershipEditable}
+              />
+              {formErrors[`additionalUsers[${index}]`] && (
+                <p className="error-message">{memberErrorMessage(formErrors[`additionalUsers[${index}]`])}</p>
+              )}
+            </div>
 
-              <div className="input-wrapper">
-                <label htmlFor={`additional-user-${index}-idir-input`}>Additional user {index + 1}&apos;s IDIR</label>
+            <div className="input-wrapper second-col">
+              <label htmlFor={`additional-user-${index}-idir-input`}>Additional user {index + 1}&apos;s IDIR</label>
+              <div className="button-wrapper">
                 <input
                   id={`additional-user-${index}-idir-input`}
                   data-testid={`additional-user-${index}-idir`}
@@ -696,28 +731,28 @@ export default function RealmForm({
                   readOnly
                   disabled
                 />
+                <button
+                  type="button"
+                  className="secondary remove-user-button"
+                  onClick={() => removeAdditionalUser(index)}
+                  aria-label={`Remove additional user ${index + 1}`}
+                  disabled={!membershipEditable}
+                >
+                  Remove
+                </button>
               </div>
-
-              <button
-                type="button"
-                className="secondary remove-user-button"
-                onClick={() => removeAdditionalUser(index)}
-                aria-label={`Remove additional user ${index + 1}`}
-              >
-                Remove
-              </button>
             </div>
-          ))}
+          </>
+        ))}
 
-          <button
-            type="button"
-            className="secondary add-user-button"
-            onClick={addAdditionalUser}
-            disabled={formData.additionalUsers.length >= MAX_ADDITIONAL_USERS}
-          >
-            Add user
-          </button>
-        </fieldset>
+        <button
+          type="button"
+          className="primary add-user-button span-cols"
+          onClick={addAdditionalUser}
+          disabled={!membershipEditable || formData.additionalUsers.length >= MAX_ADDITIONAL_USERS}
+        >
+          Add user
+        </button>
 
         {/* Below fields hidden instead of disabled if not in schema */}
 

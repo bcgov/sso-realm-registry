@@ -1,8 +1,9 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import EditPage, { getServerSideProps } from 'pages/realm/[rid]';
 import { CustomRealmFormData } from 'types/realm-profile';
-import { CustomRealmProfiles, buildMembers, serializedMembers } from './fixtures';
+import { CustomRealmProfiles, PO_EMAIL, PO_IDIR, buildMembers, serializedMembers } from './fixtures';
+import { getIdirUsersByEmail } from 'services/azure';
 import prisma from 'utils/prisma';
 import { getServerSession } from 'next-auth';
 import { RoleEnum } from 'utils/helpers';
@@ -200,7 +201,8 @@ describe('Form Validation', () => {
     const poIdirInput = (await screen.findByTestId('product-owner-idir')) as HTMLInputElement;
     const techLeadEmailInput = container.querySelector('input.technical-contact-email__input') as HTMLInputElement;
     const techLeadIdirInput = (await screen.findByTestId('tech-contact-idir')) as HTMLInputElement;
-    const additionalUsersSection = document.getElementById('additional-users-section') as HTMLFieldSetElement;
+    // The rows sit directly in the form grid, so the picker itself carries the disabled state.
+    const additionalUserEmailInput = container.querySelector('input.additional-user-email__input') as HTMLInputElement;
     return {
       realmNameInput,
       productNameInput,
@@ -213,7 +215,7 @@ describe('Form Validation', () => {
       poIdirInput,
       techLeadEmailInput,
       techLeadIdirInput,
-      additionalUsersSection,
+      additionalUserEmailInput,
     };
   };
 
@@ -251,7 +253,7 @@ describe('Form Validation', () => {
     expect(inputs.poIdirInput.disabled).toBe(true);
     expect(inputs.techLeadEmailInput!.disabled).toBe(false);
     expect(inputs.techLeadIdirInput.disabled).toBe(true);
-    expect(inputs.additionalUsersSection.disabled).toBe(false);
+    expect(inputs.additionalUserEmailInput.disabled).toBe(false);
 
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).toBeNull();
   });
@@ -272,7 +274,7 @@ describe('Form Validation', () => {
     expect(inputs.poIdirInput.disabled).toBe(true);
     expect(inputs.techLeadEmailInput!.disabled).toBe(false);
     expect(inputs.techLeadIdirInput.disabled).toBe(true);
-    expect(inputs.additionalUsersSection.disabled).toBe(false);
+    expect(inputs.additionalUserEmailInput.disabled).toBe(false);
 
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).toBeNull();
   });
@@ -293,8 +295,34 @@ describe('Form Validation', () => {
     expect(inputs.poIdirInput.disabled).toBe(true);
     expect(inputs.techLeadEmailInput!.disabled).toBe(false);
     expect(inputs.techLeadIdirInput.disabled).toBe(true);
-    expect(inputs.additionalUsersSection.disabled).toBe(false);
+    expect(inputs.additionalUserEmailInput.disabled).toBe(false);
 
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).not.toBeNull();
+  });
+
+  it('Rejects a stored member picked again into another slot', async () => {
+    // The product owner is already stored, so the form holds it as a userId while the
+    // directory search hands back an azureId for the very same person.
+    (getIdirUsersByEmail as jest.Mock).mockImplementation(() =>
+      Promise.resolve([[{ id: 'azure-po', mail: PO_EMAIL, onPremisesSamAccountName: PO_IDIR }], null]),
+    );
+
+    // Filled in so the membership check is what the submission stops on.
+    const realm = { ...testRealm, purpose: 'purpose', productName: 'product' };
+    const { container } = render(<EditPage realm={realm} role={RoleEnum.PRODUCT_OWNER} />);
+
+    const additionalUserInput = container.querySelector('input.additional-user-email__input') as HTMLInputElement;
+    fireEvent.input(additionalUserInput, { target: { value: PO_EMAIL } });
+    await waitFor(() => {
+      const options = container.querySelectorAll('.additional-user-email__option');
+      expect(options.length).toBeGreaterThan(0);
+      fireEvent.click(options[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit', { selector: 'button' }));
+    });
+
+    await waitFor(() => screen.getByText(/cannot occupy more than one membership slot/));
   });
 });

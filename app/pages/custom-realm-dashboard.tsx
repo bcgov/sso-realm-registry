@@ -15,6 +15,7 @@ import { StatusEnum } from 'validators/create-realm';
 import { Table } from '@bcgov-sso/common-react-components';
 import { faRotate, faTrash, faTrashRestoreAlt } from '@fortawesome/free-solid-svg-icons';
 import { MemberRoleEnum } from 'utils/constants';
+import { buildFormData } from 'utils/membership';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import Head from 'next/head';
@@ -174,8 +175,10 @@ function CustomRealmDashboard({ alert }: Props) {
     const realmId = realm.id;
     const approving = approval === 'approved';
     const handleConfirm = async () => {
+      // The row is the payload the server returned, which carries membership as a flat
+      // `members` list. An update is validated against the slot fields, so rebuild them.
       const [, err] = await updateRealmProfile(String(realmId), {
-        ...realm,
+        ...buildFormData(realm),
         approved: approving,
       } as unknown as RealmProfile);
       if (err) {
