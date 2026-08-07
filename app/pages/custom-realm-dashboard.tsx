@@ -300,7 +300,8 @@ function CustomRealmDashboard({ alert }: Props) {
         const restoreDisabled =
           ![StatusEnum.APPLIED].includes(props.row.original.status) || props.row.original.archived === false;
         // Purely a database predicate: rows with a pending add or a pending revoke.
-        const syncDisabled = !props.row.original.needsSync;
+        // Deleted/archived realms have no active Keycloak access to sync, so disable it too.
+        const syncDisabled = !props.row.original.needsSync || props.row.original.archived === true;
         return (
           <div style={{ display: 'flex', justifyContent: 'center', columnGap: '0.5rem' }}>
             <FontAwesomeIcon
@@ -311,7 +312,13 @@ function CustomRealmDashboard({ alert }: Props) {
               className={`delete-icon ${syncDisabled ? 'disabled' : ''}`}
               role="button"
               data-testid="sync-btn"
-              title={syncDisabled ? 'Realm access is in sync' : 'Retry syncing realm access'}
+              title={
+                props.row.original.archived === true
+                  ? 'Disabled realms cannot be synced'
+                  : syncDisabled
+                  ? 'Realm access is in sync'
+                  : 'Retry syncing realm access'
+              }
             />
             <FontAwesomeIcon
               onClick={() => {
