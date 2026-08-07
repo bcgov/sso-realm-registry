@@ -14,6 +14,7 @@ import {
   MemberValidationError,
   applyMembershipChanges,
   countUnresolvedMembers,
+  diffMembers,
   getRealmMembers,
   memberOfRealmFilter,
   needsSync,
@@ -173,12 +174,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // provisioned by the reconcile that runs on approval.
       await applyMembershipChanges(newRealm.id, desiredMembers);
       const members = await getRealmMembers(newRealm.id);
+      const membershipChanges = diffMembers([], members);
 
       await createEvent({
         realmId: newRealm.id,
         eventCode: EventEnum.REQUEST_CREATE_SUCCESS,
         idirUserId: username,
-        details: pick(newRealm, allowedFormFields),
+        details: { ...pick(newRealm, allowedFormFields), membershipChanges },
       });
       await sendCreateEmail(newRealm, session, members);
       return res.status(201).json({ ...newRealm, members: serializeMembers(members) });

@@ -299,6 +299,8 @@ export const sendReadyToUseEmail = async (realm: Roster, members: MemberWithUser
           ${emailHeader}
             <main>
             <p>Your custom realm ${realm.realm} is ready to be accessed.</p>
+            <p>You can administer the realm through the master realm console:</p>
+            ${masterRealmLinkList(realmName, realm.environments ?? [])}
             <p>If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at: <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a></p>
             </main>
           ${emailFooter}

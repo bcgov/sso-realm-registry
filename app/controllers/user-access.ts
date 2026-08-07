@@ -81,7 +81,17 @@ const upsertUser = async (directoryUser: DirectoryUser & { guid: string }) => {
   return prisma.user.create({ data });
 };
 
-const resolveMember = async (input: MemberInput, slot: string): Promise<User> => {
+/**
+ * A `userId` slot means "keep this member unchanged"; it must therefore already be tied
+ * to this realm (current or former membership), never merely exist anywhere in the
+ * global `users` table. `users.id` is a sequential integer, so without this scope a
+ * product owner/technical lead could probe arbitrary ids and pull the directory details
+ * (name, email) of unrelated people on other realms, or grant access to someone who was
+ * never actually looked up for this request. `rosterId` is undefined only when
+ * resolving membership for a brand-new realm, which has no prior members at all, so any
+ * `userId` there is necessarily illegitimate.
+ */
+const resolveMember = async (input: MemberInput, slot: string, rosterId?: number): Promise<User> => {
   if (input?.azureId) {
     const directoryUser = await fetchIdirUserByAzureId(input.azureId);
     if (!directoryUser) throw new MemberValidationError(`${slot} could not be found in the directory`);
@@ -92,10 +102,12 @@ const resolveMember = async (input: MemberInput, slot: string): Promise<User> =>
   }
 
   if (input?.userId) {
-    const user = await prisma.user.findUnique({ where: { id: input.userId } });
-    if (!user) throw new MemberValidationError(`${slot} is not a known user`);
-    if (!user.guid) throw new MemberValidationError(`${slot} has never been resolved in the directory`);
-    return user;
+    const membership = rosterId
+      ? await prisma.userRoster.findFirst({ where: { rosterId, userId: input.userId }, include: { user: true } })
+      : null;
+    if (!membership) throw new MemberValidationError(`${slot} is not a known user`);
+    if (!membership.user.guid) throw new MemberValidationError(`${slot} has never been resolved in the directory`);
+    return membership.user;
   }
 
   throw new MemberValidationError(`${slot} is required`);
@@ -104,22 +116,26 @@ const resolveMember = async (input: MemberInput, slot: string): Promise<User> =>
 /**
  * Turns the request payload into the desired membership, re-resolving every freshly
  * picked account against Graph. Lookups are sequential to keep Graph traffic modest on
- * a bulk edit.
+ * a bulk edit. `rosterId` is omitted when creating a brand-new realm, since a `userId`
+ * slot can only ever refer to a realm's existing membership history.
  */
-export const resolveMembership = async (input: MembershipInput): Promise<DesiredMember[]> => {
+export const resolveMembership = async (input: MembershipInput, rosterId?: number): Promise<DesiredMember[]> => {
   const additionalUsers = input.additionalUsers ?? [];
   if (additionalUsers.length > MAX_ADDITIONAL_USERS) {
     throw new MemberValidationError(`A realm may have at most ${MAX_ADDITIONAL_USERS} additional users`);
   }
 
   const desired: DesiredMember[] = [
-    { user: await resolveMember(input.productOwner, 'Product owner'), role: MemberRoleEnum.PRODUCT_OWNER },
-    { user: await resolveMember(input.technicalLead, 'Technical lead'), role: MemberRoleEnum.TECHNICAL_LEAD },
+    { user: await resolveMember(input.productOwner, 'Product owner', rosterId), role: MemberRoleEnum.PRODUCT_OWNER },
+    {
+      user: await resolveMember(input.technicalLead, 'Technical lead', rosterId),
+      role: MemberRoleEnum.TECHNICAL_LEAD,
+    },
   ];
 
   for (let index = 0; index < additionalUsers.length; index += 1) {
     desired.push({
-      user: await resolveMember(additionalUsers[index], `Additional user ${index + 1}`),
+      user: await resolveMember(additionalUsers[index], `Additional user ${index + 1}`, rosterId),
       role: MemberRoleEnum.ADDITIONAL,
     });
   }
@@ -313,6 +329,33 @@ export const getRealmMembers = (rosterId: number): Promise<MemberWithUser[]> =>
     include: { user: true },
     orderBy: { id: 'asc' },
   });
+
+export interface MemberSummary {
+  role: MemberRoleEnum;
+  idirUsername: string;
+}
+
+const summarizeMember = (member: MemberWithUser): MemberSummary => ({
+  role: member.role as MemberRoleEnum,
+  idirUsername: member.user.idirUsername,
+});
+
+/**
+ * Readable added/removed membership summary for the audit log. `users_rosters` changes
+ * are stored outside the `Roster` row, so `getUpdatedProperties`'s column diff never
+ * sees them; callers should merge this into the event `details` on any mutation path
+ * that touches membership.
+ */
+export const diffMembers = (previous: MemberWithUser[], current: MemberWithUser[]) => {
+  const key = (member: MemberWithUser) => `${member.userId}:${member.role}`;
+  const previousKeys = new Set(previous.map(key));
+  const currentKeys = new Set(current.map(key));
+
+  return {
+    added: current.filter((member) => !previousKeys.has(key(member))).map(summarizeMember),
+    removed: previous.filter((member) => !currentKeys.has(key(member))).map(summarizeMember),
+  };
+};
 
 /** Recipients for realm-wide notifications: everyone currently holding access. */
 export const memberEmails = (members: MemberWithUser[]) => {

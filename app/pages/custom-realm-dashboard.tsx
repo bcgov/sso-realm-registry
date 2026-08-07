@@ -299,9 +299,14 @@ function CustomRealmDashboard({ alert }: Props) {
         const deleteDisabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
         const restoreDisabled =
           ![StatusEnum.APPLIED].includes(props.row.original.status) || props.row.original.archived === false;
+        // Realms that aren't approved and applied yet don't exist in Keycloak, so there is
+        // nothing to sync. Deleted/archived realms have no active Keycloak access either.
+        const isProvisioned =
+          props.row.original.approved === true &&
+          props.row.original.status === StatusEnum.APPLIED &&
+          props.row.original.archived !== true;
         // Purely a database predicate: rows with a pending add or a pending revoke.
-        // Deleted/archived realms have no active Keycloak access to sync, so disable it too.
-        const syncDisabled = !props.row.original.needsSync || props.row.original.archived === true;
+        const syncDisabled = !isProvisioned || !props.row.original.needsSync;
         return (
           <div style={{ display: 'flex', justifyContent: 'center', columnGap: '0.5rem' }}>
             <FontAwesomeIcon
@@ -315,6 +320,8 @@ function CustomRealmDashboard({ alert }: Props) {
               title={
                 props.row.original.archived === true
                   ? 'Disabled realms cannot be synced'
+                  : !isProvisioned
+                  ? 'Realm has not been approved and applied yet'
                   : syncDisabled
                   ? 'Realm access is in sync'
                   : 'Retry syncing realm access'

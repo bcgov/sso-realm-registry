@@ -20,6 +20,7 @@ import {
   MemberValidationError,
   applyMembershipChanges,
   canEditRealm,
+  diffMembers,
   getRealmMembers,
   getUserRoleOnRealm,
   reconcileRealmAccess,
@@ -65,6 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       let updatedRealm: any;
       let updatingApprovalStatus = false;
       let allEnvRealmsCreated = false;
+      let membershipChanges: ReturnType<typeof diffMembers> | undefined;
 
       try {
         let lastUpdatedBy = `${session.user.family_name}, ${session.user.given_name}`;
@@ -84,6 +86,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         if (!currentRequest || currentRequest.approved === false) {
           return res.status(400).json({ success: false, error: 'Invalid request' });
         }
+
+        const previousMembers = await getRealmMembers(realmId);
 
         const memberRole = await getUserRoleOnRealm(realmId, username);
         if (!canEditRealm(memberRole, isAdmin)) return res.status(401).json({ success: false, error: 'unauthorized' });
@@ -108,7 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
         let desiredMembers;
         try {
-          desiredMembers = await resolveMembership(updateRequest);
+          desiredMembers = await resolveMembership(updateRequest, realmId);
         } catch (err) {
           if (err instanceof MemberValidationError) {
             return res.status(400).json({ success: false, error: [err.message] });
@@ -189,12 +193,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         const reconcile = await reconcileRealmAccess(updatedRealm, reconciledAll ? {} : { memberIds: changedIds });
 
         const members = await getRealmMembers(realmId);
+        membershipChanges = diffMembers(previousMembers, members);
 
         await createEvent({
           realmId,
           eventCode: EventEnum.REQUEST_UPDATE_SUCCESS,
           idirUserId: username,
-          details: getUpdatedProperties(currentRequest, updatedRealm),
+          details: { ...getUpdatedProperties(currentRequest, updatedRealm), membershipChanges },
         });
 
         // Confirmations only go out once access actually changed everywhere, so nobody is
@@ -222,7 +227,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           realmId,
           eventCode: EventEnum.REQUEST_UPDATE_FAILED,
           idirUserId: username,
-          details: getUpdatedProperties(currentRequest, updatedRealm),
+          details: { ...getUpdatedProperties(currentRequest, updatedRealm), membershipChanges },
         });
         console.error(err);
         return res.status(500).json({ success: false, error: 'update failed' });
