@@ -118,8 +118,9 @@ describe('Form Validation', () => {
     await waitFor(() => {
       const options = container.querySelectorAll(`.${classSelector}__option`);
       expect(options.length).toBeGreaterThan(optionIndex);
-      fireEvent.click(options[optionIndex]);
     });
+    const options = container.querySelectorAll(`.${classSelector}__option`);
+    fireEvent.click(options[optionIndex]);
   };
 
   const clickInput = (label: string) => {
@@ -263,8 +264,8 @@ describe('Form Validation', () => {
 
     expect(submitRealmRequest).not.toHaveBeenCalled();
     const rowErrors = container.querySelectorAll('.additional-user-email-1 ~ .error-message');
-    expect(container.querySelectorAll('.error-message').length).toBe(1);
-    expect(rowErrors.length).toBe(1);
+    expect(container.querySelectorAll('.error-message')).toHaveLength(1);
+    expect(rowErrors).toHaveLength(1);
   });
 
   it('Caps the additional users at ten', () => {
@@ -273,7 +274,7 @@ describe('Form Validation', () => {
 
     for (let i = 0; i < 10; i += 1) fireEvent.click(addButton);
 
-    expect(screen.getAllByText(/Additional user \d+'s email/).length).toBe(10);
+    expect(screen.getAllByText(/Additional user \d+'s email/)).toHaveLength(10);
     expect(addButton.disabled).toBe(true);
   });
 
@@ -289,7 +290,7 @@ describe('Form Validation', () => {
       submitForm();
     });
 
-    await waitFor(() => screen.getByText(/cannot occupy more than one membership slot/));
+    await screen.findByText(/cannot occupy more than one membership slot/);
     expect(submitRealmRequest).not.toHaveBeenCalled();
   });
 

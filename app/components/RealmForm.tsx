@@ -1,6 +1,6 @@
 import { CustomRealmFormData, PrimaryEndUser, RealmMember } from 'types/realm-profile';
 import styled from 'styled-components';
-import React, { useState, ChangeEvent, useEffect, Dispatch, SetStateAction } from 'react';
+import React, { useState, ChangeEvent, useEffect, useMemo, Dispatch, SetStateAction } from 'react';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import { ValidationError } from 'yup';
 import { cloneDeep, kebabCase, debounce } from 'lodash';
@@ -286,23 +286,32 @@ export default function RealmForm({
   const [branches, setBranches] = useState<string[]>([]);
 
   // The search already returns the IDIR username, so a selection needs no follow up call.
-  const fuzzySearchIdirUsersByEmail = debounce((email: string, cb) => {
-    if (email.length > 2) {
-      getIdirUsersByEmail(email).then(([data, err]) => {
-        if (err) return cb([]);
-        const options = data?.map((u) => {
-          return {
-            value: u.id,
-            label: u.mail,
-            idirUsername: u.onPremisesSamAccountName || u.mailNickname || '',
-          };
-        });
-        cb(options);
-      });
-    } else {
-      cb([]);
-    }
-  }, 300);
+  // Memoized so the debounce timer persists across renders instead of being reset on every keystroke.
+  const fuzzySearchIdirUsersByEmail = useMemo(
+    () =>
+      debounce((email: string, cb) => {
+        if (email.length > 2) {
+          getIdirUsersByEmail(email).then(([data, err]) => {
+            if (err) return cb([]);
+            const options = data?.map((u) => {
+              return {
+                value: u.id,
+                label: u.mail,
+                idirUsername: u.onPremisesSamAccountName || u.mailNickname || '',
+              };
+            });
+            cb(options);
+          });
+        } else {
+          cb([]);
+        }
+      }, 300),
+    [],
+  );
+
+  useEffect(() => {
+    return () => fuzzySearchIdirUsersByEmail.cancel();
+  }, [fuzzySearchIdirUsersByEmail]);
 
   /** Only the Azure object id is sent on save; the server re-resolves everything else. */
   const optionToMember = (option: any): RealmMember | null =>

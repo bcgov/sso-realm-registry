@@ -109,8 +109,8 @@ jest.mock('../pages/api/auth/[...nextauth]', () => {
 describe('Table', () => {
   it('Loads in table data from serverside props', async () => {
     render(<CustomRealmDashboard />);
-    await waitFor(() => screen.getByText('realm 1'));
-    await waitFor(() => screen.getByText('realm 2'));
+    await screen.findByText('realm 1');
+    await screen.findByText('realm 2');
   });
 
   it('Displays out of sync information when available', async () => {
@@ -131,9 +131,9 @@ describe('Table', () => {
     );
     render(<CustomRealmDashboard />);
 
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     fireEvent.click(screen.getByText('realm 1'));
-    await waitFor(() => screen.getByText('Realm not found in dev environment'));
+    await screen.findByText('Realm not found in dev environment');
   });
 });
 
@@ -150,11 +150,11 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     fireEvent.click(screen.getByText('realm 1'));
     screen.getByText('Access Request').click();
-    await waitFor(() => screen.getByText('Approve Custom Realm', { selector: 'button' }).click());
-    await waitFor(() => screen.getByText('Are you sure you want to approve request 1?'));
+    (await screen.findByText('Approve Custom Realm', { selector: 'button' })).click();
+    await screen.findByText('Are you sure you want to approve request 1?');
   });
 
   it('Prompts modal for request declination', async () => {
@@ -165,11 +165,11 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     fireEvent.click(screen.getByText('realm 1'));
     screen.getByText('Access Request').click();
-    await waitFor(() => screen.getByText('Decline Custom Realm', { selector: 'button' }).click());
-    await waitFor(() => screen.getByText('Are you sure you want to decline request 1?'));
+    (await screen.findByText('Decline Custom Realm', { selector: 'button' })).click();
+    await screen.findByText('Are you sure you want to decline request 1?');
   });
 
   it('Fires expected api request when approving', async () => {
@@ -180,11 +180,11 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     fireEvent.click(screen.getByText('realm 1'));
     screen.getByText('Access Request').click();
-    await waitFor(() => screen.getByText('Approve Custom Realm', { selector: 'button' }).click());
-    await waitFor(() => screen.getByText('Are you sure you want to approve request 1?'));
+    (await screen.findByText('Approve Custom Realm', { selector: 'button' })).click();
+    await screen.findByText('Are you sure you want to approve request 1?');
     screen.getByText('Confirm', { selector: 'button' }).click();
 
     const payload = (updateRealmProfile as jest.Mock).mock.calls[0][1];
@@ -204,11 +204,11 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     fireEvent.click(screen.getByText('realm 1'));
     screen.getByText('Access Request').click();
-    await waitFor(() => screen.getByText('Decline Custom Realm', { selector: 'button' }).click());
-    await waitFor(() => screen.getByText('Are you sure you want to decline request 1?'));
+    (await screen.findByText('Decline Custom Realm', { selector: 'button' })).click();
+    await screen.findByText('Are you sure you want to decline request 1?');
     screen.getByText('Confirm', { selector: 'button' }).click();
 
     const payload = (updateRealmProfile as jest.Mock).mock.calls[0][1];
@@ -225,7 +225,7 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     (updateRealmProfile as jest.MockedFunction<any>).mockImplementationOnce(() =>
       Promise.resolve([null, { message: 'failure' }]),
     );
@@ -234,8 +234,8 @@ describe('Status update', () => {
     const tbody = table.querySelector('tbody') as HTMLTableSectionElement;
     fireEvent.click(screen.getByText('realm 1'));
     screen.getByText('Access Request').click();
-    await waitFor(() => screen.getByText('Approve Custom Realm', { selector: 'button' }).click());
-    await waitFor(() => screen.getByText('Are you sure you want to approve request 1?'));
+    (await screen.findByText('Approve Custom Realm', { selector: 'button' })).click();
+    await screen.findByText('Are you sure you want to approve request 1?');
     screen.getByText('Confirm', { selector: 'button' }).click();
 
     let firstRow: any;
@@ -248,10 +248,10 @@ describe('Status update', () => {
 
     // Successful request
     (updateRealmProfile as jest.MockedFunction<any>).mockImplementationOnce(() => Promise.resolve([true, null]));
-    await waitFor(() => screen.getByText('Approve Custom Realm', { selector: 'button' }).click());
-    await waitFor(() => screen.getByText('Are you sure you want to approve request 1?'));
+    (await screen.findByText('Approve Custom Realm', { selector: 'button' })).click();
+    await screen.findByText('Are you sure you want to approve request 1?');
     screen.getByText('Confirm', { selector: 'button' }).click();
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
   });
 
   it('Updates status in table only when successfully declined', async () => {
@@ -262,7 +262,7 @@ describe('Status update', () => {
         router={Router as any}
       />,
     );
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     (updateRealmProfile as jest.MockedFunction<any>).mockImplementationOnce(() =>
       Promise.resolve([null, { message: 'failure' }]),
     );
@@ -271,8 +271,8 @@ describe('Status update', () => {
     fireEvent.click(screen.getByText('realm 1'));
 
     screen.getByText('Access Request').click();
-    await waitFor(() => screen.getByText('Decline Custom Realm', { selector: 'button' }).click());
-    await waitFor(() => screen.getByText('Are you sure you want to decline request 1?'));
+    (await screen.findByText('Decline Custom Realm', { selector: 'button' })).click();
+    await screen.findByText('Are you sure you want to decline request 1?');
     const confirmButton = screen.getByText('Confirm', { selector: 'button' });
     fireEvent.click(confirmButton);
 
@@ -287,10 +287,10 @@ describe('Status update', () => {
 
     // Successful request
     (updateRealmProfile as jest.MockedFunction<any>).mockImplementationOnce(() => Promise.resolve([true, null]));
-    await waitFor(() => screen.getByText('Decline Custom Realm', { selector: 'button' }).click());
-    await waitFor(() => screen.getByText('Are you sure you want to decline request 1?'));
+    (await screen.findByText('Decline Custom Realm', { selector: 'button' })).click();
+    await screen.findByText('Are you sure you want to decline request 1?');
     screen.getByText('Confirm', { selector: 'button' }).click();
-    await waitFor(() => within(firstRow[2]).queryByText('Declined'));
+    await within(firstRow[2]).findByText('Declined');
   });
 });
 
@@ -301,7 +301,7 @@ describe('Events table', () => {
 
   it('fetches correct events when selected row changes', async () => {
     render(<CustomRealmDashboard />);
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     const row1 = screen.getByText('realm 1');
     fireEvent.click(row1);
     expect(getRealmEvents).toHaveBeenCalledTimes(1);
@@ -318,18 +318,18 @@ describe('Events table', () => {
 
   it('displays events for the selected realm and updates when changing rows', async () => {
     render(<CustomRealmDashboard />);
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     const firstRealmRow = screen.getByText('realm 1');
     fireEvent.click(firstRealmRow);
     const eventTab = screen.getByText('Events');
     fireEvent.click(eventTab);
 
     // Expect only realm 1 event to show
-    await waitFor(() => screen.getByText('request-create-success'));
+    await screen.findByText('request-create-success');
     expect(screen.queryByText('request-update-success')).toBeNull();
     const secondRealmRow = screen.getByText('realm 2');
     fireEvent.click(secondRealmRow);
-    await waitFor(() => screen.getByText('request-update-success'));
+    await screen.findByText('request-update-success');
     expect(screen.queryByText('request-create-success')).toBeNull();
   });
 
@@ -344,8 +344,8 @@ describe('Events table', () => {
         router={Router as any}
       />,
     );
-    await waitFor(() => screen.getByText('realm 1'));
+    await screen.findByText('realm 1');
     fireEvent.click(screen.getByText('realm 1'));
-    await waitFor(() => screen.getByText('Network error when fetching realm events.'));
+    await screen.findByText('Network error when fetching realm events.');
   });
 });

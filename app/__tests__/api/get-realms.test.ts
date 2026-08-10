@@ -136,7 +136,7 @@ describe('Membership reporting', () => {
     // @ts-ignore
     const responseData = res._getData();
 
-    expect(responseData[0].members.length).toBe(3);
+    expect(responseData[0].members).toHaveLength(3);
     responseData[0].members.forEach((member: any) => expect(member.guid).toBeUndefined());
     expect(JSON.stringify(responseData)).not.toContain('guid-po');
   });
@@ -169,7 +169,7 @@ describe('Membership reporting', () => {
     expect(res._getData()[0].needsSync).toBe(true);
     // Tombstones are not shown to the client.
     // @ts-ignore
-    expect(res._getData()[0].members.length).toBe(2);
+    expect(res._getData()[0].members).toHaveLength(2);
   });
 
   it('Counts members that never resolved in the directory', async () => {

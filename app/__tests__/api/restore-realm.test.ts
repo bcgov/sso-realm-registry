@@ -164,12 +164,12 @@ describe('Restore Realm', () => {
 
     await handler(req, res);
     expect(manageCustomRealm).toHaveBeenCalledTimes(1);
-    expect(emailList.length).toBe(1);
+    expect(emailList).toHaveLength(1);
     expect(emailList[0].subject).toContain(`Notification: Realm ${realm.realm} Restoration Requested`);
     expect(emailList[0].to).toEqual(
       expect.arrayContaining([members[0].user.email, members[1].user.email, members[2].user.email]),
     );
-    expect(emailList[0].to.length).toBe(3);
+    expect(emailList[0].to).toHaveLength(3);
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
   });
 

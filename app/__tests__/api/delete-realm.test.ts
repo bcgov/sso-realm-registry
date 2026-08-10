@@ -110,14 +110,14 @@ describe('Delete Realms', () => {
     // Every member loses realm admin access, in every environment.
     expect(revokeAllRealmAccess).toHaveBeenCalledTimes(1);
 
-    expect(emailList.length).toBe(1);
+    expect(emailList).toHaveLength(1);
     expect(emailList[0].subject).toContain(
       `Notification: Custom Realm ${CustomRealmProfiles[0].realm} has now been Deleted.`,
     );
     expect(emailList[0].to).toEqual(
       expect.arrayContaining([members[0].user.email, members[1].user.email, members[2].user.email]),
     );
-    expect(emailList[0].to.length).toBe(3);
+    expect(emailList[0].to).toHaveLength(3);
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
   });
 
@@ -139,6 +139,6 @@ describe('Delete Realms', () => {
     expect(res.statusCode).toBe(422);
     expect(manageCustomRealm).toHaveBeenCalledTimes(1);
     expect(revokeAllRealmAccess).not.toHaveBeenCalled();
-    expect(emailList.length).toBe(0);
+    expect(emailList).toHaveLength(0);
   });
 });

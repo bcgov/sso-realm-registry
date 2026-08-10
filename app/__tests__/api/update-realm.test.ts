@@ -260,7 +260,7 @@ describe('Profile Validations', () => {
     await handler(req, res);
 
     const failureEmails = emailList.filter((email) => email.subject.includes('Realm access sync failed'));
-    expect(failureEmails.length).toBe(1);
+    expect(failureEmails).toHaveLength(1);
     expect(failureEmails[0].to).toEqual([ssoTeamEmail]);
     expect(failureEmails[0].body).toContain('asmith');
     expect(failureEmails[0].body).toContain('bjones');
@@ -284,7 +284,7 @@ describe('Profile Validations', () => {
     await handler(req, res);
 
     const onboarding = emailList.filter((email) => email.subject.includes('has been granted realm admin access'));
-    expect(onboarding.length).toBe(1);
+    expect(onboarding).toHaveLength(1);
     // The affected user, plus the product owner and technical lead.
     expect(onboarding[0].to).toEqual(
       expect.arrayContaining([members[2].user.email, members[0].user.email, members[1].user.email]),
@@ -339,7 +339,7 @@ describe('approval and rejection', () => {
     // Approval reconciles every member, not just the ones that changed.
     expect(reconcileRealmAccess).toHaveBeenCalledWith(expect.anything(), {});
 
-    expect(emailList.length).toBe(2);
+    expect(emailList).toHaveLength(2);
     expect(emailList[0].to).toEqual(
       expect.arrayContaining([members[0].user.email, members[1].user.email, members[2].user.email]),
     );
@@ -381,7 +381,7 @@ describe('approval and rejection', () => {
     const createEventArgs1 = (createEvent as jest.Mock).mock.calls[1][0];
     expect(createEventArgs1.eventCode).toBe(EventEnum.REQUEST_UPDATE_SUCCESS);
 
-    expect(emailList.length).toBe(1);
+    expect(emailList).toHaveLength(1);
     expect(emailList[0].subject).toContain('Important: Your request for Custom Realm realm 1 has been Declined');
     expect(emailList[0].to).toEqual(
       expect.arrayContaining([members[0].user.email, members[1].user.email, members[2].user.email]),

@@ -316,13 +316,14 @@ describe('Form Validation', () => {
     await waitFor(() => {
       const options = container.querySelectorAll('.additional-user-email__option');
       expect(options.length).toBeGreaterThan(0);
-      fireEvent.click(options[0]);
     });
+    const options = container.querySelectorAll('.additional-user-email__option');
+    fireEvent.click(options[0]);
 
     await act(async () => {
       fireEvent.click(screen.getByText('Submit', { selector: 'button' }));
     });
 
-    await waitFor(() => screen.getByText(/cannot occupy more than one membership slot/));
+    await screen.findByText(/cannot occupy more than one membership slot/);
   });
 });

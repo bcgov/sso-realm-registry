@@ -136,7 +136,7 @@ describe('IDIR user deletion', () => {
     await handler(req, res);
 
     const teamEmails = emailList.filter((email) => email.to.includes(ssoTeamEmail));
-    expect(teamEmails.length).toBe(1);
+    expect(teamEmails).toHaveLength(1);
     const teamEmail = teamEmails[0];
 
     // Fetch bullet items to check realms and contact lists

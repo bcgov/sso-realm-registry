@@ -86,7 +86,7 @@ describe('reconcileRealmAccess', () => {
     ['dev', 'test', 'prod'].forEach((env) =>
       expect(syncUserAccess).toHaveBeenCalledWith('my-realm', env, 'guid-leaver', 'remove'),
     );
-    expect(result.removed.length).toBe(1);
+    expect(result.removed).toHaveLength(1);
     expect((prisma.userRoster.update as jest.Mock).mock.calls[0][0].data.revokedAt).toBeInstanceOf(Date);
   });
 
