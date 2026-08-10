@@ -77,7 +77,7 @@ describe('Restore Realm', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (prisma.roster.findUnique as jest.Mock).mockImplementation(() => Promise.resolve(realm));
-    (prisma.roster.update as jest.Mock).mockImplementation(jest.fn());
+    (prisma.roster.update as jest.Mock).mockImplementation(({ data }) => Promise.resolve({ ...realm, ...data }));
   });
 
   it('Only allows sso-admins to restore realms', async () => {

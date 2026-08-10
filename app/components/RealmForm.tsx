@@ -709,8 +709,8 @@ export default function RealmForm({
         )}
 
         {formData.additionalUsers.map((additionalUser, index) => (
-          <>
-            <div className="input-wrapper first-col" key={`additional-user-${index}`}>
+          <React.Fragment key={`additional-user-${index}`}>
+            <div className="input-wrapper first-col">
               {/* The id matches the kebab cased yup path so a blank row can be scrolled to. */}
               <label htmlFor={`additional-users-${index}-input`}>Additional user {index + 1}&apos;s email</label>
               <AsyncSelect
@@ -751,7 +751,7 @@ export default function RealmForm({
                 </button>
               </div>
             </div>
-          </>
+          </React.Fragment>
         ))}
 
         <button

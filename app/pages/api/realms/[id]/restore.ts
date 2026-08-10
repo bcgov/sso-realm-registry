@@ -77,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     await sendAccessSyncFailureEmail(restoredRealm, reconcile.failures);
 
     const members = await getRealmMembers(realmId);
-    await sendRestoreEmail(realm, `${session.user.given_name} ${session.user.family_name}`, members);
+    await sendRestoreEmail(restoredRealm, `${session.user.given_name} ${session.user.family_name}`, members);
 
     res.status(200).send('success');
   } catch (err: any) {
