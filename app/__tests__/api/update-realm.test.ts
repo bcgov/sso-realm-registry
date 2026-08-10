@@ -347,7 +347,7 @@ describe('approval and rejection', () => {
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
     expect(emailList[1].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
     expect(emailList[0].subject).toBe(
-      '[DEV] Important: Your request for Custom Realm realm 1 has been Approved (email 1 of 2)',
+      'Important: Your request for Custom Realm realm 1 has been Approved (email 1 of 2)',
     );
     expect(emailList[1].subject).toBe('[DEV] Important: Custom Realm realm 1 Created');
   });
