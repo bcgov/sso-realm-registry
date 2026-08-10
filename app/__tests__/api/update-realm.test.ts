@@ -9,7 +9,6 @@ import { EventEnum } from 'validators/create-realm';
 import { createMockSendEmail } from './utils/mocks';
 import { ssoTeamEmail } from 'utils/mailer';
 import {
-  MemberRoleEnum,
   applyMembershipChanges,
   getUserRoleOnRealm,
   reconcileRealmAccess,

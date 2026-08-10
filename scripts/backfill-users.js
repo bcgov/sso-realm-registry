@@ -214,11 +214,6 @@ const getKcAdminClient = async (env) => {
 
 const masterUsernameForGuid = (guid) => `${guid.toLowerCase()}@azureidir`;
 
-const findMasterRealmUser = async (kcAdminClient, username) => {
-  const users = await kcAdminClient.users.find({ realm: 'master', username, max: 1 });
-  return users[0];
-};
-
 /**
  * Finds the master realm user for a guid, creating it (and its federated identity link,
  * in both the idp realm and master) if it does not exist yet.
