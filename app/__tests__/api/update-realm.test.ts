@@ -73,12 +73,13 @@ jest.mock('../../pages/api/auth/[...nextauth]', () => {
 });
 
 /** Membership never reaches the roster update; it is applied through `users_rosters`. */
-const technicalLeadAllowedFields = ['ministry', 'division', 'branch'];
-const productOwnerAllowedFields = [...technicalLeadAllowedFields, 'purpose', 'productName', 'primaryEndUsers'];
-const adminAllowedFields = [...productOwnerAllowedFields, 'materialToSend', 'approved'];
+const commonAllowedFields = ['ministry', 'division', 'branch'];
+// Product owner and technical lead are symmetric: both may edit the full form,
+// restricted only from the admin-only fields.
+const editableAllowedFields = [...commonAllowedFields, 'purpose', 'productName', 'primaryEndUsers'];
+const adminAllowedFields = [...editableAllowedFields, 'materialToSend', 'approved'];
 
-const technicalLeadRestrictedFields = ['purpose', 'productName', 'primaryEndUsers', 'materialToSend', 'approved'];
-const productOwnerRestrictedFields = ['materialToSend', 'approved'];
+const editableRestrictedFields = ['materialToSend', 'approved'];
 
 const mockUserSession = (username: string) => {
   (getServerSession as jest.Mock).mockReset();
@@ -145,26 +146,26 @@ describe('Profile Validations', () => {
     expect(prisma.roster.update).not.toHaveBeenCalled();
   });
 
-  it('Only allows the technical lead to update expected fields', async () => {
+  it('Allows the technical lead to update the full form, same as the product owner', async () => {
     mockUserSession('tl');
     (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRole.TECHNICAL_LEAD));
     const { req, res }: MockHttpRequest = createMocks({ method: 'PUT', body: requestBody(), query: { id: 1 } });
     await handler(req, res);
 
     const updatedFields = Object.keys((prisma.roster.update as jest.Mock).mock.calls[0][0].data);
-    technicalLeadAllowedFields.forEach((field) => expect(updatedFields.includes(field)).toBeTruthy());
-    technicalLeadRestrictedFields.forEach((field) => expect(updatedFields.includes(field)).toBeFalsy());
+    editableAllowedFields.forEach((field) => expect(updatedFields.includes(field)).toBeTruthy());
+    editableRestrictedFields.forEach((field) => expect(updatedFields.includes(field)).toBeFalsy());
   });
 
-  it('Only allows the product owner to update expected fields', async () => {
+  it('Allows the product owner to update the full form, same as the technical lead', async () => {
     mockUserSession('po');
     (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRole.PRODUCT_OWNER));
     const { req, res }: MockHttpRequest = createMocks({ method: 'PUT', body: requestBody(), query: { id: 1 } });
     await handler(req, res);
 
     const updatedFields = Object.keys((prisma.roster.update as jest.Mock).mock.calls[0][0].data);
-    productOwnerAllowedFields.forEach((field) => expect(updatedFields.includes(field)).toBeTruthy());
-    productOwnerRestrictedFields.forEach((field) => expect(updatedFields.includes(field)).toBeFalsy());
+    editableAllowedFields.forEach((field) => expect(updatedFields.includes(field)).toBeTruthy());
+    editableRestrictedFields.forEach((field) => expect(updatedFields.includes(field)).toBeFalsy());
   });
 
   it('Allows admins to update expected fields', async () => {

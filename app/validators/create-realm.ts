@@ -99,7 +99,11 @@ export const createRealmSchema = yup
   .concat(commonSchema);
 
 export const getUpdateRealmSchemaByRole = (role: string = '') => {
-  const productOwnerFields = yup
+  // Product owner and technical lead are symmetric: both may edit the full form
+  // (product fields plus the shared membership/org fields from commonSchema).
+  // Only admins additionally get `approved`/`materialToSend`; additional members
+  // get neither branch and fall through to the read-only default below.
+  const editableFields = yup
     .object()
     .shape({
       productName: yup.string().required(),
@@ -116,9 +120,10 @@ export const getUpdateRealmSchemaByRole = (role: string = '') => {
           approved: yup.string().optional().nullable(),
           materialToSend: yup.string().optional().nullable(),
         })
-        .concat(productOwnerFields);
+        .concat(editableFields);
     case RoleEnum.PRODUCT_OWNER:
-      return productOwnerFields;
+    case RoleEnum.TECHNICAL_LEAD:
+      return editableFields;
     default:
       return commonSchema;
   }

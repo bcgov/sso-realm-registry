@@ -236,18 +236,18 @@ describe('Form Validation', () => {
     expect(additionalIdir.value).toBe(members[2].user.idirUsername);
   });
 
-  it('Enables/disables expected fields for a technical lead', async () => {
+  it('Enables/disables expected fields for a technical lead, same as a product owner', async () => {
     const { container } = render(<EditPage realm={testRealm} role={RoleEnum.TECHNICAL_LEAD} />);
 
     const inputs = await getFormInputs(container);
 
     expect(inputs.realmNameInput.disabled).toBe(true);
-    expect(inputs.productNameInput.disabled).toBe(true);
+    expect(inputs.productNameInput.disabled).toBe(false);
     expect(inputs.ministryInput.disabled).toBe(false);
     expect(inputs.divisionInput.disabled).toBe(false);
     expect(inputs.branchInput.disabled).toBe(false);
-    expect(inputs.realmPurposeInput.disabled).toBe(true);
-    expect(inputs.primaryEndUserInput.disabled).toBe(true);
+    expect(inputs.realmPurposeInput.disabled).toBe(false);
+    expect(inputs.primaryEndUserInput.disabled).toBe(false);
     // Membership is symmetric: a technical lead may change any slot.
     expect(inputs.poEmailInput!.disabled).toBe(false);
     expect(inputs.poIdirInput.disabled).toBe(true);
@@ -258,7 +258,7 @@ describe('Form Validation', () => {
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).toBeNull();
   });
 
-  it('Enables/disables expected fields for a product owner', async () => {
+  it('Enables/disables expected fields for a product owner, same as a technical lead', async () => {
     const { container } = render(<EditPage realm={testRealm} role={RoleEnum.PRODUCT_OWNER} />);
 
     const inputs = await getFormInputs(container);
