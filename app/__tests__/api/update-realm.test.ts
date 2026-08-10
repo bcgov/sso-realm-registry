@@ -347,11 +347,9 @@ describe('approval and rejection', () => {
     expect(emailList[0].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
     expect(emailList[1].cc).toEqual(expect.arrayContaining([ssoTeamEmail]));
     expect(emailList[0].subject).toBe(
-      'Important: Your request for Custom Realm realm 1 has been Approved (email 1 of 2)',
+      '[DEV] Important: Your request for Custom Realm realm 1 has been Approved (email 1 of 2)',
     );
-    expect(emailList[1].subject).toBe(
-      'Important: Custom Realm realm 1 Created and Action Required for Realm Admin Configuration (email 2 of 2)',
-    );
+    expect(emailList[1].subject).toBe('[DEV] Important: Custom Realm realm 1 Created');
   });
 
   it('does not call kc admin api to create realm in all environments after rejection', async () => {
