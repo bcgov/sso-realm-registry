@@ -9,25 +9,17 @@ export enum RoleEnum {
   TECHNICAL_LEAD = 'other',
 }
 
-export const allowedTechContactFields: string[] = [
+/** Roster columns worth recording on an event. Membership lives in `users_rosters`. */
+export const allowedFormFields: string[] = [
+  'realm',
+  'environments',
+  'purpose',
+  'productName',
+  'primaryEndUsers',
   'ministry',
   'division',
   'branch',
-  'technicalContactIdirUserId',
-  'technicalContactEmail',
-  'secondTechnicalContactEmail',
-  'secondTechnicalContactIdirUserId',
 ];
-
-export const allowedPoFields: string[] = allowedTechContactFields.concat([
-  'productName',
-  'primaryEndUsers',
-  'productOwnerEmail',
-  'productOwnerIdirUserId',
-  'primaryEndUsers',
-]);
-
-export const allowedFormFields: string[] = allowedPoFields.concat(['realm', 'environments', 'purpose']);
 
 export const adminOnlyFields: string[] = ['materialToSend'];
 

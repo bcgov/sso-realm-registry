@@ -3,7 +3,15 @@
     // Coming from button-inc dependency, to be removed soon
     "GHSA-c2c7-rcm5-vvqj",
     // Coming from button-inc dependency, to be removed soon
-    "GHSA-r5fr-rjxr-66jc"
+    "GHSA-r5fr-rjxr-66jc",
+    "GHSA-6gpp-xcg3-4w24",
+    "GHSA-7rqj-j65f-68wh",
+    "GHSA-89xv-2m56-2m9x",
+    "GHSA-f88m-g3jw-g9cj",
+    "GHSA-m99w-x7hq-7vfj",
+    "GHSA-p9j2-gv94-2wf4",
+    "GHSA-r28c-9q8g-f849",
+    "GHSA-xmf8-cvqr-rfgj"
   ],
   "directory": "./app",
   "high": true,

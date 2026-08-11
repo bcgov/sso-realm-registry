@@ -1,6 +1,7 @@
 import { sendEmail } from 'utils/ches';
 import { Session } from 'next-auth';
 import { Roster } from '@prisma/client';
+import { AccessSyncFailure, MemberWithUser, leadEmails, memberEmails } from 'controllers/user-access';
 import { generateRealmLinksByEnv, generateMasterRealmLinksByEnv, formatDocURL } from './helpers';
 import { MICROSOFT_TEAMS_CHANNEL_LINK } from './constants';
 
@@ -121,7 +122,12 @@ const emailFooter = `
 </footer>
 `;
 
-export const sendUpdateEmail = async (realm: any, session: any, updatingApprovalStatus: boolean) => {
+export const sendUpdateEmail = async (
+  realm: any,
+  session: any,
+  updatingApprovalStatus: boolean,
+  members: MemberWithUser[],
+) => {
   const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   let message: string = `
               <main>
@@ -146,9 +152,7 @@ export const sendUpdateEmail = async (realm: any, session: any, updatingApproval
   }
 
   return await sendEmail({
-    to: [realm.technicalContactEmail, realm.productOwnerEmail, realm.secondTechnicalContactEmail].filter(
-      (email) => email,
-    ),
+    to: memberEmails(members),
     cc: [ssoTeamEmail],
     body: `
           ${emailHeader}
@@ -159,7 +163,7 @@ export const sendUpdateEmail = async (realm: any, session: any, updatingApproval
   });
 };
 
-export const sendRestoreEmail = async (realm: Roster, requester: string) => {
+export const sendRestoreEmail = async (realm: Roster, requester: string, members: MemberWithUser[]) => {
   const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   const subject = `${prefix}Notification: Realm ${realm.realm} Restoration Requested`;
 
@@ -170,9 +174,7 @@ export const sendRestoreEmail = async (realm: Roster, requester: string) => {
   `;
 
   return sendEmail({
-    to: [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
-      (email) => email,
-    ),
+    to: memberEmails(members),
     cc: [ssoTeamEmail],
     body: `
           ${emailHeader}
@@ -183,64 +185,45 @@ export const sendRestoreEmail = async (realm: Roster, requester: string) => {
   });
 };
 
-const roleLabels = {
-  productOwnerIdirUserId: 'Product Owner',
-  technicalContactIdirUserId: 'Primary Technical Contact',
-  secondTechnicalContactIdirUserId: 'Secondary Technical Contact',
-};
+/** One realm a departed user held membership on, as the webhook assembles it. */
+export interface DeletedUserRealm {
+  realm: string;
+  /** Human readable role labels the user held on that realm. */
+  roles: string[];
+  /** Product owner and technical lead emails, excluding the departed user. */
+  recipients: string[];
+}
 
-export const sendDeletedUserEmail = async (realms: Roster[], userId: string) => {
+export const sendDeletedUserEmail = async (realms: DeletedUserRealm[], idirUsername: string) => {
   const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   const subject = `${prefix}Notification: User Removed`;
 
-  const roles = Object.entries(roleLabels) as [keyof Roster, string][];
-  let realmOwnership: string[] = [];
-
-  const realmEmails: Promise<any>[] = [];
-
-  realms.forEach((realm) => {
-    const deletedUserRoles = roles.filter(([key, label]) => {
-      const value = realm[key];
-      return typeof value === 'string' && value.toLowerCase() === userId.toLowerCase();
-    });
-    const ownershipLabels = deletedUserRoles.map(([, label]) => label).join(', ');
-    realmOwnership.push(`${realm.realm}: ${ownershipLabels}`);
-
-    const to = [];
-    // Message the Technical Contact / Product Owner, unless they are the deleted user
-    if (!deletedUserRoles.some((roles) => roles.includes('productOwnerIdirUserId'))) to.push(realm.productOwnerEmail!);
-    if (!deletedUserRoles.some((roles) => roles.includes('technicalContactIdirUserId')))
-      to.push(realm.technicalContactEmail!);
-
-    realmEmails.push(
+  await Promise.all(
+    realms.map(({ realm, roles, recipients }) =>
       sendEmail({
-        to,
+        to: recipients,
         cc: [ssoTeamEmail],
         subject,
         body: `
           ${emailHeader}
           <main>
             <p>
-              The user with ID ${userId} no longer had an active IDIR, and is listed as having the ${
-          deletedUserRoles.length > 1 ? 'roles' : 'role'
-        } ${deletedUserRoles.map((roles) => roles[1]).join(' and ')} on the custom realm ${
-          realm.realm
-        }. Please update your realm information.
+              The user with ID ${idirUsername} no longer had an active IDIR, and is listed as having the ${
+          roles.length > 1 ? 'roles' : 'role'
+        } ${roles.join(' and ')} on the custom realm ${realm}. Please update your realm information.
             </p>
           </main>
           ${emailFooter}
         `,
       }),
-    );
-  });
-
-  await Promise.all(realmEmails);
+    ),
+  );
 
   const message = `
     <main>
-      <p>The user ${userId} had an inactive IDIR and has been removed from keycloak. They are associated to the following custom realms:</p>
+      <p>The user ${idirUsername} had an inactive IDIR and has been removed from keycloak. They are associated to the following custom realms:</p>
       <ul>
-        ${realmOwnership.map((ownershipData) => `<li> ${ownershipData} </li>`).join('')}
+        ${realms.map(({ realm, roles }) => `<li> ${realm}: ${roles.join(', ')} </li>`).join('')}
       </ul>
     </main>
   `;
@@ -256,13 +239,11 @@ export const sendDeletedUserEmail = async (realms: Roster[], userId: string) => 
   });
 };
 
-export const sendCreateEmail = async (realm: Roster, session: Session) => {
+export const sendCreateEmail = async (realm: Roster, session: Session, members: MemberWithUser[]) => {
   const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   const username = `${session.user.given_name} ${session.user.family_name}`;
   return await sendEmail({
-    to: [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
-      (email) => email,
-    ),
+    to: memberEmails(members),
     cc: [ssoTeamEmail],
     body: `
       ${emailHeader}
@@ -275,12 +256,10 @@ export const sendCreateEmail = async (realm: Roster, session: Session) => {
   });
 };
 
-export const sendDeleteEmail = async (realm: Roster, session: Session) => {
+export const sendDeleteEmail = async (realm: Roster, session: Session, members: MemberWithUser[]) => {
   const githubActionTriggerHour = '4:00 AM';
   const username = `${session.user.given_name} ${session.user.family_name}`;
-  const to = [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
-    (email) => email,
-  );
+  const to = memberEmails(members);
   if (!to.length) return;
 
   return await sendEmail({
@@ -295,10 +274,8 @@ export const sendDeleteEmail = async (realm: Roster, session: Session) => {
   });
 };
 
-export const sendDeletionCompleteEmail = async (realm: Roster) => {
-  const to = [realm.technicalContactEmail!, realm.productOwnerEmail!, realm.secondTechnicalContactEmail!].filter(
-    (email) => email,
-  );
+export const sendDeletionCompleteEmail = async (realm: Roster, members: MemberWithUser[]) => {
+  const to = memberEmails(members);
   if (!to.length) return;
   return await sendEmail({
     to,
@@ -312,256 +289,170 @@ export const sendDeletionCompleteEmail = async (realm: Roster) => {
   });
 };
 
-export const sendReadyToUseEmail = async (realm: Roster) => {
+export const sendReadyToUseEmail = async (realm: Roster, members: MemberWithUser[]) => {
   const prefix = process.env.APP_ENV === 'development' ? '[DEV] ' : '';
   const realmName = realm.realm!;
   return await sendEmail({
     cc: [ssoTeamEmail],
-    to: [realm.technicalContactEmail!, realm.productOwnerEmail!].filter((email) => email),
+    to: memberEmails(members),
     body: `
           ${emailHeader}
             <main>
             <p>Your custom realm ${realm.realm} is ready to be accessed.</p>
-            <p>Please follow the instructions below to add Realm Admins:</p>
-            <ol>
-              <li>
-                <p>You are a Realm Admin: Please save these links below for logging in via the master realm:</p>
-                <ul>
-                  <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                    'dev',
-                    realmName,
-                  )}">${generateMasterRealmLinksByEnv('dev', realmName)}</a></p></code></li>
-                  <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                    'test',
-                    realmName,
-                  )}"></a>${generateMasterRealmLinksByEnv('test', realmName)}</p></code></li>
-                  <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                    'prod',
-                    realmName,
-                  )}">${generateMasterRealmLinksByEnv('prod', realmName)}</a></p></code></li>
-                </ul>
-              </li>
-              <li>
-                <p>You must have your identity provider configured. Please follow these <a href="https://bcgov.github.io/sso-docs/advanced/custom-realms/guides/setup-idps-mappers">instructions</a></strong></p>
-              </li>
-              <li>
-                <p> User friendly URLS and configure additional realm admins. To add yourself and others as realm admins via a user friendly url:</p>
-                <ol type="a">
-                  <li>
-                    <p>Log into your custom realm using below links so that you and other admins can be imported into the custom realm</p>
-                    <ul>
-                      <li>
-                      <p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
-      'dev',
-      realmName,
-    )}</a></code></p>
-                      </li>
-                      <li>
-                      <p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
-      'test',
-      realmName,
-    )}</a></code></p>
-                      </li>
-                      <li>
-                      <p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
-      'prod',
-      realmName,
-    )}</a></code></p>
-                      </li>
-                      </ul>
-                  </li>
-                  <li>
-                    <p>At this point you cannot log in, and might see a loading spinner or a <code>forbidden</code> message. Exit from the browser and continue with next step.</p>
-                  </li>
-                  <li>
-                    <p>One of the existing Realm Admins will need to add the user that logged in to #1 above to the custom realm admin group via the <strong>master</strong> links</p>
-                    <ul>
-                      <li>
-                        <p><code><a href="${generateMasterRealmLinksByEnv(
-                          'dev',
-                          realmName,
-                        )}">${generateMasterRealmLinksByEnv('dev', realmName)}</a></code></p>
-                      </li>
-                      <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                        'test',
-                        realmName,
-                      )}">${generateMasterRealmLinksByEnv('test', realmName)}</a></code></p></li>
-                      <li><p><code><a href="${generateMasterRealmLinksByEnv(
-                        'prod',
-                        realmName,
-                      )}">${generateMasterRealmLinksByEnv('prod', realmName)}</a></code></p></li>
-                    </ul>
-                  </li>
-                  <li>
-                    <p>Once you&rsquo;ve done this, you and your realm admins can access your realm via a more user friendly url</p>
-                    <p><span style="color: #ff0000;"><strong>PLEASE SAVE THIS USER FRIENDLY LINK</strong></span> as User Friendly Realm Admin Links</p>
-                    <ul>
-                      <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
-      'dev',
-      realmName,
-    )}</a></code></p></li>
-                      <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
-      'test',
-      realmName,
-    )}</a></code></p></li>
-                      <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
-      'prod',
-      realmName,
-    )}</a></code></p></li>
-                      </ul>
-                  </li>
-                </ol>
-              </li>
-            </ol>
+            <p>You can administer the realm through the master realm console:</p>
+            ${masterRealmLinkList(realmName, realm.environments ?? [])}
             <p>If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at: <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a></p>
             </main>
           ${emailFooter}
           `,
-    subject: `${prefix}Important: Custom Realm ${realmName} Created and Action Required for Realm Admin Configuration (email 2 of 2)`,
+    subject: `${prefix}Important: Custom Realm ${realmName} Created`,
   });
 };
 
+const masterRealmLinkList = (realmName: string, envs: string[]) => `
+        <ul>
+          ${envs
+            .map(
+              (env) =>
+                `<li><p><code><a href="${generateMasterRealmLinksByEnv(
+                  env,
+                  realmName,
+                )}">${generateMasterRealmLinksByEnv(env, realmName)}</a></code></p></li>`,
+            )
+            .join('')}
+        </ul>`;
+
+/** Everyone who should hear about one person's access changing on a realm. */
+const membershipChangeRecipients = (member: MemberWithUser, members: MemberWithUser[]) =>
+  Array.from(new Set([member.user.email, ...leadEmails(members)].filter(Boolean) as string[]));
+
+/**
+ * Confirms that a new member now holds realm admin access. Sent only after the grant
+ * succeeded in every environment, so nobody is told they have access that was never
+ * provisioned.
+ */
 export const onboardNewRealmAdmin = async (
   session: Session,
   realm: Roster,
-  oldContact: string,
-  newContact: string,
-  contactType: string,
+  member: MemberWithUser,
+  members: MemberWithUser[],
 ) => {
-  const nonUpdatedTeamMemberEmail = contactType.startsWith('Product')
-    ? realm.technicalContactEmail
-    : realm.productOwnerEmail;
-  const username = `${session.user.given_name} ${session.user.family_name}`;
   const realmName = realm.realm!;
-  const to = [newContact!, nonUpdatedTeamMemberEmail!].filter((email) => email);
+  const username = `${session.user.given_name} ${session.user.family_name}`;
+  const memberName = member.user.displayName || member.user.idirUsername;
+  const to = membershipChangeRecipients(member, members);
   if (!to.length) return;
+
   return await sendEmail({
     to,
     cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
-        <p>
-          We're reaching out to update you on changes to the ${contactType} details within the ${
-      realm.realm
-    } Custom realm. As of
-          ${new Date().toLocaleDateString()}, ${username} has modified the contact information in the Realm Registry, replacing ${oldContact} with the
-          updated information for the ${realm.realm}. We want to ensure you're informed about these recent updates.
-        </p>
-        <p>To ensure a smooth transition, please follow instructions below to make ${newContact} the Realm Admin</p>
-        <strong>Grant Realm Admin Access to the new team members</strong>
-        <p>To add others as realm admins via a user friendly URL:</p>
-        <ol type="a">
-          <li>
-            <p>Ask your new team member to login at</p>
-            <ul>
-            <li><p><code><a href="${generateRealmLinksByEnv('dev', realmName)}">${generateRealmLinksByEnv(
-      'dev',
-      realmName,
-    )}</a></code></p></li>
-            <li><p><code><a href="${generateRealmLinksByEnv('test', realmName)}">${generateRealmLinksByEnv(
-      'test',
-      realmName,
-    )}</a></code></p></li>
-            <li><p><code><a href="${generateRealmLinksByEnv('prod', realmName)}">${generateRealmLinksByEnv(
-      'prod',
-      realmName,
-    )}</a></code></p></li>
-            </ul>
-          </li>
-          <li>
-            <p>They will see a forbidden message <code>Forbidden: You don't have access to the requested resource</code></p>
-          </li>
-          <li>
-            <p>You or one of the existing Realm Admins will need to add the user that logged in. See image below.</p>
-            <img src="${
-              process.env.SSO_LOGOUT_REDIRECT_URI
-            }/onboard-realm-admin.png" alt="OnBoardNewRealmAdmin" style="width:650px">
-          </li>
-          <li>
-            <p>Once you&rsquo;ve done this, you and your realm admins can access your realm via a more user friendly url</p>
-            <p>
-              <span style="color: #ff0000"><strong>PLEASE SAVE THIS USER FRIENDLY LINK</strong></span> as User Friendly Realm
-              Admin Links
-            </p>
-            <ul>
-              <li>
-                <p>
-                  <code
-                    ><a href="${generateRealmLinksByEnv('dev', realmName)}"
-                      >${generateRealmLinksByEnv('dev', realmName)}</a
-                    ></code
-                  >
-                </p>
-              </li>
-              <li>
-                <p>
-                  <code
-                    ><a href="${generateRealmLinksByEnv('test', realmName)}"
-                      >${generateRealmLinksByEnv('test', realmName)}</a
-                    ></code
-                  >
-                </p>
-              </li>
-              <li>
-                <p>
-                  <code
-                    ><a href="${generateRealmLinksByEnv('prod', realmName)}"
-                      >${generateRealmLinksByEnv('prod', realmName)}</a
-                    ></code
-                  >
-                </p>
-              </li>
-            </ul>
-          </li>
-        </ol>
-        <p>
-          If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at:
-          <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
-        </p>
+        <main>
+          <p>
+            As of ${new Date().toLocaleDateString()}, ${username} added ${memberName} to the ${realmName} Custom Realm
+            in the Realm Registry. Realm admin access has been granted, and no further setup is needed.
+          </p>
+          <p>${memberName} can administer the realm through the master realm console:</p>
+          ${masterRealmLinkList(realmName, realm.environments ?? [])}
+          <p>
+            If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at:
+            <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
+          </p>
+        </main>
         ${emailFooter}
         `,
-    subject: `${subjectPrefix}Important: Custom Realm ${realm.realm} contact information has been updated. Action required to Onboard New Realm Admin.`,
+    subject: `${subjectPrefix}Notification: ${memberName} has been granted realm admin access to Custom Realm ${realmName}.`,
   });
 };
 
-export const offboardRealmAdmin = async (session: Session, realm: Roster, oldContact: string, contactType: string) => {
-  const nonUpdatedTeamMemberEmail = contactType.startsWith('Product')
-    ? realm.technicalContactEmail
-    : realm.productOwnerEmail;
+/**
+ * Confirms that a former member's realm admin access has been withdrawn. Sent only
+ * after the revoke succeeded in every environment.
+ */
+export const offboardRealmAdmin = async (
+  session: Session,
+  realm: Roster,
+  member: MemberWithUser,
+  members: MemberWithUser[],
+) => {
+  const realmName = realm.realm!;
   const username = `${session.user.given_name} ${session.user.family_name}`;
-  const to = [oldContact!, nonUpdatedTeamMemberEmail!].filter((email) => email);
+  const memberName = member.user.displayName || member.user.idirUsername;
+  const to = membershipChangeRecipients(member, members);
   if (!to.length) return;
+
   return await sendEmail({
     to,
     cc: [ssoTeamEmail],
     body: `
         ${emailHeader}
-        <p>
-          We're reaching out to update you on changes to the ${contactType} details within the ${
-      realm.realm
-    } Custom realm. As of
-          ${new Date().toLocaleDateString()}, ${username} has modified the contact information in the Realm Registry, replacing ${oldContact} with the
-          updated information for the ${realm.realm}. We want to ensure you're informed about these recent updates.
-        </p>
-        <p>Please follow instructions below to remove ${oldContact} as the Realm Admin</p>
-        <strong>Offboarding instructions to remove an existing realm admin</strong>
-        <ol type="a">
-          <li>
-            <p>We recommend deleting the offboarded team member from your custom realm. See image below.</p>
-            <img src="${
-              process.env.SSO_LOGOUT_REDIRECT_URI
-            }/offboard-realm-admin.png" alt="OffBoardRealmAdmin" style="width:650px">
-          </li>
-          <li>
-            <p>As you and your realm admins may have configured the user to a realm level role or realm level group, please remove the user accordingly.</p>
-          </li>
-        </ol>
-        <p>
-          If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at:
-          <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
-        </p>
+        <main>
+          <p>
+            As of ${new Date().toLocaleDateString()}, ${username} removed ${memberName} from the ${realmName} Custom
+            Realm in the Realm Registry. Their realm admin access has been withdrawn in every environment.
+          </p>
+          <p>
+            One thing is still yours to do: any roles or groups ${memberName} was given <strong>inside</strong> the
+            ${realmName} realm are managed by your team, not by the Realm Registry. Please review and remove them.
+          </p>
+          <p>
+            If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at:
+            <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>
+          </p>
+        </main>
         ${emailFooter}
         `,
-    subject: `${subjectPrefix}Important: Custom Realm ${realm.realm} contact information has been updated. Action required to Offboard existing Realm Admin.`,
+    subject: `${subjectPrefix}Notification: ${memberName}'s realm admin access to Custom Realm ${realmName} has been removed.`,
+  });
+};
+
+/**
+ * One summary per sync attempt, not one per failure, so an environment outage during a
+ * bulk change cannot flood the inbox.
+ */
+export const sendAccessSyncFailureEmail = async (realm: Roster, failures: AccessSyncFailure[]) => {
+  if (!failures.length) return;
+
+  const realmName = realm.realm!;
+  const envs = realm.environments ?? [];
+  const failedEnvs = new Set(failures.map((failure) => failure.env));
+  const succeededEnvs = envs.filter((env) => !failedEnvs.has(env));
+
+  const rows = failures
+    .map(
+      (failure) => `
+        <tr>
+          <td style="padding: 4px 12px 4px 0;">${failure.idirUsername}</td>
+          <td style="padding: 4px 12px 4px 0;">${failure.env}</td>
+          <td style="padding: 4px 12px 4px 0;">${failure.action}</td>
+          <td style="padding: 4px 12px 4px 0;">${failure.error}</td>
+        </tr>`,
+    )
+    .join('');
+
+  return await sendEmail({
+    to: [ssoTeamEmail],
+    body: `
+        ${emailHeader}
+        <main>
+          <p>Realm admin access could not be synced for the Custom Realm ${realmName}.</p>
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align: left; padding-right: 12px;">User</th>
+                <th style="text-align: left; padding-right: 12px;">Environment</th>
+                <th style="text-align: left; padding-right: 12px;">Action</th>
+                <th style="text-align: left; padding-right: 12px;">Error</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          ${succeededEnvs.length ? `<p>${succeededEnvs.join(' and ')} succeeded.</p>` : ''}
+          <p>Retry from the admin dashboard.</p>
+        </main>
+        ${emailFooter}
+        `,
+    subject: `${subjectPrefix}Realm access sync failed: ${realmName}`,
   });
 };

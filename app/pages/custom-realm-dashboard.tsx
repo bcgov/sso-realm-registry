@@ -3,11 +3,19 @@ import styled from 'styled-components';
 import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import { ModalContext } from 'context/modal';
 import { withBottomAlert, BottomAlert } from 'layout/BottomAlert';
-import { getRealmProfiles, deleteRealmRequest, updateRealmProfile, restoreRealmProfile } from 'services/realm';
+import {
+  getRealmProfiles,
+  deleteRealmRequest,
+  updateRealmProfile,
+  restoreRealmProfile,
+  syncRealmAccess,
+} from 'services/realm';
 import CustomRealmTabs from 'page-partials/custom-realm-dashboard/CustomRealmTabs';
 import { StatusEnum } from 'validators/create-realm';
 import { Table } from '@bcgov-sso/common-react-components';
-import { faTrash, faTrashRestoreAlt } from '@fortawesome/free-solid-svg-icons';
+import { faRotate, faTrash, faTrashRestoreAlt } from '@fortawesome/free-solid-svg-icons';
+import { MemberRoleEnum } from 'utils/constants';
+import { buildFormData } from 'utils/membership';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import Head from 'next/head';
@@ -56,6 +64,9 @@ interface SelectOption {
   value: any;
   label: string;
 }
+
+const memberEmail = (realm: CustomRealmFormData, role: MemberRoleEnum) =>
+  (realm.members ?? []).find((member) => member.role === role)?.email ?? '';
 
 function CustomRealmDashboard({ alert }: Props) {
   const [realmRequests, setRealmRequests] = useState<CustomRealmFormData[]>([]);
@@ -130,12 +141,44 @@ function CustomRealmDashboard({ alert }: Props) {
     });
   };
 
+  const handleSyncRequest = (id: number) => {
+    const handleConfirm = async () => {
+      const [, err] = await syncRealmAccess(String(id));
+      if (err) {
+        return alert.show({
+          variant: 'danger',
+          fadeOut: 5000,
+          closable: true,
+          content: `Realm access for request id ${id} could not be fully synced. The SSO team has been emailed the details.`,
+        });
+      }
+      alert.show({
+        variant: 'success',
+        fadeOut: 3500,
+        closable: true,
+        content: `Synced realm access for request id ${id}.`,
+      });
+      await fetchRealms();
+    };
+
+    setModalConfig({
+      show: true,
+      title: 'Sync Realm Access',
+      body: `Retry granting and revoking realm admin access for this realm in every environment?`,
+      showCancelButton: true,
+      showConfirmButton: true,
+      onConfirm: handleConfirm,
+    });
+  };
+
   const handleRequestStatusChange = (approval: 'approved' | 'declined', realm: CustomRealmFormData) => {
     const realmId = realm.id;
     const approving = approval === 'approved';
     const handleConfirm = async () => {
+      // The row is the payload the server returned, which carries membership as a flat
+      // `members` list. An update is validated against the slot fields, so rebuild them.
       const [, err] = await updateRealmProfile(String(realmId), {
-        ...realm,
+        ...buildFormData(realm),
         approved: approving,
       } as unknown as RealmProfile);
       if (err) {
@@ -187,12 +230,14 @@ function CustomRealmDashboard({ alert }: Props) {
       accessorKey: 'productOwnerEmail',
       enableColumnFilter: false,
       enableSorting: false,
+      cell: (props: any) => memberEmail(props.row.original, MemberRoleEnum.PRODUCT_OWNER),
     },
     {
-      header: 'Technical Contact',
-      accessorKey: 'technicalContactEmail',
+      header: 'Technical Lead',
+      accessorKey: 'technicalLeadEmail',
       enableColumnFilter: false,
       enableSorting: false,
+      cell: (props: any) => memberEmail(props.row.original, MemberRoleEnum.TECHNICAL_LEAD),
     },
     {
       header: 'Status',
@@ -254,8 +299,34 @@ function CustomRealmDashboard({ alert }: Props) {
         const deleteDisabled = props.row.original.status !== 'applied' || props.row.original.archived === true;
         const restoreDisabled =
           ![StatusEnum.APPLIED].includes(props.row.original.status) || props.row.original.archived === false;
+        // Realms that aren't approved and applied yet don't exist in Keycloak, so there is
+        // nothing to sync. Deleted/archived realms have no active Keycloak access either.
+        const isProvisioned =
+          props.row.original.approved === true &&
+          props.row.original.status === StatusEnum.APPLIED &&
+          props.row.original.archived !== true;
+        // Purely a database predicate: rows with a pending add or a pending revoke.
+        const syncDisabled = !isProvisioned || !props.row.original.needsSync;
         return (
           <div style={{ display: 'flex', justifyContent: 'center', columnGap: '0.5rem' }}>
+            <FontAwesomeIcon
+              onClick={() => {
+                if (!syncDisabled) handleSyncRequest(props.row.getValue('id'));
+              }}
+              icon={faRotate}
+              className={`delete-icon ${syncDisabled ? 'disabled' : ''}`}
+              role="button"
+              data-testid="sync-btn"
+              title={
+                props.row.original.archived === true
+                  ? 'Disabled realms cannot be synced'
+                  : !isProvisioned
+                  ? 'Realm has not been approved and applied yet'
+                  : syncDisabled
+                  ? 'Realm access is in sync'
+                  : 'Retry syncing realm access'
+              }
+            />
             <FontAwesomeIcon
               onClick={() => {
                 if (!deleteDisabled) handleDeleteRequest(props.row.getValue('id'));
@@ -303,12 +374,25 @@ function CustomRealmDashboard({ alert }: Props) {
     if (useLoading) setLoading(false);
   };
 
+  // Historical contacts that no longer exist in the directory. They are kept for the
+  // record but can never be provisioned, so they are reported rather than synced.
+  const unresolvedMemberCount = realmRequests.reduce(
+    (total, realm) => total + ((realm as any).unresolvedMemberCount ?? 0),
+    0,
+  );
+
   return (
     <>
       <Head>
         <title>Custom Realm Dashboard</title>
       </Head>
       <Container>
+        {unresolvedMemberCount > 0 && (
+          <p data-testid="unresolved-member-count">
+            {unresolvedMemberCount} realm {unresolvedMemberCount === 1 ? 'member' : 'members'} could not be resolved in
+            the directory and cannot be granted access. Edit the realm to replace them.
+          </p>
+        )}
         {loading ? (
           <AlignCenter>
             <SpinnerGrid color="#000" height={45} width={45} wrapperClass="d-block" visible={loading} />

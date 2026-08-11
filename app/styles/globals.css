@@ -345,6 +345,15 @@ textarea#root_bceidBody {
   height: unset !important;
 }
 
+.delete-icon {
+  cursor: pointer;
+}
+
+.delete-icon.disabled {
+  color: #c4c4c4;
+  cursor: not-allowed;
+}
+
 ul.error-detail {
   list-style: none;
   margin-left: 0;

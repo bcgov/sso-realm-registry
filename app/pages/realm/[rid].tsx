@@ -7,14 +7,17 @@ import { CustomRealmFormData, RealmProfile } from 'types/realm-profile';
 import styled from 'styled-components';
 import RealmForm from 'components/RealmForm';
 import { getUpdateRealmSchemaByRole } from 'validators/create-realm';
-import { useSession } from 'next-auth/react';
-import { getServerSession, User } from 'next-auth';
+import { getServerSession } from 'next-auth';
 import { RoleEnum } from 'utils/helpers';
 import { ModalContext } from 'context/modal';
 import { GetServerSidePropsContext } from 'next';
 import { authOptions } from 'pages/api/auth/[...nextauth]';
 import prisma from 'utils/prisma';
-import { Prisma } from '@prisma/client';
+// Only ever referenced inside getServerSideProps, so Next strips this from the client
+// bundle. Keep it that way: the module reaches Graph and the Keycloak admin client.
+import { canEditRealm, getRealmMembers, getUserRoleOnRealm, serializeRoster } from 'controllers/user-access';
+import { MemberRoleEnum } from 'utils/constants';
+import { buildFormData } from 'utils/membership';
 
 const Container = styled(ResponsiveContainer)`
   font-size: 1rem;
@@ -35,7 +38,6 @@ const Container = styled(ResponsiveContainer)`
     border-radius: 0;
     padding: 0.5em 0.6em;
     border-radius: 0.25em;
-    margin-bottom: 1rem;
     width: 100%;
 
     &:focus {
@@ -67,10 +69,11 @@ const mediaRules: MediaRule[] = [
 
 interface Props {
   realm: CustomRealmFormData | null;
+  role?: string;
   alert: BottomAlert;
 }
 
-function EditPage({ realm, alert }: Props) {
+function EditPage({ realm, role, alert }: Props) {
   if (!realm) {
     return (
       <Container rules={mediaRules}>
@@ -78,16 +81,22 @@ function EditPage({ realm, alert }: Props) {
       </Container>
     );
   }
-  return <EditRealm realm={realm!} alert={alert} />;
+  return <EditRealm realm={realm} role={role} alert={alert} />;
 }
 
-function EditRealm({ realm: initialRealm, alert }: { realm: CustomRealmFormData; alert: BottomAlert }) {
+function EditRealm({
+  realm: initialRealm,
+  role,
+  alert,
+}: {
+  realm: CustomRealmFormData;
+  role?: string;
+  alert: BottomAlert;
+}) {
   const router = useRouter();
   const { rid } = router.query;
-  const [realm, setRealm] = useState<CustomRealmFormData>(initialRealm);
-  const { data } = useSession();
+  const [realm, setRealm] = useState<CustomRealmFormData>(buildFormData(initialRealm));
   const { setModalConfig } = useContext(ModalContext);
-  const currentUser: Partial<User> = data?.user!;
 
   const onSubmit = async (formData: any) => {
     setModalConfig({
@@ -98,25 +107,30 @@ function EditRealm({ realm: initialRealm, alert }: { realm: CustomRealmFormData;
       showConfirmButton: true,
       onConfirm: async () => {
         const [, err] = await updateRealmProfile(rid as string, formData as RealmProfile);
-        if (!err) {
-          router.push('/my-dashboard').then(() => {
-            alert.show({
-              variant: 'success',
-              fadeOut: 2500,
-              closable: true,
-              content: 'Realm profile has been updated successfully',
-            });
+        if (err) {
+          // The server rejects membership the form cannot check on its own, so its
+          // reasons have to reach the requester rather than dying in the console.
+          const reasons = err?.response?.data?.error;
+          return alert.show({
+            variant: 'danger',
+            fadeOut: 10000,
+            closable: true,
+            content: Array.isArray(reasons)
+              ? reasons.join(' ')
+              : 'Failed to update the realm profile. Please try again.',
           });
         }
+        router.push('/my-dashboard').then(() => {
+          alert.show({
+            variant: 'success',
+            fadeOut: 2500,
+            closable: true,
+            content: 'Realm profile has been updated successfully',
+          });
+        });
       },
     });
   };
-
-  const isAdmin = currentUser?.client_roles?.includes('sso-admin');
-  const isPO = currentUser?.idir_username?.toLowerCase() === realm?.productOwnerIdirUserId.toLowerCase();
-  let role = RoleEnum.TECHNICAL_LEAD;
-  if (isAdmin) role = RoleEnum.ADMIN;
-  else if (isPO) role = RoleEnum.PRODUCT_OWNER;
 
   return (
     <Container rules={mediaRules}>
@@ -126,7 +140,7 @@ function EditRealm({ realm: initialRealm, alert }: { realm: CustomRealmFormData;
         setFormData={setRealm}
         onSubmit={onSubmit}
         onCancel={() => router.push('/my-dashboard')}
-        validationSchema={getUpdateRealmSchemaByRole(role)}
+        validationSchema={getUpdateRealmSchemaByRole(role ?? RoleEnum.TECHNICAL_LEAD)}
         collapse={false}
       />
     </Container>
@@ -141,54 +155,49 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
 
   try {
     const username = session?.user?.idir_username || '';
-    const userIsAdmin = session?.user?.client_roles?.includes('sso-admin');
-    const where: Prisma.RosterWhereInput = {
-      id: Number(context.params?.rid),
-    };
+    const userIsAdmin = Boolean(session?.user?.client_roles?.includes('sso-admin'));
+    const id = Number(context.params?.rid);
 
-    if (!userIsAdmin) {
-      where['OR'] = [
-        {
-          technicalContactIdirUserId: {
-            equals: username,
-            mode: 'insensitive',
-          },
-        },
-        {
-          secondTechnicalContactIdirUserId: {
-            equals: username,
-            mode: 'insensitive',
-          },
-        },
-        {
-          productOwnerIdirUserId: {
-            equals: username,
-            mode: 'insensitive',
-          },
-        },
-      ];
-    }
+    const roster = await prisma.roster.findFirst({ where: { id } });
 
-    const realm = await prisma.roster.findFirst({
-      where,
-    });
-
-    if (!realm) {
+    if (!roster) {
       return {
         props: {
-          realm,
+          realm: null,
         },
       };
     }
 
+    // Additional users are view only. The realm still appears on their dashboard so they
+    // can see what they hold; this page is not theirs to open.
+    const memberRole = userIsAdmin ? null : await getUserRoleOnRealm(id, username);
+    if (!canEditRealm(memberRole, userIsAdmin)) {
+      return {
+        props: {
+          realm: null,
+        },
+      };
+    }
+
+    const members = await getRealmMembers(id);
+    const realm = serializeRoster(roster, members);
+
     const realmSerialized = {
       ...realm,
-      createdAt: realm?.createdAt?.toISOString(),
-      updatedAt: realm?.updatedAt?.toISOString(),
+      createdAt: roster.createdAt?.toISOString() ?? null,
+      updatedAt: roster.updatedAt?.toISOString() ?? null,
     };
+
+    const role = userIsAdmin
+      ? RoleEnum.ADMIN
+      : memberRole === MemberRoleEnum.PRODUCT_OWNER
+      ? RoleEnum.PRODUCT_OWNER
+      : RoleEnum.TECHNICAL_LEAD;
+
     return {
       props: {
         realm: realmSerialized,
+        role,
       },
     };
   } catch (err) {

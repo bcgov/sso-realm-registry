@@ -34,8 +34,52 @@ model Roster {
   requestor                        String?   @map("requestor") @db.VarChar(100)
   archived                         Boolean?  @map("archived")
   events                           Event[]
+  members                          UserRoster[]
 
   @@map("rosters")
+}
+
+/// Registry users, normalised out of the flat contact columns on Roster.
+/// Rows are never hard-deleted: removing someone from a realm only tombstones
+/// their UserRoster row, so a User may end up belonging to no realm at all.
+model User {
+  id           Int          @id @default(autoincrement())
+  /// IDIR guid from Graph `onPremisesExtensionAttributes.extensionAttribute12`.
+  /// Null means the contact could not be resolved in Graph; such rows are
+  /// excluded from every sync. A unique index on lower(idir_username) (declared
+  /// in migration.sql, not expressible here) dedupes them.
+  guid         String?      @unique(map: "users_guid_unique_index") @db.VarChar(1000)
+  idirUsername String       @map("idir_username") @db.VarChar(1000)
+  email        String?      @db.VarChar(1000)
+  displayName  String?      @map("display_name") @db.VarChar(1000)
+  resolvedAt   DateTime?    @map("resolved_at") @db.Timestamptz(6)
+  createdAt    DateTime?    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime?    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  rosters      UserRoster[]
+
+  @@map("users")
+}
+
+/// Realm membership. `removedAt` tombstones an ended membership; `revokedAt` is
+/// only set once access has been withdrawn in every environment, and `syncedAt`
+/// only once access has been confirmed in every environment. Partial unique
+/// indexes over the live rows are declared in migration.sql.
+model UserRoster {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  rosterId  Int       @map("roster_id")
+  role      String    @db.VarChar(50)
+  syncedAt  DateTime? @map("synced_at") @db.Timestamptz(6)
+  removedAt DateTime? @map("removed_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onUpdate: NoAction, map: "fk_users_rosters_user_id")
+  roster    Roster    @relation(fields: [rosterId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_users_rosters_roster_id")
+
+  @@index([rosterId], map: "users_rosters_roster_id_index")
+  @@index([userId], map: "users_rosters_user_id_index")
+  @@map("users_rosters")
 }
 
 model surveys_1 {

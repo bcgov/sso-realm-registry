@@ -6,6 +6,12 @@ import { Event } from 'types/event';
 import { RealmProfile } from 'types/realm-profile';
 import Badge from 'components/Badge';
 
+const memberRoleLabels: { [key: string]: string } = {
+  product_owner: 'Product Owner',
+  technical_lead: 'Technical Lead',
+  additional: 'Additional User',
+};
+
 const Tabs = styled.ul`
   display: flex;
   flex-direction: row;
@@ -90,22 +96,16 @@ const formatRealmData = (realm?: RealmProfile): React.ReactNode => {
       <span>Environments:</span>
       <strong> {realm.environments.join(', ')}</strong>
       <br />
-      <span>Product owner's email:</span> <strong> {realm.productOwnerEmail}</strong>
-      <br />
-      <span>Product owner's IDIR:</span> <strong> {realm.productOwnerIdirUserId}</strong>
-      <br />
-      <span>Technical contact's email:</span>
-      <strong> {realm.technicalContactEmail}</strong>
-      <br />
-      <span>Technical contact's IDIR:</span>
-      <strong> {realm.technicalContactIdirUserId}</strong>
-      <br />
-      <span>Secondary technical contact's email:</span>
-      <strong> {realm.secondTechnicalContactEmail}</strong>
-      <br />
-      <span>Secondary technical contact's IDIR:</span>
-      <strong> {realm.secondTechnicalContactIdirUserId}</strong>
-      <br />
+      <span>Members:</span>
+      <ul>
+        {(realm.members ?? []).map((member) => (
+          <li key={member.id}>
+            <strong>{memberRoleLabels[member.role] ?? member.role}:</strong> {member.email ?? '(no email)'} (
+            {member.idirUsername}){member.resolvedAt === null && <em> — never resolved in the directory</em>}
+            {member.resolvedAt !== null && member.syncedAt === null && <em> — access not yet synced</em>}
+          </li>
+        ))}
+      </ul>
       {realm.outOfSync && (
         <>
           <span>Out of Sync Information:</span>

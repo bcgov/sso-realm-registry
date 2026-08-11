@@ -77,3 +77,53 @@ CREATE TABLE IF NOT EXISTS
  ALTER TABLE public.rosters
    DROP COLUMN IF EXISTS rc_channel,
    DROP COLUMN IF EXISTS rc_channel_owned_by;
+
+CREATE TABLE IF NOT EXISTS
+    public.users (
+        id serial NOT NULL,
+        guid VARCHAR(1000),
+        idir_username VARCHAR(1000) NOT NULL,
+        email VARCHAR(1000),
+        display_name VARCHAR(1000),
+        resolved_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    );
+
+-- guid is the identity key, but is nullable so that contacts who no longer exist in
+-- the directory can still be represented. Postgres allows multiple NULLs in a unique
+-- column, so the username index is what dedupes those unresolved rows.
+CREATE UNIQUE INDEX IF NOT EXISTS users_guid_unique_index ON public.users (guid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_idir_username_unique_index ON public.users (LOWER(idir_username));
+
+CREATE TABLE IF NOT EXISTS
+    public.users_rosters (
+        id serial NOT NULL,
+        user_id INTEGER NOT NULL,
+        roster_id INTEGER NOT NULL,
+        role VARCHAR(50) NOT NULL,
+        synced_at TIMESTAMP WITH TIME ZONE,
+        removed_at TIMESTAMP WITH TIME ZONE,
+        revoked_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        CONSTRAINT fk_users_rosters_user_id FOREIGN KEY (user_id) REFERENCES public.users (id),
+        CONSTRAINT fk_users_rosters_roster_id FOREIGN KEY (roster_id) REFERENCES public.rosters (id) ON DELETE CASCADE,
+        CONSTRAINT users_rosters_role_check CHECK (
+            role IN ('product_owner', 'technical_lead', 'additional')
+        )
+    );
+
+-- Removed rows are kept as tombstones, so uniqueness only applies to live membership.
+CREATE UNIQUE INDEX IF NOT EXISTS users_rosters_member_unique_index ON public.users_rosters (roster_id, user_id) WHERE removed_at IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_rosters_product_owner_unique_index ON public.users_rosters (roster_id) WHERE role = 'product_owner' AND removed_at IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_rosters_technical_lead_unique_index ON public.users_rosters (roster_id) WHERE role = 'technical_lead' AND removed_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS users_rosters_roster_id_index ON public.users_rosters (roster_id);
+
+CREATE INDEX IF NOT EXISTS users_rosters_user_id_index ON public.users_rosters (user_id);

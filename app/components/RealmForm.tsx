@@ -1,6 +1,6 @@
-import { CustomRealmFormData, PrimaryEndUser } from 'types/realm-profile';
+import { CustomRealmFormData, PrimaryEndUser, RealmMember } from 'types/realm-profile';
 import styled from 'styled-components';
-import React, { useState, ChangeEvent, useEffect, Dispatch, SetStateAction } from 'react';
+import React, { useState, ChangeEvent, useEffect, useMemo, Dispatch, SetStateAction } from 'react';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
 import { ValidationError } from 'yup';
 import { cloneDeep, kebabCase, debounce } from 'lodash';
@@ -9,8 +9,9 @@ import InfoPopover from 'components/InfoPopover';
 import { Ministry } from 'types/realm-profile';
 import * as yup from 'yup';
 import AsyncSelect from 'react-select/async';
-import { getIdirUserId, getIdirUsersByEmail } from 'services/azure';
+import { getIdirUsersByEmail } from 'services/azure';
 import { realmTakenError } from 'pages/custom-realm-form';
+import { MAX_ADDITIONAL_USERS } from 'utils/constants';
 
 const SForm = styled.form<{ collapse: boolean }>`
   display: grid;
@@ -64,6 +65,12 @@ const SForm = styled.form<{ collapse: boolean }>`
   .input-wrapper {
     display: flex;
     flex-direction: column;
+
+    .button-wrapper {
+      display: flex;
+      flex-direction: row;
+      column-gap: 0.5rem;
+    }
   }
 
   .checkbox-wrapper,
@@ -130,6 +137,26 @@ const SForm = styled.form<{ collapse: boolean }>`
       background: #dddddd;
     }
   }
+
+  .additional-user-row {
+    display: grid;
+    grid-template-columns: ${(props) => (props.collapse ? '1fr' : '1fr 1fr auto')};
+    column-gap: 2em;
+    row-gap: 0.5em;
+    align-items: end;
+    margin-bottom: 1em;
+  }
+
+  .remove-user-button,
+  .add-user-button {
+    width: auto;
+    padding: 0.5em 1em;
+  }
+
+  .help-text {
+    color: grey;
+    margin: 0;
+  }
 `;
 
 const ButtonContainer = styled.div`
@@ -181,8 +208,10 @@ interface Props {
   updatedMessage?: string;
 }
 
-const requiredMessage = 'Fill in the required fields.';
 const requiredEmailMessage = 'Fill this in with a proper email.';
+/** A membership slot either failed the schema, or carries a message of its own. */
+const memberErrorMessage = (error: boolean | string | undefined) =>
+  typeof error === 'string' ? error : requiredEmailMessage;
 const twoCharactersRequiredMessage = 'This field must be at least two characters.';
 
 const defaultUserOptions = ['livingInBC', 'businessInBC', 'govEmployees'];
@@ -195,6 +224,45 @@ const otherPrimaryEndUser = (primaryEndUsers: PrimaryEndUser[]) => {
   else return '';
 };
 
+/**
+ * A stored member is identified by `userId` and a fresh pick by `azureId`, so the same
+ * person occupying both looks like two different keys. The IDIR username is the one
+ * identity the picker echoes back for either, and it is unique, so key on it first.
+ */
+const memberKey = (member: RealmMember | null) => {
+  if (member?.idirUsername) return `idir:${member.idirUsername.toLowerCase()}`;
+  return member?.azureId ?? (member?.userId != null ? `user:${member.userId}` : null);
+};
+
+/**
+ * Best effort duplicate check. The server repeats it against resolved identities, which
+ * catches anyone the directory search could not name.
+ *
+ * The error is reported against the slot holding the second occurrence, since that is the
+ * one the requester has to change; a product owner repeated as technical lead has nothing
+ * to do with the additional users.
+ */
+const findDuplicateMember = (data: CustomRealmFormData) => {
+  const slots = [
+    { field: 'productOwner', member: data.productOwner },
+    { field: 'technicalLead', member: data.technicalLead },
+    ...data.additionalUsers.map((member, index) => ({ field: `additionalUsers[${index}]`, member })),
+  ];
+  const seen = new Set<string>();
+
+  for (const { field, member } of slots) {
+    const key = memberKey(member);
+    if (!key) continue;
+    if (seen.has(key)) {
+      const name = member?.email || member?.idirUsername || 'That user';
+      return { field, message: `${name} cannot occupy more than one membership slot.` };
+    }
+    seen.add(key);
+  }
+
+  return null;
+};
+
 export default function RealmForm({
   onSubmit,
   formData,
@@ -204,7 +272,8 @@ export default function RealmForm({
   updatedMessage,
   collapse = false,
 }: Props) {
-  const [formErrors, setFormErrors] = useState<{ [key in keyof CustomRealmFormData]?: boolean | string }>({});
+  // Keyed by yup error path, so additional user rows appear as `additionalUsers[0]`.
+  const [formErrors, setFormErrors] = useState<{ [key: string]: boolean | string | undefined }>({});
   const [otherPrimaryEndUsersSelected, setOtherPrimaryEndUsersSelected] = useState(
     hasOtherPrimaryEndUsers(formData.primaryEndUsers),
   );
@@ -216,30 +285,63 @@ export default function RealmForm({
   const [divisions, setDivisions] = useState<string[]>([]);
   const [branches, setBranches] = useState<string[]>([]);
 
-  const fuzzySearchIdirUsersByEmail = debounce((email: string, cb) => {
-    if (email.length > 2) {
-      getIdirUsersByEmail(email).then(([data, err]) => {
-        if (err) return cb([]);
-        const options = data?.map((u) => {
-          return {
-            value: u.id,
-            label: u.mail,
-          };
-        });
-        cb(options);
-      });
-    } else {
-      cb([]);
-    }
-  }, 300);
+  // The search already returns the IDIR username, so a selection needs no follow up call.
+  // Memoized so the debounce timer persists across renders instead of being reset on every keystroke.
+  const fuzzySearchIdirUsersByEmail = useMemo(
+    () =>
+      debounce((email: string, cb) => {
+        if (email.length > 2) {
+          getIdirUsersByEmail(email).then(([data, err]) => {
+            if (err) return cb([]);
+            const options = data?.map((u) => {
+              return {
+                value: u.id,
+                label: u.mail,
+                idirUsername: u.onPremisesSamAccountName || u.mailNickname || '',
+              };
+            });
+            cb(options);
+          });
+        } else {
+          cb([]);
+        }
+      }, 300),
+    [],
+  );
 
-  const handleFormSelectChange = async (e: any, selectorName: string, dependentInput: string) => {
-    let idirUserId: string | null = '';
-    if (e?.value) {
-      [idirUserId] = await getIdirUserId(e?.value);
-      if (idirUserId) setFormErrors({ ...formErrors, [selectorName]: false, [dependentInput]: false });
-    }
-    setFormData({ ...formData, [selectorName]: e?.label || '', [dependentInput]: idirUserId || '' });
+  useEffect(() => {
+    return () => fuzzySearchIdirUsersByEmail.cancel();
+  }, [fuzzySearchIdirUsersByEmail]);
+
+  /** Only the Azure object id is sent on save; the server re-resolves everything else. */
+  const optionToMember = (option: any): RealmMember | null =>
+    option?.value
+      ? { azureId: option.value, email: option.label ?? '', idirUsername: option.idirUsername ?? '' }
+      : null;
+
+  const memberToOption = (member: RealmMember | null) =>
+    member?.email ? { value: member.azureId ?? String(member.userId ?? ''), label: member.email } : undefined;
+
+  const handleMemberChange = (option: any, slot: 'productOwner' | 'technicalLead') => {
+    setFormErrors({ ...formErrors, [slot]: false });
+    setFormData({ ...formData, [slot]: optionToMember(option) });
+  };
+
+  const handleAdditionalUserChange = (option: any, index: number) => {
+    const additionalUsers = [...formData.additionalUsers];
+    additionalUsers[index] = optionToMember(option);
+    setFormErrors({ ...formErrors, [`additionalUsers[${index}]`]: false, additionalUsers: false });
+    setFormData({ ...formData, additionalUsers });
+  };
+
+  const addAdditionalUser = () => {
+    if (formData.additionalUsers.length >= MAX_ADDITIONAL_USERS) return;
+    setFormData({ ...formData, additionalUsers: [...formData.additionalUsers, null] });
+  };
+
+  const removeAdditionalUser = (index: number) => {
+    setFormErrors({});
+    setFormData({ ...formData, additionalUsers: formData.additionalUsers.filter((_, i) => i !== index) });
   };
 
   const handleFormInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -265,9 +367,21 @@ export default function RealmForm({
     if (otherPrimaryEndUsersSelected) {
       submission.primaryEndUsers.push(otherPrimaryEndUserDetails);
     }
+    // A row left blank is validated rather than dropped, so nobody submits believing they
+    // granted access to a person the form quietly discarded. Removing the row is explicit.
     const { valid, errors } = validateForm(submission, validationSchema);
     if (!valid) {
       setFormErrors(errors as any);
+      return;
+    }
+
+    const duplicate = findDuplicateMember(submission);
+    if (duplicate) {
+      setFormErrors({ [duplicate.field]: duplicate.message });
+      try {
+        // Same id convention as validateForm: the kebab cased field plus `-input`.
+        document.getElementById(`${kebabCase(duplicate.field)}-input`)?.scrollIntoView();
+      } catch (e) {}
       return;
     }
     setSubmittingForm(true);
@@ -319,6 +433,9 @@ export default function RealmForm({
   }, [formData.division]);
 
   const schemaFields = Object.keys(validationSchema.fields);
+  // Membership is shared between the product owner and technical lead, so it is in the
+  // schema for every role that can reach this form.
+  const membershipEditable = schemaFields.includes('productOwner');
 
   return (
     <>
@@ -505,25 +622,23 @@ export default function RealmForm({
         </fieldset>
 
         <div className="input-wrapper first-col">
-          <label htmlFor="product-owner-email-input" className="required">
+          <label htmlFor="product-owner-input" className="required">
             Product owner&apos;s email
           </label>
           <AsyncSelect
-            id="product-owner-email-input"
-            name="productOwnerEmail"
+            inputId="product-owner-input"
+            name="productOwner"
             loadOptions={fuzzySearchIdirUsersByEmail}
-            onChange={(e: any) => handleFormSelectChange(e, 'productOwnerEmail', 'productOwnerIdirUserId')}
+            onChange={(e: any) => handleMemberChange(e, 'productOwner')}
             isClearable
             noOptionsMessage={() => 'Start typing email...'}
-            defaultValue={() => {
-              if (formData.productOwnerEmail) return { label: formData.productOwnerEmail };
-            }}
+            value={memberToOption(formData.productOwner) ?? null}
             className="product-owner-email"
             classNamePrefix="product-owner-email"
-            isDisabled={!schemaFields.includes('productOwnerEmail')}
+            isDisabled={!membershipEditable}
           />
 
-          {formErrors.productOwnerEmail && <p className="error-message">{requiredEmailMessage}</p>}
+          {formErrors.productOwner && <p className="error-message">{memberErrorMessage(formErrors.productOwner)}</p>}
         </div>
 
         <div className="input-wrapper second-col">
@@ -533,86 +648,120 @@ export default function RealmForm({
           <input
             required
             id="product-owner-idir-input"
-            name="productOwnerIdirUserId"
-            value={formData.productOwnerIdirUserId}
-            onChange={handleFormInputChange}
+            data-testid="product-owner-idir"
+            name="productOwnerIdirUsername"
+            value={formData.productOwner?.idirUsername ?? ''}
+            readOnly
             disabled
           />
-          {formErrors.productOwnerIdirUserId && <p className="error-message">{twoCharactersRequiredMessage}</p>}
         </div>
 
         <div className="input-wrapper first-col">
-          <label htmlFor="technical-contact-email-input" className="required">
-            Technical contact&apos;s email
+          <label htmlFor="technical-lead-input" className="required">
+            Technical lead&apos;s email
           </label>
           <AsyncSelect
-            id="technical-contact-email-input"
-            name="technicalContactEmail"
+            inputId="technical-lead-input"
+            name="technicalLead"
             loadOptions={fuzzySearchIdirUsersByEmail}
-            onChange={(e: any) => handleFormSelectChange(e, 'technicalContactEmail', 'technicalContactIdirUserId')}
+            onChange={(e: any) => handleMemberChange(e, 'technicalLead')}
             isClearable
             noOptionsMessage={() => 'Start typing email...'}
-            defaultValue={() => {
-              if (formData.technicalContactEmail) return { label: formData.technicalContactEmail };
-            }}
+            value={memberToOption(formData.technicalLead) ?? null}
             className="technical-contact-email"
             classNamePrefix="technical-contact-email"
+            isDisabled={!membershipEditable}
           />
 
-          {formErrors.technicalContactEmail && <p className="error-message">{requiredEmailMessage}</p>}
+          {formErrors.technicalLead && <p className="error-message">{memberErrorMessage(formErrors.technicalLead)}</p>}
         </div>
 
         <div className="input-wrapper second-col">
-          <label htmlFor="technical-contact-idir-input" className="required">
-            Technical contact&apos;s IDIR
+          <label htmlFor="technical-lead-idir-input" className="required">
+            Technical lead&apos;s IDIR
           </label>
           <input
             required
             data-testid="tech-contact-idir"
-            id="technical-contact-idir-input"
-            name="technicalContactIdirUserId"
-            value={formData.technicalContactIdirUserId}
-            onChange={handleFormInputChange}
+            id="technical-lead-idir-input"
+            name="technicalLeadIdirUsername"
+            value={formData.technicalLead?.idirUsername ?? ''}
+            readOnly
             disabled
           />
-          {formErrors.technicalContactIdirUserId && <p className="error-message">{twoCharactersRequiredMessage}</p>}
         </div>
 
-        <div className="input-wrapper first-col">
-          <label htmlFor="secondary-contact-email-input">Secondary technical contact&apos;s email</label>
-          <AsyncSelect
-            id="secondary-contact-email-input"
-            name="secondTechnicalContactEmail"
-            loadOptions={fuzzySearchIdirUsersByEmail}
-            onChange={(e: any) =>
-              handleFormSelectChange(e, 'secondTechnicalContactEmail', 'secondTechnicalContactIdirUserId')
-            }
-            isMulti={false}
-            isClearable
-            noOptionsMessage={() => 'Start typing email...'}
-            defaultValue={() => {
-              if (formData.secondTechnicalContactEmail) return { label: formData.secondTechnicalContactEmail };
-            }}
-            className="secondary-contact-email"
-            classNamePrefix="secondary-contact-email"
-          />
+        <h3 className="span-cols" id="additional-users-section">
+          Additional users
+        </h3>
+        <p className="help-text span-cols">
+          You can give access to {MAX_ADDITIONAL_USERS} additional people. They will be granted admin access to your
+          realm.{' '}
+        </p>
 
-          {formErrors.secondTechnicalContactEmail && <p className="error-message">{requiredEmailMessage}</p>}
-        </div>
+        {/* Errors that belong to the group rather than a row. */}
+        {formErrors.additionalUsers && (
+          <p className="error-message span-cols">
+            {typeof formErrors.additionalUsers === 'string'
+              ? formErrors.additionalUsers
+              : `You may add at most ${MAX_ADDITIONAL_USERS} people.`}
+          </p>
+        )}
 
-        <div className="input-wrapper second-col">
-          <label htmlFor="secondary-contact-idir-input">Secondary technical contact&apos;s IDIR</label>
-          <input
-            required
-            id="secondary-contact-idir-input"
-            data-testid="secondary-contact-idir"
-            name="secondTechnicalContactIdirUserId"
-            value={formData.secondTechnicalContactIdirUserId}
-            onChange={handleFormInputChange}
-            disabled
-          />
-          {formErrors.secondTechnicalContactIdirUserId && <p className="error-message">{requiredMessage}</p>}
-        </div>
+        {formData.additionalUsers.map((additionalUser, index) => (
+          <React.Fragment key={`additional-user-${index}`}>
+            <div className="input-wrapper first-col">
+              {/* The id matches the kebab cased yup path so a blank row can be scrolled to. */}
+              <label htmlFor={`additional-users-${index}-input`}>Additional user {index + 1}&apos;s email</label>
+              <AsyncSelect
+                inputId={`additional-users-${index}-input`}
+                name={`additionalUsers[${index}]`}
+                loadOptions={fuzzySearchIdirUsersByEmail}
+                onChange={(e: any) => handleAdditionalUserChange(e, index)}
+                isClearable
+                noOptionsMessage={() => 'Start typing email...'}
+                value={memberToOption(additionalUser) ?? null}
+                className={`additional-user-email additional-user-email-${index}`}
+                classNamePrefix="additional-user-email"
+                isDisabled={!membershipEditable}
+              />
+              {formErrors[`additionalUsers[${index}]`] && (
+                <p className="error-message">{memberErrorMessage(formErrors[`additionalUsers[${index}]`])}</p>
+              )}
+            </div>
+
+            <div className="input-wrapper second-col">
+              <label htmlFor={`additional-user-${index}-idir-input`}>Additional user {index + 1}&apos;s IDIR</label>
+              <div className="button-wrapper">
+                <input
+                  id={`additional-user-${index}-idir-input`}
+                  data-testid={`additional-user-${index}-idir`}
+                  value={additionalUser?.idirUsername ?? ''}
+                  readOnly
+                  disabled
+                />
+                <button
+                  type="button"
+                  className="secondary remove-user-button"
+                  onClick={() => removeAdditionalUser(index)}
+                  aria-label={`Remove additional user ${index + 1}`}
+                  disabled={!membershipEditable}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </React.Fragment>
+        ))}
+
+        <button
+          type="button"
+          className="primary add-user-button span-cols"
+          onClick={addAdditionalUser}
+          disabled={!membershipEditable || formData.additionalUsers.length >= MAX_ADDITIONAL_USERS}
+        >
+          Add user
+        </button>
 
         {/* Below fields hidden instead of disabled if not in schema */}
 

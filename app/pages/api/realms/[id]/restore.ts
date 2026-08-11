@@ -4,9 +4,9 @@ import { authOptions } from '../../auth/[...nextauth]';
 import { checkAdminRole, createEvent } from 'utils/helpers';
 import prisma from 'utils/prisma';
 import { EventEnum, StatusEnum } from 'validators/create-realm';
-import { sendRestoreEmail } from 'utils/mailer';
-import { addUserAsRealmAdmin, manageCustomRealm } from 'controllers/keycloak';
-import { generateXML, makeSoapRequest, getBceidAccounts } from 'utils/idir';
+import { sendAccessSyncFailureEmail, sendRestoreEmail } from 'utils/mailer';
+import { manageCustomRealm } from 'controllers/keycloak';
+import { getRealmMembers, reconcileRealmAccess } from 'controllers/user-access';
 
 interface ErrorData {
   success: boolean;
@@ -29,9 +29,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
     let allEnvRealmsRestored = false;
     const lastUpdatedBy = `${session.user.family_name}, ${session.user.given_name}`;
+    const realmId = parseInt(req.query.id as string, 10);
     const realm = await prisma.roster.findUnique({
       where: {
-        id: parseInt(req.query.id as string, 10),
+        id: realmId,
       },
     });
 
@@ -49,9 +50,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       console.error('Error restoring custom realm', err);
     }
 
-    await prisma.roster.update({
+    const restoredRealm = await prisma.roster.update({
       where: {
-        id: parseInt(req.query.id as string, 10),
+        id: realmId,
       },
       data: {
         lastUpdatedBy,
@@ -61,7 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     });
 
     await createEvent({
-      realmId: parseInt(req.query.id as string, 10),
+      realmId,
       eventCode: allEnvRealmsRestored ? EventEnum.REQUEST_RESTORE_SUCCESS : EventEnum.REQUEST_RESTORE_FAILED,
       idirUserId: username,
     });
@@ -70,26 +71,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(422).send('Unable to process the restore request at this time');
     }
 
-    try {
-      if (allEnvRealmsRestored) {
-        [realm?.productOwnerIdirUserId, realm?.technicalContactIdirUserId].forEach(async (idirUserId) => {
-          const samlPayload = generateXML('userId', idirUserId as string, process.env.IDIR_REQUESTOR_USER_GUID ?? '');
-          const { response }: any = await makeSoapRequest(samlPayload);
-          const accounts = await getBceidAccounts(response);
+    // Membership already carries every member's guid, so restoring access needs no
+    // directory lookup at all: it is just a reconcile of everyone on the realm.
+    const reconcile = await reconcileRealmAccess(restoredRealm);
+    await sendAccessSyncFailureEmail(restoredRealm, reconcile.failures);
 
-          if (accounts.length > 0) {
-            await addUserAsRealmAdmin(`${accounts[0].guid}@idir`, realm?.environments!, realm?.realm!);
-          } else {
-            console.error(`No guid found for user ${String(idirUserId)}`);
-          }
-        });
-      }
-    } catch (err) {
-      console.error('failed to create realm admins', err);
-    }
-
-    //emails
-    await sendRestoreEmail(realm, `${session.user.given_name} ${session.user.family_name}`);
+    const members = await getRealmMembers(realmId);
+    await sendRestoreEmail(restoredRealm, `${session.user.given_name} ${session.user.family_name}`, members);
 
     res.status(200).send('success');
   } catch (err: any) {

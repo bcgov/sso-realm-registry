@@ -46,6 +46,17 @@ export const restoreRealmProfile = async (id: string): Promise<[any, null] | [nu
   }
 };
 
+/** Admin only retry for realm access that failed to sync. */
+export const syncRealmAccess = async (id: string): Promise<[any, null] | [null, any]> => {
+  try {
+    const result = await instance.post(`realms/${id}/sync`).then((res) => res.data);
+    return [result, null];
+  } catch (err: any) {
+    console.error(err);
+    return [null, err];
+  }
+};
+
 export const submitRealmRequest = async (realmInfo: CustomRealmFormData) => {
   try {
     const result = await instance.post(`realms`, realmInfo).then((res) => res.data);
