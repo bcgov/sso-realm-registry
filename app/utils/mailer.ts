@@ -299,8 +299,8 @@ export const sendReadyToUseEmail = async (realm: Roster, members: MemberWithUser
           ${emailHeader}
             <main>
             <p>Your custom realm ${realm.realm} is ready to be accessed.</p>
-            <p>You can administer the realm through the master realm console:</p>
-            ${masterRealmLinkList(realmName, realm.environments ?? [])}
+            <p>You can administer the realm through the below links using your IDIR - MFA account:</p>
+            ${customRealmLinkList(realmName, realm.environments ?? [])}
             <p>If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at: <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a></p>
             </main>
           ${emailFooter}
@@ -309,15 +309,15 @@ export const sendReadyToUseEmail = async (realm: Roster, members: MemberWithUser
   });
 };
 
-const masterRealmLinkList = (realmName: string, envs: string[]) => `
+const customRealmLinkList = (realmName: string, envs: string[]) => `
         <ul>
           ${envs
             .map(
               (env) =>
-                `<li><p><code><a href="${generateMasterRealmLinksByEnv(
+                `<li><p><code><a href="${generateRealmLinksByEnv(env, realmName)}">${generateRealmLinksByEnv(
                   env,
                   realmName,
-                )}">${generateMasterRealmLinksByEnv(env, realmName)}</a></code></p></li>`,
+                )}</a></code></p></li>`,
             )
             .join('')}
         </ul>`;
@@ -353,8 +353,8 @@ export const onboardNewRealmAdmin = async (
             As of ${new Date().toLocaleDateString()}, ${username} added ${memberName} to the ${realmName} Custom Realm
             in the Realm Registry. Realm admin access has been granted, and no further setup is needed.
           </p>
-          <p>${memberName} can administer the realm through the master realm console:</p>
-          ${masterRealmLinkList(realmName, realm.environments ?? [])}
+          <p>${memberName} can administer the realm through the below links using their IDIR - MFA account:</p>
+          ${customRealmLinkList(realmName, realm.environments ?? [])}
           <p>
             If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at:
             <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a>

@@ -17,9 +17,9 @@ interface Props {
 export default function RealmURIs({ realm }: Props) {
   let { dev, test, prod } = useContext(DomainsContext);
 
-  const devURL = `${dev}/auth/admin/${realm.realm}/console/`;
-  const testURL = `${test}/auth/admin/${realm.realm}/console/`;
-  const prodURL = `${prod}/auth/admin/${realm.realm}/console/`;
+  const devURL = `${dev}/auth/admin/master/console/#/${realm.realm}`;
+  const testURL = `${test}/auth/admin/master/console/#/${realm.realm}`;
+  const prodURL = `${prod}/auth/admin/master/console/#/${realm.realm}`;
 
   return (
     <>
