@@ -55,7 +55,7 @@ export const getUpdatedProperties = (originalData: any, newData: any) => {
 export const generateRealmLinksByEnv = (env: string, realmName: string) => {
   const domain =
     env === 'dev' ? process.env.DEV_KC_URL : env === 'test' ? process.env.TEST_KC_URL : process.env.PROD_KC_URL;
-  return `${domain}/auth/admin/${realmName}/console/`;
+  return `${domain}/auth/admin/master/console/#/${realmName}`;
 };
 
 export const generateMasterRealmLinksByEnv = (env: string, realmName: string) => {
