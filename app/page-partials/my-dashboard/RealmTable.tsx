@@ -40,6 +40,8 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
     return role === MemberRoleEnum.PRODUCT_OWNER || role === MemberRoleEnum.TECHNICAL_LEAD;
   };
 
+  const canView = (realm: RealmProfile) => realm.approved && realm.status === StatusEnum.APPLIED;
+
   const columns = [
     {
       header: 'ID',
@@ -91,8 +93,9 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
             aria-label="View URIs"
             icon={faEye}
             onClick={() => {
-              onViewClick(String(props.row.getValue('id')));
+              if (props.row.original.viewable) onViewClick(String(props.row.getValue('id')));
             }}
+            disabled={!props.row.original.viewable}
           />
           <ActionButton
             aria-label="Edit"
@@ -131,6 +134,7 @@ function RealmTable({ realms, onEditClick, onViewClick }: Props) {
             status: getStatus(r.status, r.approved),
             approved: r.approved,
             editable: canEdit(r),
+            viewable: canView(r),
           };
         })}
         columns={columns}
