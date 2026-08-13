@@ -141,7 +141,7 @@ export const sendUpdateEmail = async (
           <main>
               <p>We're pleased to inform you that your request for the Custom Realm ${realm.realm} has been approved and is currently being processed.</p>
           </main>`;
-    subject = `${prefix}Important: Your request for Custom Realm ${realm.realm} has been Approved (email 1 of 2)`;
+    subject = `${prefix}Important: Your request for Custom Realm ${realm.realm} has been Approved.`;
   } else if (updatingApprovalStatus && realm.approved === false) {
     message = `
               <main>
@@ -301,6 +301,7 @@ export const sendReadyToUseEmail = async (realm: Roster, members: MemberWithUser
             <p>Your custom realm ${realm.realm} is ready to be accessed.</p>
             <p>You can administer the realm through the below links using your IDIR - MFA account:</p>
             ${customRealmLinkList(realmName, realm.environments ?? [])}
+            <p>For information and guides on using your realm, for example setting up an identity provider, see our <a href="https://bcgov.github.io/sso-docs/category/custom-realms">custom realm documentation.</a>
             <p>If you have any questions or require further assistance, feel free to reach out to us by Microsoft Teams or email at: <a href="mailto:bcgov.sso@gov.bc.ca">bcgov.sso@gov.bc.ca</a></p>
             </main>
           ${emailFooter}
