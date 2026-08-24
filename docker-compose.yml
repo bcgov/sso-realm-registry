@@ -1,0 +1,78 @@
+# Local development only. Stands up the three Keycloak servers (dev/test/prod) that the
+# realm registry talks to. Not production ready — the embedded H2 store and the shared
+# admin/admin credentials are here purely so `yarn dev` has something to point at.
+#
+# See docs/local-development-guid.md for the app/.env values to use.
+
+name: sso-realm-registry
+
+x-keycloak: &keycloak
+  image: ghcr.io/bcgov/sso:v26.6.8-build.1
+  command: start-dev
+  restart: unless-stopped
+  networks:
+    - sso-net
+  environment: &keycloak-env
+    # The image bakes in KC_DB=postgres, so this override is what keeps us on the
+    # embedded file-backed H2 store (persisted via the volumes below).
+    KC_DB: dev-file
+    # app/utils/keycloak-core.ts appends `/auth` to *_KC_URL, so the servers have to
+    # live under the legacy relative path rather than the Keycloak 17+ default.
+    KC_HTTP_RELATIVE_PATH: /auth
+    KC_HOSTNAME_STRICT: 'false'
+    KC_HOSTNAME_STRICT_HTTPS: 'false'
+    KC_BOOTSTRAP_ADMIN_USERNAME: admin
+    KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    JAVA_OPTS_APPEND: '-Dkeycloak.profile.feature.impersonation=disabled'
+    TZ: America/Vancouver
+
+services:
+  keycloak-dev:
+    <<: *keycloak
+    ports:
+      - 9080:8080
+    volumes:
+      - kc-dev-data:/opt/keycloak/data
+
+  keycloak-test:
+    <<: *keycloak
+    ports:
+      - 9081:8080
+    volumes:
+      - kc-test-data:/opt/keycloak/data
+
+  keycloak-prod:
+    <<: *keycloak
+    ports:
+      - 9082:8080
+    volumes:
+      - kc-prod-data:/opt/keycloak/data
+
+  # One-shot seeding of the `terraform-cli` admin account and the realms the
+  # access-sync code expects. Idempotent, so it is safe to re-run at any time.
+  keycloak-bootstrap:
+    image: ghcr.io/bcgov/sso:v26.6.8-build.1
+    entrypoint: ['/bin/bash', '/bootstrap/keycloak-bootstrap.sh']
+    restart: 'no'
+    depends_on:
+      - keycloak-dev
+      - keycloak-test
+      - keycloak-prod
+    networks:
+      - sso-net
+    volumes:
+      - ./local/keycloak-bootstrap.sh:/bootstrap/keycloak-bootstrap.sh:ro
+    environment:
+      KC_SERVERS: 'http://keycloak-dev:8080 http://keycloak-test:8080 http://keycloak-prod:8080'
+      KC_ADMIN_USERNAME: admin
+      KC_ADMIN_PASSWORD: admin
+      TF_CLI_USERNAME: terraform-cli
+      TF_CLI_PASSWORD: terraform-cli
+
+volumes:
+  kc-dev-data:
+  kc-test-data:
+  kc-prod-data:
+
+networks:
+  sso-net: {}

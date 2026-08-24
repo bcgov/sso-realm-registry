@@ -4,7 +4,10 @@ import axios from 'axios';
 let msalInstance: IConfidentialClientApplication;
 
 export interface MsGraphUserValue {
+  /** Azure object id; the only identifier the realm form sends for a member. */
+  id: string;
   mailNickname: string;
+  onPremisesSamAccountName: string;
   displayName: string;
   mail: string;
   givenName: string;
@@ -99,26 +102,40 @@ export async function callAzureGraphApi({
   }
 }
 
-export const fetchIdirUser = async ({ userId }: { userId: string }) => {
-  const response = (await callAzureGraphApi({
-    pathSegments: ['users'],
-    query: {
-      $filter: `mailNickname eq '${userId}'`,
-      $select: 'onPremisesExtensionAttributes,displayName,mail,givenName,surname',
-    },
-  })) as MsGraphUserResponse;
-  if (!response?.value?.length) {
-    return false;
-  }
-  const result = response.value[0];
-  if (!result) throw new Error(`No user found with userId ${userId}`);
+export interface DirectoryUser {
+  /** Internal IDIR guid; null when the account has no extensionAttribute12. */
+  guid: string | null;
+  idirUsername: string;
+  email: string | null;
+  displayName: string | null;
+}
+
+/** Fields a directory lookup needs to populate a `users` row. */
+const directoryUserSelect = 'id,onPremisesExtensionAttributes,onPremisesSamAccountName,mailNickname,mail,displayName';
+
+const toDirectoryUser = (result?: Partial<MsGraphUserValue> | null): DirectoryUser | null => {
+  if (!result?.id) return null;
+  const idirUsername = result.onPremisesSamAccountName || result.mailNickname;
+  if (!idirUsername) return null;
 
   return {
-    guid: result.onPremisesExtensionAttributes.extensionAttribute12 as string,
-    userId,
-    displayName: result.displayName,
-    email: result.mail,
-    firstName: result.givenName,
-    lastName: result.surname,
+    guid: result.onPremisesExtensionAttributes?.extensionAttribute12 ?? null,
+    idirUsername,
+    email: result.mail ?? null,
+    displayName: result.displayName ?? null,
   };
+};
+
+/**
+ * Looks a user up by their Azure object id, which is the only identifier the realm
+ * form sends. Identity is always re-resolved here rather than trusted from the client,
+ * because the guid it returns is the direct provisioning key for realm admin access.
+ */
+export const fetchIdirUserByAzureId = async (azureId: string): Promise<DirectoryUser | null> => {
+  const result = await callAzureGraphApi({
+    pathSegments: ['users', azureId],
+    query: { $select: directoryUserSelect },
+  });
+
+  return toDirectoryUser(result);
 };

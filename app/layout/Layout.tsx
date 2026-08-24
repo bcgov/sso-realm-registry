@@ -8,7 +8,7 @@ import BottomAlertProvider from './BottomAlert';
 import { useSession } from 'next-auth/react';
 import { useEffect, useContext } from 'react';
 import { User } from 'next-auth';
-import { formatWikiURL } from 'utils/helpers';
+import { formatDocURL } from 'utils/helpers';
 import { useIdleTimer } from 'react-idle-timer';
 import { ModalContext } from 'context/modal';
 import { Nav } from 'react-bootstrap';
@@ -168,7 +168,7 @@ const RightMenuItems = () => (
       </a>
     </HoverItem>
     <HoverItem>
-      <a href={formatWikiURL()} target="_blank" title="Documentation">
+      <a href={formatDocURL()} target="_blank" title="Documentation">
         <FontAwesomeIcon size="2x" icon={faFileAlt} />
       </a>
     </HoverItem>
@@ -288,7 +288,7 @@ function Layout({ children, onLoginClick, onLogoutClick }: any) {
         icon: faEnvelope,
       },
       {
-        href: formatWikiURL(),
+        href: formatDocURL(),
         title: 'Documentation',
         icon: faFileAlt,
       },

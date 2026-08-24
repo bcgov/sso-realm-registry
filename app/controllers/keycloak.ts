@@ -1,3 +1,4 @@
+import KcAdminClient from '@keycloak/keycloak-admin-client';
 import KeycloakCore from 'utils/keycloak-core';
 import { getRealmPermissionsByRole } from 'utils/helpers';
 import RoleRepresentation, { RoleMappingPayload } from '@keycloak/keycloak-admin-client/lib/defs/roleRepresentation';
@@ -5,125 +6,147 @@ import ClientRepresentation from '@keycloak/keycloak-admin-client/lib/defs/clien
 import GroupRepresentation from '@keycloak/keycloak-admin-client/lib/defs/groupRepresentation';
 
 /**
- * Function to remove access at the master realm level as administrator of a custom realm. Custom realm owners access control comes from the role <realmname>-realm-admin. Removes this role from supplied usernames if found.
- * @param emails Usernames to remove
- * @param env The environment to cleanup
- * @param realm The realm name you want to remove access to
+ * Master realm username for an IDIR guid. This is the direct provisioning key for
+ * realm admin access, which is why the guid is only ever taken from Graph.
  */
-export const removeUserAsRealmAdmin = async (emails: (string | null)[], env: string, realm: string) => {
+export const masterUsernameForGuid = (guid: string) => `${guid.toLowerCase()}@azureidir`;
+
+/**
+ * Finds the master realm user for a guid, creating it (and its federated identity
+ * link, in both the idp realm and master) if it does not exist yet.
+ */
+const ensureMasterRealmUser = async (kcAdminClient: KcAdminClient, username: string) => {
+  const [userGuid, userIdp] = username.toLowerCase().split('@');
+
+  const idpRealmUsers = await kcAdminClient.users.find({
+    realm: userIdp,
+    username: userGuid,
+    max: 1,
+  });
+
+  if (idpRealmUsers.length === 0) {
+    const idpRealmUser = await kcAdminClient.users.create({
+      realm: userIdp,
+      username: userGuid,
+      enabled: true,
+    });
+
+    await kcAdminClient.users.addToFederatedIdentity({
+      realm: userIdp,
+      id: idpRealmUser.id,
+      federatedIdentityId: userIdp,
+      federatedIdentity: {
+        userId: userGuid, // after user gets logged in it gets updated to actual sub from entra by keycloak authenticator
+        userName: userGuid,
+        identityProvider: userIdp,
+      },
+    });
+  }
+
+  const masterRealmUsers = await kcAdminClient.users.find({
+    realm: 'master',
+    username,
+    max: 1,
+  });
+
+  if (masterRealmUsers.length > 0) return masterRealmUsers[0];
+
+  const masterRealmUser = await kcAdminClient.users.create({
+    realm: 'master',
+    username,
+    enabled: true,
+  });
+
+  await kcAdminClient.users.addToFederatedIdentity({
+    realm: 'master',
+    id: masterRealmUser.id,
+    federatedIdentityId: 'azureidir',
+    federatedIdentity: {
+      userId: userGuid,
+      userName: userGuid,
+      identityProvider: 'azureidir',
+    },
+  });
+
+  return await kcAdminClient.users.findOne({ realm: 'master', id: masterRealmUser.id });
+};
+
+const findMasterRealmUser = async (kcAdminClient: KcAdminClient, username: string) => {
+  const users = await kcAdminClient.users.find({ realm: 'master', username, max: 1 });
+  return users[0];
+};
+
+/**
+ * Finds the `<realm> Realm Administrator` group in master, creating it and mapping
+ * the realm admin role if it is missing. Realms provisioned by the retired terraform
+ * path have the role but no group, and converge here the first time a membership changes.
+ */
+const ensureMasterRealmAdminGroup = async (
+  kcAdminClient: KcAdminClient,
+  realmName: string,
+  role: RoleRepresentation,
+) => {
+  const groupName = `${realmName} Realm Administrator`;
+  const groups = await kcAdminClient.groups.find({ realm: 'master', search: groupName });
+  const group = groups.find((g: GroupRepresentation) => g.name === groupName);
+  if (group) return group;
+
+  const created = await kcAdminClient.groups.create({ realm: 'master', name: groupName });
+  await kcAdminClient.groups.addRealmRoleMappings({
+    realm: 'master',
+    id: created.id,
+    roles: [{ id: role.id as string, name: role.name as string }],
+  });
+
+  return await kcAdminClient.groups.findOne({ realm: 'master', id: created.id });
+};
+
+/**
+ * Grants or withdraws master realm administrator access for a single user in a single
+ * environment. Access is granted through the realm's master group; removals also strip
+ * any direct role assignment, which is how historical manual grants drain toward group
+ * membership over time.
+ *
+ * Idempotent: safe to re-run for an environment that already succeeded.
+ */
+export const syncUserAccess = async (realmName: string, env: string, guid: string, action: 'add' | 'remove') => {
   const kcCore = new KeycloakCore(env);
   const kcAdminClient = await kcCore.getAdminClient();
-  const definedEmails = emails.filter(Boolean) as string[];
+  const username = masterUsernameForGuid(guid);
 
-  const userPromises = definedEmails.map((email) =>
-    kcAdminClient.users.find({
+  const role = await kcAdminClient.roles.findOneByName({ realm: 'master', name: `${realmName}-realm-admin` });
+  if (!role) throw new Error(`Realm ${realmName} has no ${realmName}-realm-admin role in ${env}`);
+
+  const group = await ensureMasterRealmAdminGroup(kcAdminClient, realmName, role);
+  if (!group?.id) throw new Error(`Unable to resolve the realm administrator group for ${realmName} in ${env}`);
+
+  if (action === 'remove') {
+    // Never create a user just to remove them; no account means nothing to withdraw.
+    const masterRealmUser = await findMasterRealmUser(kcAdminClient, username);
+    if (!masterRealmUser?.id) return;
+
+    await kcAdminClient.users.delFromGroup({
       realm: 'master',
-      email,
-    }),
-  );
+      id: masterRealmUser.id,
+      groupId: group.id,
+    });
 
-  const users = await Promise.all(userPromises);
-
-  const userIds = users.map((user) => user?.[0]?.id).filter(Boolean) as string[];
-
-  if (userIds.length === 0) {
-    console.info(`No users found as admin for realm ${realm}.`);
+    await kcAdminClient.users.delRealmRoleMappings({
+      realm: 'master',
+      id: masterRealmUser.id,
+      roles: [{ id: role.id as string, name: role.name as string }],
+    });
     return;
   }
 
-  const role = await kcAdminClient.roles.findOneByName({ realm: 'master', name: `${realm}-realm-admin` });
+  const masterRealmUser = await ensureMasterRealmUser(kcAdminClient, username);
+  if (!masterRealmUser?.id) throw new Error(`Unable to resolve the master realm user ${username} in ${env}`);
 
-  if (role === null) return;
-
-  const roleMapping: RoleMappingPayload = { id: role?.id as string, name: role?.name as string };
-
-  const delRoleMappingPromises = userIds.map((id) =>
-    kcAdminClient.users.delRealmRoleMappings({
-      realm: 'master',
-      id: id,
-      roles: [roleMapping],
-    }),
-  );
-  return Promise.all(delRoleMappingPromises);
-};
-
-export const addUserAsRealmAdmin = async (username: string, envs: string[], realmName: string) => {
-  try {
-    for (const env of envs) {
-      const kcCore = new KeycloakCore(env);
-      const kcAdminClient = await kcCore.getAdminClient();
-      let masterRealmUser;
-      const [userGuid, userIdp] = username.toLowerCase().split('@');
-
-      let azureidirRealmUsers = await kcAdminClient.users.find({
-        realm: userIdp,
-        username: userGuid,
-        max: 1,
-      });
-
-      if (azureidirRealmUsers.length === 0) {
-        // create user in realm
-        const azureidirRealmUser = await kcAdminClient.users.create({
-          realm: userIdp,
-          username: userGuid,
-          enabled: true,
-        });
-
-        // assign federated links to user
-        await kcAdminClient.users.addToFederatedIdentity({
-          realm: userIdp,
-          id: azureidirRealmUser.id,
-          federatedIdentityId: userIdp,
-          federatedIdentity: {
-            userId: userGuid.toLowerCase(), // after user gets logged in it gets updated to actual sub from entra by keycloak authenticator
-            userName: userGuid.toLowerCase(),
-            identityProvider: userIdp,
-          },
-        });
-      }
-
-      const masterRealmUsers = await kcAdminClient.users.find({
-        realm: 'master',
-        username,
-        max: 1,
-      });
-
-      if (masterRealmUsers.length === 0) {
-        // create user in master realm
-        masterRealmUser = await kcAdminClient.users.create({
-          realm: 'master',
-          username,
-          enabled: true,
-        });
-
-        // assign federated links to user for idp
-        await kcAdminClient.users.addToFederatedIdentity({
-          realm: 'master',
-          id: masterRealmUser.id,
-          federatedIdentityId: 'azureidir',
-          federatedIdentity: {
-            userId: userGuid,
-            userName: userGuid,
-            identityProvider: 'azureidir',
-          },
-        });
-      } else {
-        masterRealmUser = masterRealmUsers[0];
-      }
-
-      const role = await kcAdminClient.roles.findOneByName({ realm: 'master', name: `${realmName}-realm-admin` });
-
-      const roleMapping: RoleMappingPayload = { id: role?.id as string, name: role?.name as string };
-
-      await kcAdminClient.users.addRealmRoleMappings({
-        realm: 'master',
-        id: masterRealmUser.id as string,
-        roles: [roleMapping],
-      });
-    }
-  } catch (err) {
-    console.error(err);
-  }
+  await kcAdminClient.users.addToGroup({
+    realm: 'master',
+    id: masterRealmUser.id,
+    groupId: group.id,
+  });
 };
 
 export const createCustomRealm = async (realmName: string, env: string) => {
@@ -316,7 +339,7 @@ export const manageCustomRealm = async (realmName: string, envs: string[], actio
           }
           break;
         case 'restore':
-          if (process.env.APP_ENV === 'production' && realm?.enabled === false) {
+          if (realm?.enabled === false) {
             await kcAdminClient.realms.update({ realm: realmName }, { enabled: true });
           } else if (!realm) await createCustomRealm(realmName, env);
           break;

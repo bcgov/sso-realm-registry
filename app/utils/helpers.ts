@@ -1,10 +1,7 @@
 import prisma from './prisma';
 import { diff } from 'deep-diff';
 
-export const formatWikiURL = (page?: string) =>
-  `https://mvp.developer.gov.bc.ca/docs/default/component/css-docs/${
-    page ?? ''
-  }?utm_source=sso-wiki&utm_medium=web&utm_campaign=retirement-notice-sso`;
+export const formatDocURL = (page?: string) => `https://bcgov.github.io/sso-docs/${page ?? ''}`;
 
 export enum RoleEnum {
   ADMIN = 'admin',
@@ -12,25 +9,17 @@ export enum RoleEnum {
   TECHNICAL_LEAD = 'other',
 }
 
-export const allowedTechContactFields: string[] = [
+/** Roster columns worth recording on an event. Membership lives in `users_rosters`. */
+export const allowedFormFields: string[] = [
+  'realm',
+  'environments',
+  'purpose',
+  'productName',
+  'primaryEndUsers',
   'ministry',
   'division',
   'branch',
-  'technicalContactIdirUserId',
-  'technicalContactEmail',
-  'secondTechnicalContactEmail',
-  'secondTechnicalContactIdirUserId',
 ];
-
-export const allowedPoFields: string[] = allowedTechContactFields.concat([
-  'productName',
-  'primaryEndUsers',
-  'productOwnerEmail',
-  'productOwnerIdirUserId',
-  'primaryEndUsers',
-]);
-
-export const allowedFormFields: string[] = allowedPoFields.concat(['realm', 'environments', 'purpose']);
 
 export const adminOnlyFields: string[] = ['materialToSend'];
 
@@ -66,7 +55,7 @@ export const getUpdatedProperties = (originalData: any, newData: any) => {
 export const generateRealmLinksByEnv = (env: string, realmName: string) => {
   const domain =
     env === 'dev' ? process.env.DEV_KC_URL : env === 'test' ? process.env.TEST_KC_URL : process.env.PROD_KC_URL;
-  return `${domain}/auth/admin/${realmName}/console/`;
+  return `${domain}/auth/admin/master/console/#/${realmName}`;
 };
 
 export const generateMasterRealmLinksByEnv = (env: string, realmName: string) => {

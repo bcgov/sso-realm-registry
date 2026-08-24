@@ -10,6 +10,11 @@ const Title = styled.div`
   margin-top: 5px;
   margin-bottom: 5px;
 `;
+
+const Container = styled.div`
+  overflow-wrap: anywhere;
+`;
+
 interface Props {
   realm: RealmProfile;
 }
@@ -17,12 +22,12 @@ interface Props {
 export default function RealmURIs({ realm }: Props) {
   let { dev, test, prod } = useContext(DomainsContext);
 
-  const devURL = `${dev}/auth/admin/${realm.realm}/console/`;
-  const testURL = `${test}/auth/admin/${realm.realm}/console/`;
-  const prodURL = `${prod}/auth/admin/${realm.realm}/console/`;
+  const devURL = `${dev}/auth/admin/master/console/#/${realm.realm}`;
+  const testURL = `${test}/auth/admin/master/console/#/${realm.realm}`;
+  const prodURL = `${prod}/auth/admin/master/console/#/${realm.realm}`;
 
   return (
-    <>
+    <Container>
       <Title>Development</Title>
       <Link external href={devURL} title="Development Realm Admin Console">
         {devURL}
@@ -39,6 +44,6 @@ export default function RealmURIs({ realm }: Props) {
       <Link external href={prodURL} title="Production Realm Admin Console">
         {prodURL}
       </Link>
-    </>
+    </Container>
   );
 }

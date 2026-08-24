@@ -1,23 +1,30 @@
 import React from 'react';
-import { render, screen, fireEvent, prettyDOM, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import CustomRealmForm from 'pages/custom-realm-form';
 import { submitRealmRequest } from 'services/realm';
 import { AzureUser, CustomRealmFormData } from 'types/realm-profile';
 import { getBranches, getDivisions, getMinistries } from 'services/meta';
 
-const testAzureUser: AzureUser = {
+const buildAzureUser = (name: string, id: string, samAccountName: string): AzureUser => ({
   businessPhones: ['1234567890'],
-  displayName: 'Test Azure User',
-  givenName: 'Test Azure',
+  displayName: name,
+  givenName: name,
   jobTitle: 'Automation Tester',
-  mail: 'test.azure.user@gov.bc.ca',
+  mail: `${samAccountName.toLowerCase()}@gov.bc.ca`,
   mobilePhone: '',
   officeLocation: '',
   preferredLanguage: '',
   surname: 'User',
   userPrincipalName: '',
-  id: 'dasc-asdw-dfer-gree-vdfv-sads',
-};
+  id,
+  onPremisesSamAccountName: samAccountName,
+});
+
+const testAzureUsers = [
+  buildAzureUser('Ada Owner', 'azure-id-owner', 'AOWNER'),
+  buildAzureUser('Ben Lead', 'azure-id-lead', 'BLEAD'),
+  buildAzureUser('Cara Extra', 'azure-id-extra', 'CEXTRA'),
+];
 
 jest.mock('services/meta', () => {
   return {
@@ -33,10 +40,10 @@ jest.mock('services/realm', () => {
   };
 });
 
+// The search returns the IDIR username, so a selection needs no second round trip.
 jest.mock('services/azure', () => {
   return {
-    getIdirUsersByEmail: jest.fn((email: string) => Promise.resolve([[testAzureUser], null])),
-    getIdirUserId: jest.fn((id: string) => Promise.resolve(['TAUSER', null])),
+    getIdirUsersByEmail: jest.fn((email: string) => Promise.resolve([testAzureUsers, null])),
   };
 });
 
@@ -74,8 +81,20 @@ jest.mock('next-auth/react', () => {
   };
 });
 
+const memberPayload = (user: AzureUser) => ({
+  azureId: user.id,
+  email: user.mail,
+  idirUsername: user.onPremisesSamAccountName,
+});
+
 describe('Form Validation', () => {
-  const requiredFieldCount = 8;
+  // realm, product name, purpose, primary end users, product owner, technical lead.
+  // The IDIR inputs are read only echoes of the picker, so they no longer validate.
+  const requiredFieldCount = 6;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   const submitForm = () => {
     const submitButon = screen.getByText('Submit', { selector: 'button' });
@@ -92,18 +111,30 @@ describe('Form Validation', () => {
     fireEvent.change(field, { target: { value } });
   };
 
-  const fillSelectField = async (classSelector: string, container: HTMLElement) => {
+  /** Picks the nth directory result out of an async select. */
+  const fillSelectField = async (classSelector: string, container: HTMLElement, optionIndex = 0) => {
     const field = container.querySelector(`input.${classSelector}__input`);
-    fireEvent.input(field!, { target: { value: testAzureUser.mail } });
+    fireEvent.input(field!, { target: { value: 'user' } });
     await waitFor(() => {
-      const option = container.querySelector(`.${classSelector}__option`);
-      fireEvent.click(option!);
+      const options = container.querySelectorAll(`.${classSelector}__option`);
+      expect(options.length).toBeGreaterThan(optionIndex);
     });
+    const options = container.querySelectorAll(`.${classSelector}__option`);
+    fireEvent.click(options[optionIndex]);
   };
 
   const clickInput = (label: string) => {
     const field = screen.getByLabelText(label);
     fireEvent.click(field);
+  };
+
+  const fillRequiredFields = async (container: HTMLElement) => {
+    fillTextInput('Custom Realm name', 'name');
+    fillTextInput('Purpose of Realm', 'purpose');
+    fillTextInput('Product Name', 'name');
+    clickInput('People living in BC');
+    await fillSelectField('product-owner-email', container, 0);
+    await fillSelectField('technical-contact-email', container, 1);
   };
 
   it('Shows validation messages for incomplete fields and does not make api request', () => {
@@ -130,27 +161,19 @@ describe('Form Validation', () => {
     clickInput('People living in BC');
     expect(getErrorCount(container)).toBe(requiredFieldCount - 3);
 
-    await fillSelectField('product-owner-email', container);
+    await fillSelectField('product-owner-email', container, 0);
+    expect(getErrorCount(container)).toBe(requiredFieldCount - 4);
 
+    await fillSelectField('technical-contact-email', container, 1);
     expect(getErrorCount(container)).toBe(requiredFieldCount - 5);
 
-    await fillSelectField('technical-contact-email', container);
-
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 7);
-
     fillTextInput('Product Name', 'aa', true);
-    expect(getErrorCount(container)).toBe(requiredFieldCount - 8);
+    expect(getErrorCount(container)).toBe(requiredFieldCount - 6);
   });
 
-  it('Sends off the expected form data when a proper submission is made', async () => {
+  it('Sends the azure object id for each member', async () => {
     const { container } = render(<CustomRealmForm />);
-    fillTextInput('Custom Realm name', 'name');
-    fillTextInput('Purpose of Realm', 'purpose');
-    fillTextInput('Product Name', 'name');
-    clickInput('People living in BC');
-    await fillSelectField('product-owner-email', container);
-    await fillSelectField('technical-contact-email', container);
-    await fillSelectField('secondary-contact-email', container);
+    await fillRequiredFields(container);
 
     await act(async () => {
       submitForm();
@@ -159,15 +182,139 @@ describe('Form Validation', () => {
     expect(submitRealmRequest).toHaveBeenCalledWith({
       primaryEndUsers: ['livingInBC'],
       productName: 'name',
-      productOwnerEmail: testAzureUser.mail,
-      productOwnerIdirUserId: 'TAUSER',
       realm: 'name',
       purpose: 'purpose',
-      secondTechnicalContactEmail: testAzureUser.mail,
-      secondTechnicalContactIdirUserId: 'TAUSER',
-      technicalContactEmail: testAzureUser.mail,
-      technicalContactIdirUserId: 'TAUSER',
+      productOwner: memberPayload(testAzureUsers[0]),
+      technicalLead: memberPayload(testAzureUsers[1]),
+      additionalUsers: [],
     });
+  });
+
+  it('Shows the IDIR username read only alongside each picker', async () => {
+    const { container } = render(<CustomRealmForm />);
+    await fillRequiredFields(container);
+
+    const poIdir = screen.getByTestId('product-owner-idir') as HTMLInputElement;
+    const tlIdir = screen.getByTestId('tech-contact-idir') as HTMLInputElement;
+
+    expect(poIdir.value).toBe('AOWNER');
+    expect(poIdir.readOnly).toBe(true);
+    expect(tlIdir.value).toBe('BLEAD');
+    expect(tlIdir.readOnly).toBe(true);
+  });
+
+  it('Adds and removes additional user rows', async () => {
+    const { container } = render(<CustomRealmForm />);
+    await fillRequiredFields(container);
+
+    fireEvent.click(screen.getByText('Add user', { selector: 'button' }));
+    await fillSelectField('additional-user-email', container, 2);
+
+    await act(async () => {
+      submitForm();
+    });
+
+    expect((submitRealmRequest as jest.Mock).mock.calls[0][0].additionalUsers).toEqual([
+      memberPayload(testAzureUsers[2]),
+    ]);
+
+    fireEvent.click(screen.getByLabelText('Remove additional user 1'));
+
+    await act(async () => {
+      submitForm();
+    });
+
+    expect((submitRealmRequest as jest.Mock).mock.calls[1][0].additionalUsers).toEqual([]);
+  });
+
+  it('Rejects additional user rows that were never filled in', async () => {
+    const { container } = render(<CustomRealmForm />);
+    await fillRequiredFields(container);
+
+    fireEvent.click(screen.getByText('Add user', { selector: 'button' }));
+
+    await act(async () => {
+      submitForm();
+    });
+
+    expect(getErrorCount(container)).toBe(1);
+    expect(submitRealmRequest).not.toHaveBeenCalled();
+
+    // Removing the row is how the requester says they did not mean to add anybody.
+    fireEvent.click(screen.getByLabelText('Remove additional user 1'));
+
+    await act(async () => {
+      submitForm();
+    });
+
+    expect((submitRealmRequest as jest.Mock).mock.calls[0][0].additionalUsers).toEqual([]);
+  });
+
+  it('Flags only the blank row when other rows are filled in', async () => {
+    const { container } = render(<CustomRealmForm />);
+    await fillRequiredFields(container);
+
+    fireEvent.click(screen.getByText('Add user', { selector: 'button' }));
+    await fillSelectField('additional-user-email', container, 2);
+    fireEvent.click(screen.getByText('Add user', { selector: 'button' }));
+
+    await act(async () => {
+      submitForm();
+    });
+
+    expect(submitRealmRequest).not.toHaveBeenCalled();
+    const rowErrors = container.querySelectorAll('.additional-user-email-1 ~ .error-message');
+    expect(container.querySelectorAll('.error-message')).toHaveLength(1);
+    expect(rowErrors).toHaveLength(1);
+  });
+
+  it('Caps the additional users at ten', () => {
+    render(<CustomRealmForm />);
+    const addButton = screen.getByText('Add user', { selector: 'button' }) as HTMLButtonElement;
+
+    for (let i = 0; i < 10; i += 1) fireEvent.click(addButton);
+
+    expect(screen.getAllByText(/Additional user \d+'s email/)).toHaveLength(10);
+    expect(addButton.disabled).toBe(true);
+  });
+
+  it('Rejects the same person in more than one slot', async () => {
+    const { container } = render(<CustomRealmForm />);
+    await fillRequiredFields(container);
+
+    fireEvent.click(screen.getByText('Add user', { selector: 'button' }));
+    // The same account already holds the product owner slot.
+    await fillSelectField('additional-user-email', container, 0);
+
+    await act(async () => {
+      submitForm();
+    });
+
+    await screen.findByText(/cannot occupy more than one membership slot/);
+    expect(submitRealmRequest).not.toHaveBeenCalled();
+  });
+
+  it('Reports a duplicate against the slot that has to change', async () => {
+    const { container } = render(<CustomRealmForm />);
+    fillTextInput('Custom Realm name', 'name');
+    fillTextInput('Purpose of Realm', 'purpose');
+    fillTextInput('Product Name', 'name');
+    clickInput('People living in BC');
+    // The same account in both slots, so the technical lead is the one to fix.
+    await fillSelectField('product-owner-email', container, 0);
+    await fillSelectField('technical-contact-email', container, 0);
+
+    await act(async () => {
+      submitForm();
+    });
+
+    const techLeadError = container
+      .querySelector('.technical-contact-email')
+      ?.closest('.input-wrapper')
+      ?.querySelector('.error-message');
+    expect(techLeadError?.textContent).toMatch(/cannot occupy more than one membership slot/);
+    expect(getErrorCount(container)).toBe(1);
+    expect(submitRealmRequest).not.toHaveBeenCalled();
   });
 });
 

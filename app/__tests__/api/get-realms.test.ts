@@ -1,7 +1,7 @@
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/realms';
 import prisma from 'utils/prisma';
-import { MockHttpRequest, roster } from '../fixtures';
+import { MockHttpRequest, buildMembers, roster } from '../fixtures';
 import { getServerSession } from 'next-auth';
 import KeycloakCore from '../../utils/keycloak-core';
 
@@ -36,9 +36,9 @@ const mockUserAdminStatus = (isAdmin: boolean) => {
 const mockKeycloakRealmResponse = (enabled: boolean = true) =>
   jest.spyOn(KeycloakCore.prototype, 'getRealms').mockReturnValue(Promise.resolve([{ realm: REALM_NAME, enabled }]));
 
-const mockPrismaRoster = (archived: boolean = false, status: string = 'applied') =>
+const mockPrismaRoster = (archived: boolean = false, status: string = 'applied', members = buildMembers()) =>
   (prisma.roster.findMany as jest.Mock).mockImplementation(() => {
-    return Promise.resolve([{ ...roster, realm: REALM_NAME, archived, status }]);
+    return Promise.resolve([{ ...roster, realm: REALM_NAME, archived, status, members }]);
   });
 
 jest.mock('../../pages/api/auth/[...nextauth]', () => {
@@ -119,5 +119,75 @@ describe('Real Out Of Sync Details', () => {
     responseData = res._getData();
     expect(responseData[0].outOfSync).toBe(true);
     expect(responseData[0].outOfSyncDetails.dev).toBe(`Realm ${REALM_NAME} not found in environment dev`);
+  });
+});
+
+describe('Membership reporting', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockKeycloakRealmResponse(true);
+  });
+
+  it('Never leaks the guid, which is the provisioning key', async () => {
+    mockUserAdminStatus(true);
+    mockPrismaRoster();
+    const { req, res }: MockHttpRequest = createMocks({ method: 'GET' });
+    await handler(req, res);
+    // @ts-ignore
+    const responseData = res._getData();
+
+    expect(responseData[0].members).toHaveLength(3);
+    responseData[0].members.forEach((member: any) => expect(member.guid).toBeUndefined());
+    expect(JSON.stringify(responseData)).not.toContain('guid-po');
+  });
+
+  it('Flags membership that still has access work pending', async () => {
+    mockUserAdminStatus(true);
+
+    // Everything synced: nothing pending.
+    mockPrismaRoster();
+    const { req, res }: MockHttpRequest = createMocks({ method: 'GET' });
+    await handler(req, res);
+    // @ts-ignore
+    expect(res._getData()[0].needsSync).toBe(false);
+
+    // A live row that has never synced is a pending add.
+    const members = buildMembers();
+    members[0].syncedAt = null;
+    mockPrismaRoster(false, 'applied', members);
+    await handler(req, res);
+    // @ts-ignore
+    expect(res._getData()[0].needsSync).toBe(true);
+
+    // A tombstone that has not been revoked yet is a pending revoke.
+    const withTombstone = buildMembers();
+    withTombstone[2].removedAt = new Date();
+    withTombstone[2].revokedAt = null;
+    mockPrismaRoster(false, 'applied', withTombstone);
+    await handler(req, res);
+    // @ts-ignore
+    expect(res._getData()[0].needsSync).toBe(true);
+    // Tombstones are not shown to the client.
+    // @ts-ignore
+    expect(res._getData()[0].members).toHaveLength(2);
+  });
+
+  it('Counts members that never resolved in the directory', async () => {
+    mockUserAdminStatus(true);
+
+    const members = buildMembers();
+    members[2].user.guid = null;
+    members[2].user.resolvedAt = null;
+    members[2].syncedAt = null;
+    mockPrismaRoster(false, 'applied', members);
+
+    const { req, res }: MockHttpRequest = createMocks({ method: 'GET' });
+    await handler(req, res);
+    // @ts-ignore
+    const responseData = res._getData();
+
+    expect(responseData[0].unresolvedMemberCount).toBe(1);
+    // They can never be provisioned, so they must not keep the sync button lit forever.
+    expect(responseData[0].needsSync).toBe(false);
   });
 });

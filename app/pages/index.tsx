@@ -7,7 +7,7 @@ import squid from 'svg/squid.svg';
 import fishes from 'svg/fishes.svg';
 import { signIn, useSession } from 'next-auth/react';
 import NextLink from 'next/link';
-import { formatWikiURL } from 'utils/helpers';
+import { formatDocURL } from 'utils/helpers';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faClose } from '@fortawesome/free-solid-svg-icons';
@@ -223,11 +223,11 @@ const Home = () => {
                 <p className="large-font">Do you want to request a new Custom Realm?</p>
                 <p>
                   Over 90% of our clients benefit from our Standard Service, please visit our{' '}
-                  <NextLink target="_blank" href={formatWikiURL()}>
+                  <NextLink target="_blank" href={formatDocURL()}>
                     information
                   </NextLink>{' '}
                   to ensure this is not a fit for you. To maintain our{' '}
-                  <NextLink target="_blank" href={formatWikiURL('Alerts-and-Us#service-levels')}>
+                  <NextLink target="_blank" href={formatDocURL('uptime#service-level-agreement-sla')}>
                     service levels
                   </NextLink>
                   , we need to evaluate every single custom realm request coming to us. Please fill out the form to

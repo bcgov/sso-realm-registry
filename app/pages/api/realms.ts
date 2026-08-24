@@ -9,7 +9,19 @@ import { ValidationError } from 'yup';
 import { omit, pick, kebabCase } from 'lodash';
 import { sendCreateEmail } from 'utils/mailer';
 import RealmRepresentation from '@keycloak/keycloak-admin-client/lib/defs/realmRepresentation';
-import { Roster } from '@prisma/client';
+import { Prisma, Roster, User, UserRoster } from '@prisma/client';
+import {
+  MemberValidationError,
+  applyMembershipChanges,
+  countUnresolvedMembers,
+  diffMembers,
+  getRealmMembers,
+  memberOfRealmFilter,
+  needsSync,
+  resolveMembership,
+  serializeMembers,
+  serializeRoster,
+} from 'controllers/user-access';
 
 type EnvironmentRealmData = {
   dev: RealmRepresentation[];
@@ -19,10 +31,15 @@ type EnvironmentRealmData = {
 
 type OutOfSyncDetails = { dev: string; test: string; prod: string };
 
+type RosterWithMembers = Roster & { members: (UserRoster & { user: User })[] };
+
 /**
  * Adds an outOfSync and outOfSync details section to rosters indicating their sync status with keycloak
  */
-const checkRosterSync = (rosters: Roster[], realms: EnvironmentRealmData) => {
+const checkRosterSync = <T extends { realm?: string | null; status?: string | null; archived?: boolean | null }>(
+  rosters: T[],
+  realms: EnvironmentRealmData,
+) => {
   return rosters.map((roster) => {
     let synced = true;
     let details: OutOfSyncDetails = { dev: '', test: '', prod: '' };
@@ -57,48 +74,37 @@ const checkRosterSync = (rosters: Roster[], realms: EnvironmentRealmData) => {
 };
 
 export const getAllRealms = async (username: string, isAdmin: boolean, excludeArchived: boolean = false) => {
-  let baseWhereClause: { archived?: boolean } = {};
-  if (excludeArchived) baseWhereClause.archived = false;
+  const where: Prisma.RosterWhereInput = {};
+  if (excludeArchived) where.archived = false;
+  // Additional users see their realms here, but cannot edit them.
+  if (!isAdmin) Object.assign(where, memberOfRealmFilter(username));
 
-  if (isAdmin) {
-    const rosters = await prisma.roster.findMany({ where: baseWhereClause, orderBy: { id: 'desc' } });
-    let realms: EnvironmentRealmData = { dev: [], test: [], prod: [] };
-    for (const env of ['dev', 'test', 'prod']) {
-      const kcClient = await new KeycloakCore(env);
-      await kcClient.getAdminClient();
-      realms[env as keyof EnvironmentRealmData] = await kcClient.getRealms();
-    }
-    const rostersWithSyncData = checkRosterSync(rosters, realms);
-    return rostersWithSyncData;
-  } else {
-    const rosters = await prisma.roster.findMany({
-      orderBy: { id: 'desc' },
-      where: {
-        ...baseWhereClause,
-        OR: [
-          {
-            technicalContactIdirUserId: {
-              equals: username,
-              mode: 'insensitive',
-            },
-          },
-          {
-            secondTechnicalContactIdirUserId: {
-              equals: username,
-              mode: 'insensitive',
-            },
-          },
-          {
-            productOwnerIdirUserId: {
-              equals: username,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      },
-    });
-    return rosters.map((r: any) => omit(r, adminOnlyFields));
+  const rosters = (await prisma.roster.findMany({
+    where,
+    orderBy: { id: 'desc' },
+    include: { members: { include: { user: true }, orderBy: { id: 'asc' } } },
+  })) as RosterWithMembers[];
+
+  if (!isAdmin) {
+    return rosters.map(({ members, ...roster }) => omit(serializeRoster(roster, members), adminOnlyFields));
   }
+
+  let realms: EnvironmentRealmData = { dev: [], test: [], prod: [] };
+  for (const env of ['dev', 'test', 'prod']) {
+    const kcClient = await new KeycloakCore(env);
+    await kcClient.getAdminClient();
+    realms[env as keyof EnvironmentRealmData] = await kcClient.getRealms();
+  }
+
+  // `needsSync` is membership level and needs no Keycloak calls; `outOfSync` asks
+  // whether the realm itself exists and is enabled. They are deliberately separate.
+  const serialized = rosters.map(({ members, ...roster }) => ({
+    ...serializeRoster(roster, members),
+    needsSync: needsSync(members),
+    unresolvedMemberCount: countUnresolvedMembers(members),
+  }));
+
+  return checkRosterSync(serialized, realms);
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -143,9 +149,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(409).json({ success: false, error: 'Realm name already taken' });
       }
 
+      let desiredMembers;
+      try {
+        desiredMembers = await resolveMembership(data);
+      } catch (err) {
+        if (err instanceof MemberValidationError) {
+          return res.status(400).json({ success: false, error: [err.message] });
+        }
+        throw err;
+      }
+
       let newRealm = await prisma.roster.create({
         data: {
-          ...data,
+          ...omit(data, ['productOwner', 'technicalLead', 'additionalUsers']),
           requestor: `${session.user.family_name}, ${session.user.given_name}`,
           preferredAdminLoginMethod: 'azureidir',
           environments: ['dev', 'test', 'prod'],
@@ -153,14 +169,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           status: StatusEnum.PENDING,
         },
       });
+
+      // The realm does not exist in Keycloak yet, so membership is stored unsynced and
+      // provisioned by the reconcile that runs on approval.
+      await applyMembershipChanges(newRealm.id, desiredMembers);
+      const members = await getRealmMembers(newRealm.id);
+      const membershipChanges = diffMembers([], members);
+
       await createEvent({
         realmId: newRealm.id,
         eventCode: EventEnum.REQUEST_CREATE_SUCCESS,
         idirUserId: username,
-        details: pick(newRealm, allowedFormFields),
+        details: { ...pick(newRealm, allowedFormFields), membershipChanges },
       });
-      await sendCreateEmail(newRealm, session);
-      return res.status(201).json(newRealm);
+      await sendCreateEmail(newRealm, session, members);
+      return res.status(201).json({ ...newRealm, members: serializeMembers(members) });
     } else {
       return res.status(405).json({ success: false, error: 'Not allowed' });
     }

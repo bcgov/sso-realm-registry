@@ -1,13 +1,14 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import EditPage, { getServerSideProps } from 'pages/realm/[rid]';
 import { CustomRealmFormData } from 'types/realm-profile';
-import { CustomRealmProfiles } from './fixtures';
-import { useSession } from 'next-auth/react';
+import { CustomRealmProfiles, PO_EMAIL, PO_IDIR, buildMembers, serializedMembers } from './fixtures';
+import { getIdirUsersByEmail } from 'services/azure';
 import prisma from 'utils/prisma';
 import { getServerSession } from 'next-auth';
-
-const PRODUCT_OWNER_IDIR_USERID = 'po';
+import { RoleEnum } from 'utils/helpers';
+import { MemberRoleEnum } from 'utils/constants';
+import { getRealmMembers, getUserRoleOnRealm } from 'controllers/user-access';
 
 jest.mock('services/meta', () => {
   return {
@@ -21,6 +22,30 @@ jest.mock('services/realm', () => {
   return {
     submitRealmRequest: jest.fn((realmInfo: CustomRealmFormData) => Promise.resolve([true, null])),
     getRealmProfiles: jest.fn(() => Promise.resolve([CustomRealmProfiles, null])),
+  };
+});
+
+jest.mock('services/azure', () => {
+  return {
+    getIdirUsersByEmail: jest.fn(() => Promise.resolve([[], null])),
+  };
+});
+
+// Keeps the admin client's ESM out of jest; this page only reads membership.
+jest.mock('../controllers/keycloak', () => {
+  return {
+    syncUserAccess: jest.fn(),
+  };
+});
+
+const members = buildMembers();
+
+jest.mock('../controllers/user-access', () => {
+  const actual = jest.requireActual('../controllers/user-access');
+  return {
+    ...actual,
+    getUserRoleOnRealm: jest.fn(),
+    getRealmMembers: jest.fn(() => Promise.resolve(members)),
   };
 });
 
@@ -89,54 +114,71 @@ const testRealm: CustomRealmFormData = {
   purpose: '',
   productName: '',
   primaryEndUsers: [],
-  productOwnerEmail: '',
-  productOwnerIdirUserId: PRODUCT_OWNER_IDIR_USERID,
-  technicalContactEmail: '',
-  technicalContactIdirUserId: '',
-  secondTechnicalContactIdirUserId: '',
-  secondTechnicalContactEmail: '',
+  productOwner: null,
+  technicalLead: null,
+  additionalUsers: [],
+  members: serializedMembers(members),
 };
 
+const mockSessionAs = (overrides: any) =>
+  (getServerSession as jest.Mock).mockImplementation(() => ({
+    user: { idir_username: MOCK_IDIR, ...overrides },
+  }));
+
 describe('Server Fetching', () => {
-  it('Requires non-admins to be a product owner, technical contact, or secondary contact to see the edit page', async () => {
-    await getServerSideProps({ params: { rid: 1 } } as any);
-    expect(prisma.roster.findFirst).toHaveBeenCalledTimes(1);
-    const prismaArgs = (prisma.roster.findFirst as jest.Mock).mock.calls[0][0];
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (prisma.roster.findFirst as jest.Mock).mockImplementation(() => Promise.resolve({ id: 1, realm: 'realm 1' }));
+    (getRealmMembers as jest.Mock).mockImplementation(() => Promise.resolve(members));
+    mockSessionAs({});
+  });
 
-    // Checks the id
-    expect(prismaArgs.where.id).toBe(1);
+  it('Requires a non-admin to hold membership on the realm', async () => {
+    (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(null));
 
-    // Also requires IDIR match
-    expect(prismaArgs.where['OR']).toBeDefined();
-    const technicalContactClause = prismaArgs.where['OR'].find((clause: any) =>
-      Object.keys(clause).includes('technicalContactIdirUserId'),
-    ).technicalContactIdirUserId;
-    const secondaryTechnicalContactClause = prismaArgs.where['OR'].find((clause: any) =>
-      Object.keys(clause).includes('secondTechnicalContactIdirUserId'),
-    ).secondTechnicalContactIdirUserId;
-    const productOwnerClause = prismaArgs.where['OR'].find((clause: any) =>
-      Object.keys(clause).includes('productOwnerIdirUserId'),
-    ).productOwnerIdirUserId;
+    const result: any = await getServerSideProps({ params: { rid: 1 } } as any);
 
-    expect(technicalContactClause.equals).toBe(MOCK_IDIR);
-    expect(secondaryTechnicalContactClause.equals).toBe(MOCK_IDIR);
-    expect(productOwnerClause.equals).toBe(MOCK_IDIR);
+    expect(getUserRoleOnRealm).toHaveBeenCalledWith(1, MOCK_IDIR);
+    expect(result.props.realm).toBeNull();
+  });
+
+  it('Keeps additional users out of the edit page, since they are view only', async () => {
+    (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRoleEnum.ADDITIONAL));
+
+    const result: any = await getServerSideProps({ params: { rid: 1 } } as any);
+
+    expect(result.props.realm).toBeNull();
+  });
+
+  it('Lets the product owner and technical lead in, with their own role', async () => {
+    (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRoleEnum.PRODUCT_OWNER));
+    let result: any = await getServerSideProps({ params: { rid: 1 } } as any);
+    expect(result.props.realm).not.toBeNull();
+    expect(result.props.role).toBe(RoleEnum.PRODUCT_OWNER);
+
+    (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRoleEnum.TECHNICAL_LEAD));
+    result = await getServerSideProps({ params: { rid: 1 } } as any);
+    expect(result.props.realm).not.toBeNull();
+    expect(result.props.role).toBe(RoleEnum.TECHNICAL_LEAD);
   });
 
   it('Allows admins to always see the edit page', async () => {
-    (getServerSession as jest.Mock).mockImplementation(() => ({
-      user: {
-        idir_username: MOCK_IDIR,
-        client_roles: ['sso-admin'],
-      },
-    }));
-    await getServerSideProps({ params: { rid: 1 } } as any);
-    expect(prisma.roster.findFirst).toHaveBeenCalledTimes(1);
-    const prismaArgs = (prisma.roster.findFirst as jest.Mock).mock.calls[0][0];
-    expect(prismaArgs.where['OR']).not.toBeDefined();
+    mockSessionAs({ client_roles: ['sso-admin'] });
 
-    // sso-admin only checks the id
-    expect(prismaArgs.where).toEqual({ id: 1 });
+    const result: any = await getServerSideProps({ params: { rid: 1 } } as any);
+
+    // Admins are never membership checked.
+    expect(getUserRoleOnRealm).not.toHaveBeenCalled();
+    expect(result.props.realm).not.toBeNull();
+    expect(result.props.role).toBe(RoleEnum.ADMIN);
+  });
+
+  it('Never sends the guid to the client', async () => {
+    (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRoleEnum.PRODUCT_OWNER));
+
+    const result: any = await getServerSideProps({ params: { rid: 1 } } as any);
+
+    expect(JSON.stringify(result.props)).not.toContain('guid-po');
   });
 });
 
@@ -155,25 +197,12 @@ describe('Form Validation', () => {
     const primaryEndUserInput = (
       await screen.findByText('Who are the primary end users of your project', { exact: false })
     ).closest('fieldset') as HTMLFieldSetElement;
-    //const poEmailInput = (await screen.findByLabelText("Product owner's email", { exact: false })) as HTMLInputElement;
     const poEmailInput = container.querySelector('input.product-owner-email__input') as HTMLInputElement;
-    const poIdirInput = (await screen.findByLabelText("Product owner's IDIR", { exact: false })) as HTMLInputElement;
-    // const techContactEmailInput = (await screen.findByTestId('tech-contact-email', {
-    //   exact: false,
-    // })) as HTMLInputElement;
-    const techContactEmailInput = container.querySelector('input.technical-contact-email__input') as HTMLInputElement;
-    const techContactIdirInput = (await screen.findByTestId('tech-contact-idir', {
-      exact: false,
-    })) as HTMLInputElement;
-    // const secondTechContactEmailInput = (await screen.findByLabelText("Secondary technical contact's email", {
-    //   exact: false,
-    // })) as HTMLInputElement;
-    const secondTechContactEmailInput = container.querySelector(
-      'input.secondary-contact-email__input',
-    ) as HTMLInputElement;
-    const secondTechContactIdirInput = (await screen.findByTestId('secondary-contact-idir', {
-      exact: false,
-    })) as HTMLInputElement;
+    const poIdirInput = (await screen.findByTestId('product-owner-idir')) as HTMLInputElement;
+    const techLeadEmailInput = container.querySelector('input.technical-contact-email__input') as HTMLInputElement;
+    const techLeadIdirInput = (await screen.findByTestId('tech-contact-idir')) as HTMLInputElement;
+    // The rows sit directly in the form grid, so the picker itself carries the disabled state.
+    const additionalUserEmailInput = container.querySelector('input.additional-user-email__input') as HTMLInputElement;
     return {
       realmNameInput,
       productNameInput,
@@ -184,10 +213,9 @@ describe('Form Validation', () => {
       primaryEndUserInput,
       poEmailInput,
       poIdirInput,
-      techContactEmailInput,
-      techContactIdirInput,
-      secondTechContactEmailInput,
-      secondTechContactIdirInput,
+      techLeadEmailInput,
+      techLeadIdirInput,
+      additionalUserEmailInput,
     };
   };
 
@@ -196,37 +224,42 @@ describe('Form Validation', () => {
     screen.getByText('Not Found');
   });
 
-  it('Enables/disables expected fields for a technical contact', async () => {
-    const { container } = render(<EditPage realm={testRealm} />);
+  it('Loads the stored membership into the form', async () => {
+    render(<EditPage realm={testRealm} role={RoleEnum.PRODUCT_OWNER} />);
+
+    const poIdir = (await screen.findByTestId('product-owner-idir')) as HTMLInputElement;
+    const tlIdir = (await screen.findByTestId('tech-contact-idir')) as HTMLInputElement;
+    const additionalIdir = (await screen.findByTestId('additional-user-0-idir')) as HTMLInputElement;
+
+    expect(poIdir.value).toBe(members[0].user.idirUsername);
+    expect(tlIdir.value).toBe(members[1].user.idirUsername);
+    expect(additionalIdir.value).toBe(members[2].user.idirUsername);
+  });
+
+  it('Enables/disables expected fields for a technical lead, same as a product owner', async () => {
+    const { container } = render(<EditPage realm={testRealm} role={RoleEnum.TECHNICAL_LEAD} />);
 
     const inputs = await getFormInputs(container);
 
     expect(inputs.realmNameInput.disabled).toBe(true);
-    expect(inputs.productNameInput.disabled).toBe(true);
+    expect(inputs.productNameInput.disabled).toBe(false);
     expect(inputs.ministryInput.disabled).toBe(false);
     expect(inputs.divisionInput.disabled).toBe(false);
     expect(inputs.branchInput.disabled).toBe(false);
-    expect(inputs.realmPurposeInput.disabled).toBe(true);
-    expect(inputs.primaryEndUserInput.disabled).toBe(true);
-    expect(inputs.poEmailInput!.disabled).toBe(true);
+    expect(inputs.realmPurposeInput.disabled).toBe(false);
+    expect(inputs.primaryEndUserInput.disabled).toBe(false);
+    // Membership is symmetric: a technical lead may change any slot.
+    expect(inputs.poEmailInput!.disabled).toBe(false);
     expect(inputs.poIdirInput.disabled).toBe(true);
-    expect(inputs.techContactEmailInput!.disabled).toBe(false);
-    expect(inputs.techContactIdirInput.disabled).toBe(true);
-    expect(inputs.secondTechContactEmailInput!.disabled).toBe(false);
-    expect(inputs.secondTechContactIdirInput.disabled).toBe(true);
+    expect(inputs.techLeadEmailInput!.disabled).toBe(false);
+    expect(inputs.techLeadIdirInput.disabled).toBe(true);
+    expect(inputs.additionalUserEmailInput.disabled).toBe(false);
 
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).toBeNull();
   });
 
-  it('Enables/disables expected fields for a product owner', async () => {
-    (useSession as jest.Mock).mockImplementation(() => ({
-      status: 'authenticated',
-      data: {
-        expires: new Date(Date.now() + 2 * 86400).toISOString(),
-        user: { idir_username: PRODUCT_OWNER_IDIR_USERID },
-      },
-    }));
-    const { container } = render(<EditPage realm={testRealm} />);
+  it('Enables/disables expected fields for a product owner, same as a technical lead', async () => {
+    const { container } = render(<EditPage realm={testRealm} role={RoleEnum.PRODUCT_OWNER} />);
 
     const inputs = await getFormInputs(container);
 
@@ -239,23 +272,15 @@ describe('Form Validation', () => {
     expect(inputs.primaryEndUserInput.disabled).toBe(false);
     expect(inputs.poEmailInput!.disabled).toBe(false);
     expect(inputs.poIdirInput.disabled).toBe(true);
-    expect(inputs.techContactEmailInput!.disabled).toBe(false);
-    expect(inputs.techContactIdirInput.disabled).toBe(true);
-    expect(inputs.secondTechContactEmailInput!.disabled).toBe(false);
-    expect(inputs.secondTechContactIdirInput.disabled).toBe(true);
+    expect(inputs.techLeadEmailInput!.disabled).toBe(false);
+    expect(inputs.techLeadIdirInput.disabled).toBe(true);
+    expect(inputs.additionalUserEmailInput.disabled).toBe(false);
 
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).toBeNull();
   });
 
   it('Enables/disables expected fields for an admin', async () => {
-    (useSession as jest.Mock).mockImplementation(() => ({
-      status: 'authenticated',
-      data: {
-        expires: new Date(Date.now() + 2 * 86400).toISOString(),
-        user: { idir_username: PRODUCT_OWNER_IDIR_USERID, client_roles: 'sso-admin' },
-      },
-    }));
-    const { container } = render(<EditPage realm={testRealm} />);
+    const { container } = render(<EditPage realm={testRealm} role={RoleEnum.ADMIN} />);
 
     const inputs = await getFormInputs(container);
 
@@ -268,11 +293,37 @@ describe('Form Validation', () => {
     expect(inputs.primaryEndUserInput.disabled).toBe(false);
     expect(inputs.poEmailInput!.disabled).toBe(false);
     expect(inputs.poIdirInput.disabled).toBe(true);
-    expect(inputs.techContactEmailInput!.disabled).toBe(false);
-    expect(inputs.techContactIdirInput.disabled).toBe(true);
-    expect(inputs.secondTechContactEmailInput!.disabled).toBe(false);
-    expect(inputs.secondTechContactIdirInput.disabled).toBe(true);
+    expect(inputs.techLeadEmailInput!.disabled).toBe(false);
+    expect(inputs.techLeadIdirInput.disabled).toBe(true);
+    expect(inputs.additionalUserEmailInput.disabled).toBe(false);
 
     expect(screen.queryByLabelText('SSO team notes', { exact: false })).not.toBeNull();
+  });
+
+  it('Rejects a stored member picked again into another slot', async () => {
+    // The product owner is already stored, so the form holds it as a userId while the
+    // directory search hands back an azureId for the very same person.
+    (getIdirUsersByEmail as jest.Mock).mockImplementation(() =>
+      Promise.resolve([[{ id: 'azure-po', mail: PO_EMAIL, onPremisesSamAccountName: PO_IDIR }], null]),
+    );
+
+    // Filled in so the membership check is what the submission stops on.
+    const realm = { ...testRealm, purpose: 'purpose', productName: 'product' };
+    const { container } = render(<EditPage realm={realm} role={RoleEnum.PRODUCT_OWNER} />);
+
+    const additionalUserInput = container.querySelector('input.additional-user-email__input') as HTMLInputElement;
+    fireEvent.input(additionalUserInput, { target: { value: PO_EMAIL } });
+    await waitFor(() => {
+      const options = container.querySelectorAll('.additional-user-email__option');
+      expect(options.length).toBeGreaterThan(0);
+    });
+    const options = container.querySelectorAll('.additional-user-email__option');
+    fireEvent.click(options[0]);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit', { selector: 'button' }));
+    });
+
+    await screen.findByText(/cannot occupy more than one membership slot/);
   });
 });
