@@ -4,10 +4,13 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
-    "@azure/msal-node": "^5.0.6",
+    "@azure/msal-node": "^7.1.2",
     "@keycloak/keycloak-admin-client": "26.4.7",
-    "axios": "^1.18.1",
+    "axios": "^1.21.0",
     "dotenv": "^17.4.2",
     "pg": "^8.20.0"
+  },
+  "resolutions": {
+    "follow-redirects": ">=1.16.1"
   }
 }
