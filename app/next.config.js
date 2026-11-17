@@ -5,6 +5,11 @@ module.exports = {
     styledComponents: true,
   },
   transpilePackages: ['react-loader-spinner'],
+  experimental: {
+    // Turbopack's shared runtime bootstrap emits an inline <script> with no src/nonce,
+    // which violates our strict `script-src 'self'` CSP (see vercel/next.js#100906).
+    turbopackSharedRuntime: false,
+  },
   async headers() {
     if (process.env.SECURE_HEADERS === 'false') return [];
 
