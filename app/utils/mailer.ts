@@ -192,6 +192,8 @@ export interface DeletedUserRealm {
   roles: string[];
   /** Product owner and technical lead emails, excluding the departed user. */
   recipients: string[];
+  /** No product owner or technical lead remains to manage realm access. */
+  actionRequired: boolean;
 }
 
 export const sendDeletedUserEmail = async (realms: DeletedUserRealm[], idirUsername: string) => {
@@ -208,9 +210,9 @@ export const sendDeletedUserEmail = async (realms: DeletedUserRealm[], idirUsern
           ${emailHeader}
           <main>
             <p>
-              The user with ID ${idirUsername} no longer had an active IDIR, and is listed as having the ${
+              The user with ID ${idirUsername} no longer has an active IDIR and has been removed from the custom realm ${realm}, where they held the ${
           roles.length > 1 ? 'roles' : 'role'
-        } ${roles.join(' and ')} on the custom realm ${realm}. Please update your realm information.
+        } ${roles.join(' and ')}.
             </p>
           </main>
           ${emailFooter}
@@ -221,9 +223,16 @@ export const sendDeletedUserEmail = async (realms: DeletedUserRealm[], idirUsern
 
   const message = `
     <main>
-      <p>The user ${idirUsername} had an inactive IDIR and has been removed from keycloak. They are associated to the following custom realms:</p>
+      <p>The user ${idirUsername} had an inactive IDIR and has been removed from Keycloak. They were associated with the following custom realms:</p>
       <ul>
-        ${realms.map(({ realm, roles }) => `<li> ${realm}: ${roles.join(', ')} </li>`).join('')}
+        ${realms
+          .map(
+            ({ realm, roles, actionRequired }) =>
+              `<li> ${realm}: ${roles.join(', ')}${
+                actionRequired ? ' - <strong>Action required: no product owner or technical lead remains</strong>' : ''
+              } </li>`,
+          )
+          .join('')}
       </ul>
     </main>
   `;

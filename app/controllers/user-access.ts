@@ -191,6 +191,18 @@ export const applyMembershipChanges = async (rosterId: number, desired: DesiredM
   });
 };
 
+/** Sets the removedAt field for the membership to the current timestamp, so it will be revoked from keycloak on the next sync. */
+export const tombstoneMemberships = async (membershipIds: number[]) => {
+  if (membershipIds.length === 0) return [];
+
+  await prisma.userRoster.updateMany({
+    where: { id: { in: membershipIds }, removedAt: null },
+    data: { removedAt: new Date() },
+  });
+
+  return membershipIds;
+};
+
 /** A realm only exists in Keycloak once it has been approved and applied. */
 export const isRealmProvisioned = (roster: Pick<Roster, 'approved' | 'status' | 'archived' | 'realm'>) =>
   Boolean(roster.realm) && roster.approved === true && roster.status === StatusEnum.APPLIED && !roster.archived;

@@ -5,7 +5,8 @@ import { MockHttpRequest, buildMember, roster } from '../fixtures';
 import { createMockSendEmail, mockSession } from './utils/mocks';
 import { ssoTeamEmail } from 'utils/mailer';
 import { MemberRoleEnum } from 'utils/constants';
-import { getRealmMembers } from 'controllers/user-access';
+import { getRealmMembers, reconcileRealmAccess } from 'controllers/user-access';
+import { createEvent } from 'utils/helpers';
 
 jest.mock('utils/ches');
 
@@ -30,6 +31,15 @@ jest.mock('../../controllers/user-access', () => {
   return {
     ...actual,
     getRealmMembers: jest.fn(),
+    reconcileRealmAccess: jest.fn(() => Promise.resolve({ provisioned: true, added: [], removed: [], failures: [] })),
+  };
+});
+
+jest.mock('utils/helpers', () => {
+  const actual = jest.requireActual('utils/helpers');
+  return {
+    ...actual,
+    createEvent: jest.fn(),
   };
 });
 
@@ -77,16 +87,20 @@ const membersForRoster = (rosterId: number) => {
 };
 
 const mockMemberships = () =>
-  (prisma.userRoster.findMany as jest.Mock).mockImplementation(() =>
-    Promise.resolve(
-      testCases.flatMap((testCase, index) =>
-        testCase.deletedRoles.map((role) => ({
-          ...member(role, DELETED_USER_ID, DELETED_USER_EMAIL, index + 1),
-          roster: { ...roster, id: index + 1, realm: testCase.realm },
-        })),
-      ),
-    ),
-  );
+  (prisma.user.findFirst as jest.Mock).mockImplementation(() => {
+    const rosters = testCases.flatMap((testCase, index) =>
+      testCase.deletedRoles.map((role) => ({
+        ...member(role, DELETED_USER_ID, DELETED_USER_EMAIL, index + 1),
+        roster: { ...roster, id: index + 1, realm: testCase.realm, approved: true, status: 'applied', archived: false },
+      })),
+    );
+
+    return Promise.resolve({
+      id: rosters[0].userId,
+      idirUsername: DELETED_USER_ID,
+      rosters,
+    });
+  });
 
 const mockApiKey = 'secret';
 
@@ -157,11 +171,95 @@ describe('IDIR user deletion', () => {
     });
   });
 
-  it('Never revokes access, so a spurious call cannot strip a realm', async () => {
+  it('Tombstones all memberships and reconciles each affected realm', async () => {
     createMockSendEmail();
     await handler(req, res);
 
-    expect(prisma.userRoster.update).not.toHaveBeenCalled();
+    const memberships = (await (prisma.user.findFirst as jest.Mock).mock.results[0].value).rosters;
+    expect(prisma.userRoster.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: memberships.map((membership: any) => membership.id) }, removedAt: null },
+      data: { removedAt: expect.any(Date) },
+    });
+    expect(reconcileRealmAccess).toHaveBeenCalledTimes(testCases.length);
+    testCases.forEach((_, index) => {
+      expect(reconcileRealmAccess).toHaveBeenCalledWith(expect.objectContaining({ id: index + 1 }), {
+        memberIds: memberships
+          .filter((membership: any) => membership.rosterId === index + 1)
+          .map((membership: any) => membership.id),
+      });
+    });
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it('Marks only a realm with no remaining managing lead as requiring action', async () => {
+    const emailList = createMockSendEmail();
+    await handler(req, res);
+
+    const teamEmail = emailList.find(
+      (email) => email.to.includes(ssoTeamEmail) && email.subject.includes('Notification: User Removed'),
+    );
+    expect(teamEmail.body).toContain(
+      'realm 5: Product Owner, Technical Lead, Additional User - <strong>Action required',
+    );
+    expect(teamEmail.body).not.toContain('realm 1: Product Owner - <strong>Action required');
+    expect(teamEmail.body).not.toContain('realm 2: Technical Lead - <strong>Action required');
+  });
+
+  it('Returns OK without changing anything when the user is not in the users table', async () => {
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue(null);
+    createMockSendEmail();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
     expect(prisma.userRoster.updateMany).not.toHaveBeenCalled();
+    expect(reconcileRealmAccess).not.toHaveBeenCalled();
+  });
+
+  it('Returns OK without changing anything when the user has no active memberships', async () => {
+    (prisma.user.findFirst as jest.Mock).mockResolvedValue({
+      id: 1,
+      idirUsername: DELETED_USER_ID,
+      rosters: [],
+    });
+    createMockSendEmail();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.userRoster.updateMany).not.toHaveBeenCalled();
+    expect(reconcileRealmAccess).not.toHaveBeenCalled();
+  });
+
+  it('Returns OK and notifies SSO when a Keycloak revocation remains pending', async () => {
+    (reconcileRealmAccess as jest.Mock).mockResolvedValueOnce({
+      provisioned: true,
+      added: [],
+      removed: [],
+      failures: [{ idirUsername: DELETED_USER_ID, env: 'prod', action: 'remove', error: 'ECONNREFUSED' }],
+    });
+    const emailList = createMockSendEmail();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(emailList.some((email) => email.subject.includes('Realm access sync failed: realm 1'))).toBeTruthy();
+  });
+
+  it('Records an audit event for each affected realm', async () => {
+    createMockSendEmail();
+    await handler(req, res);
+
+    expect(createEvent).toHaveBeenCalledTimes(testCases.length);
+    expect(createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        realmId: 1,
+        idirUserId: DELETED_USER_ID,
+        details: expect.objectContaining({
+          automated: true,
+          reason: 'inactive-idir',
+        }),
+      }),
+    );
   });
 });
