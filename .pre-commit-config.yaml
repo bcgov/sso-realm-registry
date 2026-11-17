@@ -18,13 +18,13 @@ repos:
     hooks:
       - id: prettier
         exclude: ^helm/
-  # - repo: local
-  #   hooks:
-  #     - id: npm-audit
-  #       name: Run npm package audit
-  #       # flags on high and critical
-  #       entry: npx audit-ci --config ./audit-ci.jsonc
-  #       language: node
+  - repo: local
+    hooks:
+      - id: npm-audit
+        name: Run npm package audit
+        # flags on high and critical
+        entry: npx audit-ci --config ./audit-ci.jsonc
+        language: node
   - repo: https://github.com/jorisroovers/gitlint
     rev: v0.17.0
     hooks:
