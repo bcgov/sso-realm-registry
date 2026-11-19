@@ -2762,10 +2762,10 @@ boxen@^8.0.1:
     widest-line "^5.0.0"
     wrap-ansi "^9.0.0"
 
-brace-expansion@>=5.0.9, brace-expansion@^5.0.5:
-  version "5.0.9"
-  resolved "https://registry.yarnpkg.com/brace-expansion/-/brace-expansion-5.0.9.tgz#7c72438809b5fa5babf54199a1f1c281a6984fcf"
-  integrity sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg==
+brace-expansion@>=5.0.13, brace-expansion@^5.0.5:
+  version "5.0.13"
+  resolved "https://registry.yarnpkg.com/brace-expansion/-/brace-expansion-5.0.13.tgz#e2d4497370f7e385e6f96b57bd7ff11d77d85851"
+  integrity sha512-Vh3dmFbc4wZeox7M9I/0L9GfFd83Su4+yCck/OF9Gi/P/dAHn0RT7X4K9R7gMNMhDck3DvhR6QXsnQdjjgwNvQ==
   dependencies:
     balanced-match "^4.0.2"
 
@@ -3238,10 +3238,10 @@ deep-is@^0.1.3:
   resolved "https://registry.yarnpkg.com/deep-is/-/deep-is-0.1.4.tgz#a6f2dce612fadd2ef1f519b73551f17e85199831"
   integrity sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==
 
-deepmerge-ts@7.1.5:
-  version "7.1.5"
-  resolved "https://registry.yarnpkg.com/deepmerge-ts/-/deepmerge-ts-7.1.5.tgz#ff818564007f5c150808d2b7b732cac83aa415ab"
-  integrity sha512-HOJkrhaYsweh+W+e74Yn7YStZOilkoPb6fycpwNLKzSPtruFs48nYis0zy5yJz1+ktUhHxoRDJ27RQAWLIJVJw==
+deepmerge-ts@7.1.5, deepmerge-ts@>=8.0.2:
+  version "8.0.2"
+  resolved "https://registry.yarnpkg.com/deepmerge-ts/-/deepmerge-ts-8.0.2.tgz#4f3e5588c3a7c59ea80d54b583948d6f404cf13e"
+  integrity sha512-uqbvqLUMrc6p0MO+WBRtTxY55hmyh94WRwI5a++PZe54X+bfVh59FSN7uWCBCW1CCVjzjnrwzfI8zidE2obMMw==
 
 deepmerge@^4.2.2, deepmerge@^4.3.1:
   version "4.3.1"
@@ -7989,7 +7989,7 @@ yup@*, yup@^1.7.1:
   resolved "https://registry.yarnpkg.com/zod-validation-error/-/zod-validation-error-4.0.2.tgz#bc605eba49ce0fcd598c127fee1c236be3f22918"
   integrity sha512-Q6/nZLe6jxuU80qb/4uJ4t5v2VEZ44lzQjPDhYJNztRQ4wyWc6VF3D3Kb/fAuPetZQnhS3hnajCf9CsWesghLQ==
 
-"zod@^3.25.0 || ^4.0.0":
-  version "4.4.3"
-  resolved "https://registry.yarnpkg.com/zod/-/zod-4.4.3.tgz#b680f172885d18bbebf21a834ea25e55a1bbf356"
-  integrity sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==
+zod@>=4.6.7, "zod@^3.25.0 || ^4.0.0":
+  version "4.6.7"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-4.6.7.tgz#e806cf64a7f4e37635ce9f2f52c04c3766f75e5b"
+  integrity sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==
