@@ -41,7 +41,8 @@ postgres:
 jwt:
   tokenExpiry: 1h
 
-env: {}
+env:
+  ENABLE_USER_CLEANUP: 'false'
 extraEnv: {}
 
 vault:

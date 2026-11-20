@@ -150,6 +150,9 @@ export const roster: Roster = {
   purpose: 'purpose',
   primaryEndUsers: ['livingInBC', 'businessInBC', 'govEmployees', 'details'],
   preferredAdminLoginMethod: 'azureidir',
+  userCleanupEnabled: false,
+  userCleanupTypes: [],
+  userCleanupNotifications: false,
   // Retired columns, kept on the model until they are dropped in a follow up change.
   productOwnerEmail: null,
   productOwnerIdirUserId: null,

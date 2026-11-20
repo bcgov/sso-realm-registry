@@ -5,6 +5,7 @@ import { adminOnlyFields, allowedFormFields, checkAdminRole, createEvent } from 
 import prisma from 'utils/prisma';
 import KeycloakCore from 'utils/keycloak-core';
 import { EventEnum, StatusEnum, createRealmSchema } from 'validators/create-realm';
+import { isUserCleanupFeatureEnabled, userCleanupFields } from 'utils/feature-flags';
 import { ValidationError } from 'yup';
 import { omit, pick, kebabCase } from 'lodash';
 import { sendCreateEmail } from 'utils/mailer';
@@ -124,8 +125,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else if (req.method === 'POST') {
       let data = req.body;
       data.realm = kebabCase(data.realm);
+      const userCleanupFeatureEnabled = isUserCleanupFeatureEnabled();
+      if (!userCleanupFeatureEnabled) data = omit(data, userCleanupFields);
       try {
         data = createRealmSchema.validateSync(data, { abortEarly: false, stripUnknown: true });
+        if (!userCleanupFeatureEnabled) data = omit(data, userCleanupFields);
       } catch (e) {
         const error = e as ValidationError;
         return res.status(400).json({ success: false, error: error.errors });

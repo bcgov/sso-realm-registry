@@ -9,6 +9,7 @@ import { ModalContext } from 'context/modal';
 import RealmForm from 'components/RealmForm';
 import styled from 'styled-components';
 import { createRealmSchema } from 'validators/create-realm';
+import { isUserCleanupFeatureEnabled } from 'utils/feature-flags';
 
 export const realmTakenError = 'name taken';
 
@@ -21,6 +22,9 @@ const defaultData: CustomRealmFormData = {
   purpose: '',
   productName: '',
   primaryEndUsers: [],
+  userCleanupEnabled: false,
+  userCleanupTypes: [],
+  userCleanupNotifications: false,
   productOwner: null,
   technicalLead: null,
   additionalUsers: [],
@@ -28,9 +32,10 @@ const defaultData: CustomRealmFormData = {
 
 interface Props {
   alert: BottomAlert;
+  userCleanupFeatureEnabled?: boolean;
 }
 
-function NewRealmForm({ alert }: Props) {
+function NewRealmForm({ alert, userCleanupFeatureEnabled = false }: Props) {
   const [formData, setFormData] = useState<CustomRealmFormData>(defaultData);
   const { setModalConfig } = useContext(ModalContext);
   const router = useRouter();
@@ -83,9 +88,16 @@ function NewRealmForm({ alert }: Props) {
         isPO={true}
         validationSchema={createRealmSchema}
         collapse={false}
+        showUserCleanup={userCleanupFeatureEnabled}
       />
     </Container>
   );
 }
 
 export default withBottomAlert(NewRealmForm);
+
+export const getServerSideProps = async () => ({
+  props: {
+    userCleanupFeatureEnabled: isUserCleanupFeatureEnabled(),
+  },
+});

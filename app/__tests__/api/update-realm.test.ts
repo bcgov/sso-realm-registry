@@ -75,7 +75,15 @@ jest.mock('../../pages/api/auth/[...nextauth]', () => {
 const commonAllowedFields = ['ministry', 'division', 'branch'];
 // Product owner and technical lead are symmetric: both may edit the full form,
 // restricted only from the admin-only fields.
-const editableAllowedFields = [...commonAllowedFields, 'purpose', 'productName', 'primaryEndUsers'];
+const editableAllowedFields = [
+  ...commonAllowedFields,
+  'purpose',
+  'productName',
+  'primaryEndUsers',
+  'userCleanupEnabled',
+  'userCleanupTypes',
+  'userCleanupNotifications',
+];
 const adminAllowedFields = [...editableAllowedFields, 'materialToSend', 'approved'];
 
 const editableRestrictedFields = ['materialToSend', 'approved'];
@@ -112,6 +120,9 @@ const requestBody = (overrides: any = {}) => ({
   productOwner: { azureId: 'azure-po' },
   technicalLead: { azureId: 'azure-tl' },
   additionalUsers: [{ azureId: 'azure-extra' }],
+  userCleanupEnabled: false,
+  userCleanupTypes: [],
+  userCleanupNotifications: false,
   ...overrides,
 });
 
@@ -120,6 +131,7 @@ describe('Profile Validations', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.ENABLE_USER_CLEANUP = 'true';
     (prisma.roster.findUnique as jest.Mock).mockImplementation(() => Promise.resolve(testRoster));
     (prisma.roster.update as jest.Mock).mockImplementation(() => Promise.resolve(testRoster));
     (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(null));
@@ -165,6 +177,70 @@ describe('Profile Validations', () => {
     const updatedFields = Object.keys((prisma.roster.update as jest.Mock).mock.calls[0][0].data);
     editableAllowedFields.forEach((field) => expect(updatedFields.includes(field)).toBeTruthy());
     editableRestrictedFields.forEach((field) => expect(updatedFields.includes(field)).toBeFalsy());
+  });
+
+  it('Persists cleanup preferences when the product owner updates a realm', async () => {
+    mockUserSession('po');
+    (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRole.PRODUCT_OWNER));
+    const cleanupPreferences = {
+      userCleanupEnabled: true,
+      userCleanupTypes: ['idir', 'azureidir'],
+      userCleanupNotifications: true,
+    };
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: requestBody(cleanupPreferences),
+      query: { id: 1 },
+    });
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prisma.roster.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining(cleanupPreferences) }),
+    );
+  });
+
+  it('Rejects cleanup opt-in without a selected user type', async () => {
+    mockUserSession('po');
+    (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRole.PRODUCT_OWNER));
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: requestBody({ userCleanupEnabled: true, userCleanupTypes: [] }),
+      query: { id: 1 },
+    });
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(prisma.roster.update).not.toHaveBeenCalled();
+  });
+
+  it('Preserves saved cleanup preferences while the feature is disabled', async () => {
+    process.env.ENABLE_USER_CLEANUP = 'false';
+    const savedPreferences = {
+      userCleanupEnabled: true,
+      userCleanupTypes: ['idir'],
+      userCleanupNotifications: true,
+    };
+    (prisma.roster.findUnique as jest.Mock).mockImplementation(() =>
+      Promise.resolve({ ...testRoster, ...savedPreferences }),
+    );
+    mockUserSession('po');
+    (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRole.PRODUCT_OWNER));
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: requestBody({ userCleanupEnabled: false, userCleanupTypes: [], userCleanupNotifications: false }),
+      query: { id: 1 },
+    });
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    const updateData = (prisma.roster.update as jest.Mock).mock.calls[0][0].data;
+    expect(updateData).not.toHaveProperty('userCleanupEnabled');
+    expect(updateData).not.toHaveProperty('userCleanupTypes');
+    expect(updateData).not.toHaveProperty('userCleanupNotifications');
   });
 
   it('Allows admins to update expected fields', async () => {

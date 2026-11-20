@@ -34,6 +34,7 @@ type Status =
   | 'applyFailed';
 
 export type MemberRole = 'product_owner' | 'technical_lead' | 'additional';
+export type UserCleanupType = 'idir' | 'azureidir';
 
 /**
  * A membership slot as the form holds it. Only `userId` / `azureId` are sent to the
@@ -70,6 +71,9 @@ export interface CustomRealmFormData {
   purpose: string;
   primaryEndUsers: PrimaryEndUser[];
   preferredAdminLoginMethod?: string;
+  userCleanupEnabled?: boolean;
+  userCleanupTypes?: UserCleanupType[];
+  userCleanupNotifications?: boolean;
   productOwner: RealmMember | null;
   technicalLead: RealmMember | null;
   /** Null entries are rows the user added but has not filled in yet; they are dropped on submit. */

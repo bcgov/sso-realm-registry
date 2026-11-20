@@ -4,6 +4,7 @@ import { authOptions } from '../../auth/[...nextauth]';
 import { RoleEnum, adminOnlyFields, checkAdminRole, createEvent, getUpdatedProperties } from 'utils/helpers';
 import prisma from 'utils/prisma';
 import { EventEnum, StatusEnum, getUpdateRealmSchemaByRole } from 'validators/create-realm';
+import { isUserCleanupFeatureEnabled, userCleanupFields } from 'utils/feature-flags';
 import { ValidationError } from 'yup';
 import { omit } from 'lodash';
 import {
@@ -62,6 +63,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.send((isAdmin ? payload : omit(payload, adminOnlyFields)) as any);
     } else if (req.method === 'PUT') {
       let updateRequest = req.body;
+      const userCleanupFeatureEnabled = isUserCleanupFeatureEnabled();
+      if (!userCleanupFeatureEnabled) updateRequest = omit(updateRequest, userCleanupFields);
       let updaterRole = '';
       let updatedRealm: any;
       let updatingApprovalStatus = false;
@@ -105,6 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             abortEarly: false,
             stripUnknown: true,
           });
+          if (!userCleanupFeatureEnabled) updateRequest = omit(updateRequest, userCleanupFields);
         } catch (e) {
           const error = e as ValidationError;
           return res.status(400).json({ success: false, error: error.errors });
