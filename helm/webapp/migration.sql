@@ -45,6 +45,15 @@ ALTER TABLE public.rosters
 ADD COLUMN IF NOT EXISTS preferred_admin_login_method VARCHAR(25);
 
 ALTER TABLE public.rosters
+ADD COLUMN IF NOT EXISTS user_cleanup_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE public.rosters
+ADD COLUMN IF NOT EXISTS user_cleanup_types TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
+
+ALTER TABLE public.rosters
+ADD COLUMN IF NOT EXISTS user_cleanup_notifications BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE public.rosters
 ADD COLUMN IF NOT EXISTS approved BOOLEAN;
 
 ALTER TABLE public.rosters

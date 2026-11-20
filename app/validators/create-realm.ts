@@ -12,6 +12,11 @@ export enum LoginIDPEnum {
   AZUREIDIR = 'azureidir',
 }
 
+export enum CleanupUserTypeEnum {
+  IDIR = 'idir',
+  AZUREIDIR = 'azureidir',
+}
+
 export enum StatusEnum {
   PENDING = 'pending',
   PRSUCCESS = 'prSuccess',
@@ -70,6 +75,23 @@ const commonSchema = yup.object().shape({
   ministry: yup.string().optional().nullable(),
   division: yup.string().optional().nullable(),
   branch: yup.string().optional().nullable(),
+  userCleanupEnabled: yup.boolean().default(false),
+  userCleanupTypes: yup
+    .array()
+    .of(yup.string().oneOf(Object.values(CleanupUserTypeEnum)).required())
+    .when('userCleanupEnabled', {
+      is: true,
+      then: (schema) => schema.min(1).required(),
+      otherwise: (schema) => schema.max(0).default([]),
+    }),
+  userCleanupNotifications: yup
+    .boolean()
+    .default(false)
+    .when('userCleanupEnabled', {
+      is: true,
+      then: (schema) => schema,
+      otherwise: (schema) => schema.oneOf([false]),
+    }),
   productOwner: memberSchema,
   technicalLead: memberSchema,
   additionalUsers: yup

@@ -1,0 +1,3 @@
+export const isUserCleanupFeatureEnabled = () => process.env.ENABLE_USER_CLEANUP === 'true';
+
+export const userCleanupFields = ['userCleanupEnabled', 'userCleanupTypes', 'userCleanupNotifications'] as const;

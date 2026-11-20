@@ -139,6 +139,7 @@ describe('Form Validation', () => {
 
   it('Shows validation messages for incomplete fields and does not make api request', () => {
     const { container } = render(<CustomRealmForm />);
+    expect(screen.queryByLabelText('Opt in to stale user cleanup')).not.toBeInTheDocument();
     submitForm();
 
     const errorCount = getErrorCount(container);
@@ -184,10 +185,40 @@ describe('Form Validation', () => {
       productName: 'name',
       realm: 'name',
       purpose: 'purpose',
+      userCleanupEnabled: false,
+      userCleanupTypes: [],
+      userCleanupNotifications: false,
       productOwner: memberPayload(testAzureUsers[0]),
       technicalLead: memberPayload(testAzureUsers[1]),
       additionalUsers: [],
     });
+  });
+
+  it('Requires a cleanup user type and submits the selected cleanup options', async () => {
+    const { container } = render(<CustomRealmForm userCleanupFeatureEnabled />);
+    await fillRequiredFields(container);
+    fireEvent.click(screen.getByLabelText('Opt in to stale user cleanup'));
+
+    await act(async () => {
+      submitForm();
+    });
+
+    expect(submitRealmRequest).not.toHaveBeenCalled();
+    expect(screen.getByText('Select at least one user type for cleanup.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('IDIR'));
+    fireEvent.click(screen.getByLabelText('Notify the product owner and technical lead when users are deleted'));
+    await act(async () => {
+      submitForm();
+    });
+
+    expect(submitRealmRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userCleanupEnabled: true,
+        userCleanupTypes: ['idir'],
+        userCleanupNotifications: true,
+      }),
+    );
   });
 
   it('Shows the IDIR username read only alongside each picker', async () => {

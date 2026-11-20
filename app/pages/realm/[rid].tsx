@@ -18,6 +18,7 @@ import prisma from 'utils/prisma';
 import { canEditRealm, getRealmMembers, getUserRoleOnRealm, serializeRoster } from 'controllers/user-access';
 import { MemberRoleEnum } from 'utils/constants';
 import { buildFormData } from 'utils/membership';
+import { isUserCleanupFeatureEnabled } from 'utils/feature-flags';
 
 const Container = styled(ResponsiveContainer)`
   font-size: 1rem;
@@ -71,9 +72,10 @@ interface Props {
   realm: CustomRealmFormData | null;
   role?: string;
   alert: BottomAlert;
+  userCleanupFeatureEnabled: boolean;
 }
 
-function EditPage({ realm, role, alert }: Props) {
+function EditPage({ realm, role, alert, userCleanupFeatureEnabled = false }: Props) {
   if (!realm) {
     return (
       <Container rules={mediaRules}>
@@ -81,17 +83,19 @@ function EditPage({ realm, role, alert }: Props) {
       </Container>
     );
   }
-  return <EditRealm realm={realm} role={role} alert={alert} />;
+  return <EditRealm realm={realm} role={role} alert={alert} userCleanupFeatureEnabled={userCleanupFeatureEnabled} />;
 }
 
 function EditRealm({
   realm: initialRealm,
   role,
   alert,
+  userCleanupFeatureEnabled,
 }: {
   realm: CustomRealmFormData;
   role?: string;
   alert: BottomAlert;
+  userCleanupFeatureEnabled: boolean;
 }) {
   const router = useRouter();
   const { rid } = router.query;
@@ -142,6 +146,7 @@ function EditRealm({
         onCancel={() => router.push('/my-dashboard')}
         validationSchema={getUpdateRealmSchemaByRole(role ?? RoleEnum.TECHNICAL_LEAD)}
         collapse={false}
+        showUserCleanup={userCleanupFeatureEnabled}
       />
     </Container>
   );
@@ -152,6 +157,7 @@ export default withBottomAlert(EditPage);
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
   const session = await getServerSession(context.req, context.res, authOptions);
   if (!session) return;
+  const userCleanupFeatureEnabled = isUserCleanupFeatureEnabled();
 
   try {
     const username = session?.user?.idir_username || '';
@@ -164,6 +170,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
       return {
         props: {
           realm: null,
+          userCleanupFeatureEnabled,
         },
       };
     }
@@ -175,6 +182,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
       return {
         props: {
           realm: null,
+          userCleanupFeatureEnabled,
         },
       };
     }
@@ -198,6 +206,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
       props: {
         realm: realmSerialized,
         role,
+        userCleanupFeatureEnabled,
       },
     };
   } catch (err) {
