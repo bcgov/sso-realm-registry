@@ -6,6 +6,7 @@ import { isUserCleanupFeatureEnabled } from 'utils/feature-flags';
 interface CleanupRealm {
   name: string | null;
   userTypes: string[];
+  idpAliases: { idir: string | null; azureidir: string | null };
   notifyOnDeletion: boolean;
   notifications: string[];
 }
@@ -36,6 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       select: {
         realm: true,
         userCleanupTypes: true,
+        userCleanupIdirAlias: true,
+        userCleanupAzureidirAlias: true,
         userCleanupNotifications: true,
         members: {
           where: {
@@ -53,6 +56,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       realms: rosters.map((roster) => ({
         name: roster.realm,
         userTypes: roster.userCleanupTypes,
+        idpAliases: {
+          idir: roster.userCleanupIdirAlias,
+          azureidir: roster.userCleanupAzureidirAlias,
+        },
         notifyOnDeletion: roster.userCleanupNotifications,
         notifications: roster.userCleanupNotifications
           ? Array.from(

@@ -38,6 +38,19 @@ const SForm = styled.form<{ collapse: boolean }>`
     grid-column: 1 / 3;
   }
 
+  .cleanup-grid {
+    display: grid;
+    grid-template-columns: ${(props) => (props.collapse ? '1fr' : '1fr 1fr')};
+    column-gap: 2em;
+    row-gap: 1em;
+  }
+
+  .cleanup-column {
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.5em;
+  }
+
   label,
   legend {
     &.required:after {
@@ -368,7 +381,14 @@ export default function RealmForm({
     setFormData({
       ...formData,
       userCleanupEnabled: enabled,
-      ...(enabled ? {} : { userCleanupTypes: [], userCleanupNotifications: false }),
+      ...(enabled
+        ? {}
+        : {
+            userCleanupTypes: [],
+            userCleanupIdirAlias: null,
+            userCleanupAzureidirAlias: null,
+            userCleanupNotifications: false,
+          }),
     });
   };
 
@@ -383,6 +403,11 @@ export default function RealmForm({
           ? userCleanupTypes
           : [...userCleanupTypes, userType]
         : userCleanupTypes.filter((selectedType) => selectedType !== userType),
+      ...(e.target.checked
+        ? {}
+        : userType === 'idir'
+        ? { userCleanupIdirAlias: null }
+        : { userCleanupAzureidirAlias: null }),
     });
   };
 
@@ -459,6 +484,7 @@ export default function RealmForm({
   }, [formData.division]);
 
   const schemaFields = Object.keys(validationSchema.fields);
+  const cleanupUserTypes = formData.userCleanupTypes ?? [];
   // Membership is shared between the product owner and technical lead, so it is in the
   // schema for every role that can reach this form.
   const membershipEditable = schemaFields.includes('productOwner');
@@ -815,28 +841,67 @@ export default function RealmForm({
                   <br />
                   <fieldset disabled={!schemaFields.includes('userCleanupTypes')}>
                     <legend>Which user types can be cleaned up? (select all that apply)</legend>
-                    <div className="grid">
-                      <div className="checkbox-wrapper">
-                        <input
-                          type="checkbox"
-                          id="user-cleanup-idir-checkbox"
-                          name="userCleanupTypes"
-                          value="idir"
-                          checked={(formData.userCleanupTypes ?? []).includes('idir')}
-                          onChange={handleUserCleanupTypeChange}
-                        />
-                        <label htmlFor="user-cleanup-idir-checkbox">IDIR</label>
+                    <div className="cleanup-grid">
+                      <div className="cleanup-column">
+                        <div className="checkbox-wrapper">
+                          <input
+                            type="checkbox"
+                            id="user-cleanup-idir-checkbox"
+                            name="userCleanupTypes"
+                            value="idir"
+                            checked={(formData.userCleanupTypes ?? []).includes('idir')}
+                            onChange={handleUserCleanupTypeChange}
+                          />
+                          <label htmlFor="user-cleanup-idir-checkbox">IDIR</label>
+                        </div>
+                        <div className="input-wrapper">
+                          <label htmlFor="user-cleanup-idir-alias-input" className="required">
+                            IDIR IDP alias
+                          </label>
+                          <input
+                            id="user-cleanup-idir-alias-input"
+                            name="userCleanupIdirAlias"
+                            value={formData.userCleanupIdirAlias ?? ''}
+                            onChange={handleFormInputChange}
+                            required={cleanupUserTypes.includes('idir')}
+                            disabled={
+                              !cleanupUserTypes.includes('idir') || !schemaFields.includes('userCleanupIdirAlias')
+                            }
+                          />
+                          {formErrors.userCleanupIdirAlias && <p className="error-message">This field is required.</p>}
+                        </div>
                       </div>
-                      <div className="checkbox-wrapper">
-                        <input
-                          type="checkbox"
-                          id="user-cleanup-azureidir-checkbox"
-                          name="userCleanupTypes"
-                          value="azureidir"
-                          checked={(formData.userCleanupTypes ?? []).includes('azureidir')}
-                          onChange={handleUserCleanupTypeChange}
-                        />
-                        <label htmlFor="user-cleanup-azureidir-checkbox">IDIR-MFA</label>
+                      <div className="cleanup-column">
+                        <div className="checkbox-wrapper">
+                          <input
+                            type="checkbox"
+                            id="user-cleanup-azureidir-checkbox"
+                            name="userCleanupTypes"
+                            value="azureidir"
+                            checked={(formData.userCleanupTypes ?? []).includes('azureidir')}
+                            onChange={handleUserCleanupTypeChange}
+                          />
+                          <label htmlFor="user-cleanup-azureidir-checkbox">IDIR-MFA</label>
+                        </div>
+                        <div className="input-wrapper">
+                          <label htmlFor="user-cleanup-azureidir-alias-input" className="required">
+                            IDIR-MFA IDP alias
+                          </label>
+                          <input
+                            id="user-cleanup-azureidir-alias-input"
+                            name="userCleanupAzureidirAlias"
+                            value={formData.userCleanupAzureidirAlias ?? ''}
+                            onChange={handleFormInputChange}
+                            required={cleanupUserTypes.includes('azureidir')}
+                            disabled={
+                              !cleanupUserTypes.includes('azureidir') ||
+                              !schemaFields.includes('userCleanupAzureidirAlias')
+                            }
+                          />
+                          {formErrors.userCleanupAzureidirAlias && (
+                            <p className="error-message">This field is required.</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {formErrors.userCleanupTypes && (

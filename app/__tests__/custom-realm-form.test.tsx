@@ -187,6 +187,8 @@ describe('Form Validation', () => {
       purpose: 'purpose',
       userCleanupEnabled: false,
       userCleanupTypes: [],
+      userCleanupIdirAlias: null,
+      userCleanupAzureidirAlias: null,
       userCleanupNotifications: false,
       productOwner: memberPayload(testAzureUsers[0]),
       technicalLead: memberPayload(testAzureUsers[1]),
@@ -207,6 +209,10 @@ describe('Form Validation', () => {
     expect(screen.getByText('Select at least one user type for cleanup.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('IDIR'));
+    expect(screen.getByLabelText('IDIR IDP alias')).toBeEnabled();
+    expect(screen.getByLabelText('IDIR IDP alias')).toBeRequired();
+    expect(screen.getByLabelText('IDIR-MFA IDP alias')).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('IDIR IDP alias'), { target: { value: 'idir-provider' } });
     fireEvent.click(screen.getByLabelText('Notify the product owner and technical lead when users are deleted'));
     await act(async () => {
       submitForm();
@@ -216,7 +222,41 @@ describe('Form Validation', () => {
       expect.objectContaining({
         userCleanupEnabled: true,
         userCleanupTypes: ['idir'],
+        userCleanupIdirAlias: 'idir-provider',
+        userCleanupAzureidirAlias: null,
         userCleanupNotifications: true,
+      }),
+    );
+    fireEvent.click(screen.getByLabelText('IDIR'));
+    expect(screen.getByLabelText('IDIR IDP alias')).toBeDisabled();
+    expect((screen.getByLabelText('IDIR IDP alias') as HTMLInputElement).value).toBe('');
+  });
+
+  it('Requires an IDIR-MFA IDP alias when IDIR-MFA cleanup is selected', async () => {
+    const { container } = render(<CustomRealmForm userCleanupFeatureEnabled />);
+    await fillRequiredFields(container);
+    fireEvent.click(screen.getByLabelText('Opt in to stale user cleanup'));
+    fireEvent.click(screen.getByLabelText('IDIR-MFA'));
+
+    expect(screen.getByLabelText('IDIR-MFA IDP alias')).toBeEnabled();
+    expect(screen.getByLabelText('IDIR-MFA IDP alias')).toBeRequired();
+    await act(async () => {
+      submitForm();
+    });
+
+    expect(submitRealmRequest).not.toHaveBeenCalled();
+    expect(screen.getByText('This field is required.')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('IDIR-MFA IDP alias'), { target: { value: 'mfa-provider' } });
+    await act(async () => {
+      submitForm();
+    });
+
+    expect(submitRealmRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userCleanupTypes: ['azureidir'],
+        userCleanupIdirAlias: null,
+        userCleanupAzureidirAlias: 'mfa-provider',
       }),
     );
   });

@@ -18,6 +18,8 @@ export const allowedFormFields: string[] = [
   'primaryEndUsers',
   'userCleanupEnabled',
   'userCleanupTypes',
+  'userCleanupIdirAlias',
+  'userCleanupAzureidirAlias',
   'userCleanupNotifications',
   'ministry',
   'division',

@@ -73,6 +73,8 @@ export interface CustomRealmFormData {
   preferredAdminLoginMethod?: string;
   userCleanupEnabled?: boolean;
   userCleanupTypes?: UserCleanupType[];
+  userCleanupIdirAlias?: string | null;
+  userCleanupAzureidirAlias?: string | null;
   userCleanupNotifications?: boolean;
   productOwner: RealmMember | null;
   technicalLead: RealmMember | null;

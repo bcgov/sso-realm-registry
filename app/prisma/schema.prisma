@@ -29,6 +29,8 @@ model Roster {
   preferredAdminLoginMethod        String?      @map("preferred_admin_login_method") @db.VarChar(25)
   userCleanupEnabled               Boolean      @default(false) @map("user_cleanup_enabled")
   userCleanupTypes                 String[]     @default([]) @map("user_cleanup_types")
+  userCleanupIdirAlias             String?      @map("user_cleanup_idir_alias")
+  userCleanupAzureidirAlias        String?      @map("user_cleanup_azureidir_alias")
   userCleanupNotifications         Boolean      @default(false) @map("user_cleanup_notifications")
   status                           String?      @map("status") @db.VarChar(50)
   lastUpdatedBy                    String?      @map("last_updated_by") @db.VarChar(50)

@@ -24,6 +24,8 @@ const defaultData: CustomRealmFormData = {
   primaryEndUsers: [],
   userCleanupEnabled: false,
   userCleanupTypes: [],
+  userCleanupIdirAlias: null,
+  userCleanupAzureidirAlias: null,
   userCleanupNotifications: false,
   productOwner: null,
   technicalLead: null,

@@ -84,6 +84,24 @@ const commonSchema = yup.object().shape({
       then: (schema) => schema.min(1).required(),
       otherwise: (schema) => schema.max(0).default([]),
     }),
+  userCleanupIdirAlias: yup
+    .string()
+    .nullable()
+    .default(null)
+    .when(['userCleanupEnabled', 'userCleanupTypes'], {
+      is: (enabled: boolean, types: string[] | undefined) => enabled && types?.includes(CleanupUserTypeEnum.IDIR),
+      then: (schema) => schema.trim().required(),
+      otherwise: (schema) => schema.oneOf([null]).default(null),
+    }),
+  userCleanupAzureidirAlias: yup
+    .string()
+    .nullable()
+    .default(null)
+    .when(['userCleanupEnabled', 'userCleanupTypes'], {
+      is: (enabled: boolean, types: string[] | undefined) => enabled && types?.includes(CleanupUserTypeEnum.AZUREIDIR),
+      then: (schema) => schema.trim().required(),
+      otherwise: (schema) => schema.oneOf([null]).default(null),
+    }),
   userCleanupNotifications: yup
     .boolean()
     .default(false)

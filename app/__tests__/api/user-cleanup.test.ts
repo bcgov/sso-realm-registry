@@ -18,12 +18,16 @@ describe('User cleanup configuration endpoint', () => {
       {
         realm: 'realm-one',
         userCleanupTypes: ['idir', 'azureidir'],
+        userCleanupIdirAlias: 'idir-provider',
+        userCleanupAzureidirAlias: 'azureidir-provider',
         userCleanupNotifications: true,
         members: [{ user: { email: 'po@gov.bc.ca' } }, { user: { email: 'tl@gov.bc.ca' } }],
       },
       {
         realm: 'realm-two',
         userCleanupTypes: ['azureidir'],
+        userCleanupIdirAlias: null,
+        userCleanupAzureidirAlias: 'azureidir-provider',
         userCleanupNotifications: false,
         members: [],
       },
@@ -42,10 +46,17 @@ describe('User cleanup configuration endpoint', () => {
         {
           name: 'realm-one',
           userTypes: ['idir', 'azureidir'],
+          idpAliases: { idir: 'idir-provider', azureidir: 'azureidir-provider' },
           notifyOnDeletion: true,
           notifications: ['po@gov.bc.ca', 'tl@gov.bc.ca'],
         },
-        { name: 'realm-two', userTypes: ['azureidir'], notifyOnDeletion: false, notifications: [] },
+        {
+          name: 'realm-two',
+          userTypes: ['azureidir'],
+          idpAliases: { idir: null, azureidir: 'azureidir-provider' },
+          notifyOnDeletion: false,
+          notifications: [],
+        },
       ],
     });
     expect(prisma.roster.findMany).toHaveBeenCalledWith(
@@ -57,6 +68,8 @@ describe('User cleanup configuration endpoint', () => {
           realm: { not: null },
         },
         select: expect.objectContaining({
+          userCleanupIdirAlias: true,
+          userCleanupAzureidirAlias: true,
           members: expect.objectContaining({
             where: {
               removedAt: null,

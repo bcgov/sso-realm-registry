@@ -51,6 +51,12 @@ ALTER TABLE public.rosters
 ADD COLUMN IF NOT EXISTS user_cleanup_types TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
 
 ALTER TABLE public.rosters
+ADD COLUMN IF NOT EXISTS user_cleanup_idir_alias TEXT;
+
+ALTER TABLE public.rosters
+ADD COLUMN IF NOT EXISTS user_cleanup_azureidir_alias TEXT;
+
+ALTER TABLE public.rosters
 ADD COLUMN IF NOT EXISTS user_cleanup_notifications BOOLEAN NOT NULL DEFAULT FALSE;
 
 ALTER TABLE public.rosters

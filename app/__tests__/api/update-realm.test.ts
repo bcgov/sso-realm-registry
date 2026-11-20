@@ -82,6 +82,8 @@ const editableAllowedFields = [
   'primaryEndUsers',
   'userCleanupEnabled',
   'userCleanupTypes',
+  'userCleanupIdirAlias',
+  'userCleanupAzureidirAlias',
   'userCleanupNotifications',
 ];
 const adminAllowedFields = [...editableAllowedFields, 'materialToSend', 'approved'];
@@ -122,6 +124,8 @@ const requestBody = (overrides: any = {}) => ({
   additionalUsers: [{ azureId: 'azure-extra' }],
   userCleanupEnabled: false,
   userCleanupTypes: [],
+  userCleanupIdirAlias: null,
+  userCleanupAzureidirAlias: null,
   userCleanupNotifications: false,
   ...overrides,
 });
@@ -185,6 +189,8 @@ describe('Profile Validations', () => {
     const cleanupPreferences = {
       userCleanupEnabled: true,
       userCleanupTypes: ['idir', 'azureidir'],
+      userCleanupIdirAlias: 'idir-alias',
+      userCleanupAzureidirAlias: 'azureidir-alias',
       userCleanupNotifications: true,
     };
     const { req, res }: MockHttpRequest = createMocks({
@@ -206,7 +212,22 @@ describe('Profile Validations', () => {
     (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRole.PRODUCT_OWNER));
     const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',
-      body: requestBody({ userCleanupEnabled: true, userCleanupTypes: [] }),
+      body: requestBody({ userCleanupEnabled: true, userCleanupTypes: [], userCleanupIdirAlias: null }),
+      query: { id: 1 },
+    });
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(prisma.roster.update).not.toHaveBeenCalled();
+  });
+
+  it('Rejects a selected cleanup user type without its IDP alias', async () => {
+    mockUserSession('po');
+    (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRole.PRODUCT_OWNER));
+    const { req, res }: MockHttpRequest = createMocks({
+      method: 'PUT',
+      body: requestBody({ userCleanupEnabled: true, userCleanupTypes: ['idir'], userCleanupIdirAlias: null }),
       query: { id: 1 },
     });
 
@@ -221,6 +242,8 @@ describe('Profile Validations', () => {
     const savedPreferences = {
       userCleanupEnabled: true,
       userCleanupTypes: ['idir'],
+      userCleanupIdirAlias: 'idir-alias',
+      userCleanupAzureidirAlias: null,
       userCleanupNotifications: true,
     };
     (prisma.roster.findUnique as jest.Mock).mockImplementation(() =>
@@ -230,7 +253,13 @@ describe('Profile Validations', () => {
     (getUserRoleOnRealm as jest.Mock).mockImplementation(() => Promise.resolve(MemberRole.PRODUCT_OWNER));
     const { req, res }: MockHttpRequest = createMocks({
       method: 'PUT',
-      body: requestBody({ userCleanupEnabled: false, userCleanupTypes: [], userCleanupNotifications: false }),
+      body: requestBody({
+        userCleanupEnabled: false,
+        userCleanupTypes: [],
+        userCleanupIdirAlias: null,
+        userCleanupAzureidirAlias: null,
+        userCleanupNotifications: false,
+      }),
       query: { id: 1 },
     });
 
@@ -240,6 +269,8 @@ describe('Profile Validations', () => {
     const updateData = (prisma.roster.update as jest.Mock).mock.calls[0][0].data;
     expect(updateData).not.toHaveProperty('userCleanupEnabled');
     expect(updateData).not.toHaveProperty('userCleanupTypes');
+    expect(updateData).not.toHaveProperty('userCleanupIdirAlias');
+    expect(updateData).not.toHaveProperty('userCleanupAzureidirAlias');
     expect(updateData).not.toHaveProperty('userCleanupNotifications');
   });
 

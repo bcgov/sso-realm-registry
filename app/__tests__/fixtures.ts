@@ -152,6 +152,8 @@ export const roster: Roster = {
   preferredAdminLoginMethod: 'azureidir',
   userCleanupEnabled: false,
   userCleanupTypes: [],
+  userCleanupIdirAlias: null,
+  userCleanupAzureidirAlias: null,
   userCleanupNotifications: false,
   // Retired columns, kept on the model until they are dropped in a follow up change.
   productOwnerEmail: null,
