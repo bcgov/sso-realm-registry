@@ -196,8 +196,8 @@ describe('Form Validation', () => {
   it('Opts in to stale user cleanup and submits the notification preference', async () => {
     const { container } = render(<CustomRealmForm userCleanupFeatureEnabled />);
     await fillRequiredFields(container);
-    fireEvent.click(screen.getByLabelText('Opt in to stale user cleanup'));
-    fireEvent.click(screen.getByLabelText('Notify the product owner and technical lead when users are deleted'));
+    fireEvent.click(screen.getByLabelText('Automatically remove inactive IDIR accounts from my realm.'));
+    fireEvent.click(screen.getByLabelText('Notify the product owner and technical lead when users are deleted.'));
 
     await act(async () => {
       submitForm();
