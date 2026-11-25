@@ -794,8 +794,8 @@ export default function RealmForm({
             <h3 className="span-cols">
               Inactive User Deletion
               <InfoPopover size="xs">
-                Check below to have old IDIR accounts automatically deleted from your realm. Accounts will be checked
-                nightly against the upstream provider, and removed from keycloak if they are no longer active.
+                Check below to have inactive IDIR accounts automatically deleted from your realm. Accounts will be
+                checked nightly against the upstream provider, and removed from keycloak if they are no longer active.
               </InfoPopover>
             </h3>
             <p className="span-cols">
@@ -820,7 +820,7 @@ export default function RealmForm({
                   onChange={handleUserCleanupToggle}
                 />
                 <label htmlFor="user-cleanup-enabled-checkbox">
-                  Automatically remove old IDIR accounts from my realm.
+                  Automatically remove inactive IDIR accounts from my realm.
                 </label>
               </div>
               {formData.userCleanupEnabled && (
