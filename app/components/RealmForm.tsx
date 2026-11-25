@@ -820,7 +820,7 @@ export default function RealmForm({
                   onChange={handleUserCleanupToggle}
                 />
                 <label htmlFor="user-cleanup-enabled-checkbox">
-                  Automatically remove old IDIR accounts from my realm
+                  Automatically remove old IDIR accounts from my realm.
                 </label>
               </div>
               {formData.userCleanupEnabled && (
