@@ -70,6 +70,15 @@ const commonSchema = yup.object().shape({
   ministry: yup.string().optional().nullable(),
   division: yup.string().optional().nullable(),
   branch: yup.string().optional().nullable(),
+  userCleanupEnabled: yup.boolean().default(false),
+  userCleanupNotifications: yup
+    .boolean()
+    .default(false)
+    .when('userCleanupEnabled', {
+      is: true,
+      then: (schema) => schema,
+      otherwise: (schema) => schema.oneOf([false]),
+    }),
   productOwner: memberSchema,
   technicalLead: memberSchema,
   additionalUsers: yup

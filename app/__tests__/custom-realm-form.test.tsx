@@ -139,6 +139,7 @@ describe('Form Validation', () => {
 
   it('Shows validation messages for incomplete fields and does not make api request', () => {
     const { container } = render(<CustomRealmForm />);
+    expect(screen.queryByLabelText('Opt in to stale user cleanup')).not.toBeInTheDocument();
     submitForm();
 
     const errorCount = getErrorCount(container);
@@ -184,10 +185,30 @@ describe('Form Validation', () => {
       productName: 'name',
       realm: 'name',
       purpose: 'purpose',
+      userCleanupEnabled: false,
+      userCleanupNotifications: false,
       productOwner: memberPayload(testAzureUsers[0]),
       technicalLead: memberPayload(testAzureUsers[1]),
       additionalUsers: [],
     });
+  });
+
+  it('Opts in to stale user cleanup and submits the notification preference', async () => {
+    const { container } = render(<CustomRealmForm userCleanupFeatureEnabled />);
+    await fillRequiredFields(container);
+    fireEvent.click(screen.getByLabelText('Automatically remove inactive IDIR accounts from my realm.'));
+    fireEvent.click(screen.getByLabelText('Notify the product owner and technical lead when users are deleted.'));
+
+    await act(async () => {
+      submitForm();
+    });
+
+    expect(submitRealmRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userCleanupEnabled: true,
+        userCleanupNotifications: true,
+      }),
+    );
   });
 
   it('Shows the IDIR username read only alongside each picker', async () => {

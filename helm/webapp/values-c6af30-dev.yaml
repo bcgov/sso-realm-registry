@@ -28,6 +28,7 @@ env:
   TF_GH_ORG: bcgov
   TF_GH_REPO: sso-terraform-dev
   TF_MODULE_GH_REF: dev
+  ENABLE_USER_CLEANUP: 'true'
 
 vault:
   vaultSecretEngine: c6af30-nonprod

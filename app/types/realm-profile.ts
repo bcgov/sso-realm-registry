@@ -70,6 +70,8 @@ export interface CustomRealmFormData {
   purpose: string;
   primaryEndUsers: PrimaryEndUser[];
   preferredAdminLoginMethod?: string;
+  userCleanupEnabled?: boolean;
+  userCleanupNotifications?: boolean;
   productOwner: RealmMember | null;
   technicalLead: RealmMember | null;
   /** Null entries are rows the user added but has not filled in yet; they are dropped on submit. */

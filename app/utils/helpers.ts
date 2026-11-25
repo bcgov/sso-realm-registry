@@ -16,6 +16,8 @@ export const allowedFormFields: string[] = [
   'purpose',
   'productName',
   'primaryEndUsers',
+  'userCleanupEnabled',
+  'userCleanupNotifications',
   'ministry',
   'division',
   'branch',

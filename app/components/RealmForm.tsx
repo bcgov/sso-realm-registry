@@ -12,6 +12,8 @@ import AsyncSelect from 'react-select/async';
 import { getIdirUsersByEmail } from 'services/azure';
 import { realmTakenError } from 'pages/custom-realm-form';
 import { MAX_ADDITIONAL_USERS } from 'utils/constants';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faWarning } from '@fortawesome/free-solid-svg-icons';
 
 const SForm = styled.form<{ collapse: boolean }>`
   display: grid;
@@ -36,6 +38,19 @@ const SForm = styled.form<{ collapse: boolean }>`
 
   .span-cols {
     grid-column: 1 / 3;
+  }
+
+  .cleanup-grid {
+    display: grid;
+    grid-template-columns: ${(props) => (props.collapse ? '1fr' : '1fr 1fr')};
+    column-gap: 2em;
+    row-gap: 1em;
+  }
+
+  .cleanup-column {
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.5em;
   }
 
   label,
@@ -205,6 +220,7 @@ interface Props {
   isPO?: boolean;
   validationSchema: yup.AnyObjectSchema;
   collapse: boolean;
+  showUserCleanup?: boolean;
   updatedMessage?: string;
 }
 
@@ -270,6 +286,7 @@ export default function RealmForm({
   validationSchema,
   onCancel,
   updatedMessage,
+  showUserCleanup = false,
   collapse = false,
 }: Props) {
   // Keyed by yup error path, so additional user rows appear as `additionalUsers[0]`.
@@ -358,6 +375,15 @@ export default function RealmForm({
       newData = { ...formData, [groupName]: formData[groupName].filter((val) => val !== e.target.name) };
     }
     setFormData(newData);
+  };
+
+  const handleUserCleanupToggle = (e: ChangeEvent<HTMLInputElement>) => {
+    const enabled = e.target.checked;
+    setFormData({
+      ...formData,
+      userCleanupEnabled: enabled,
+      ...(enabled ? {} : { userCleanupNotifications: false }),
+    });
   };
 
   const handleSubmit = () => {
@@ -762,6 +788,64 @@ export default function RealmForm({
         >
           Add user
         </button>
+
+        {showUserCleanup && (
+          <>
+            <h3 className="span-cols">
+              Inactive User Deletion
+              <InfoPopover size="xs">
+                Check below to have inactive IDIR accounts automatically deleted from your realm. Accounts will be
+                checked nightly against the upstream provider, and removed from keycloak if they are no longer active.
+              </InfoPopover>
+            </h3>
+            <p className="span-cols">
+              <FontAwesomeIcon icon={faWarning} color="red" /> <strong>Important:</strong> To use this feature, your
+              identity provider must be connected through a standard client. For more information on configuring your
+              identity provider see our{' '}
+              <a
+                href="https://bcgov.github.io/sso-docs/advanced/custom-realms/guides/setup-idps-mappers"
+                target="_blank"
+              >
+                documentation
+              </a>
+              .
+            </p>
+            <fieldset className="span-cols" disabled={!schemaFields.includes('userCleanupEnabled')}>
+              <div className="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  id="user-cleanup-enabled-checkbox"
+                  name="userCleanupEnabled"
+                  checked={Boolean(formData.userCleanupEnabled)}
+                  onChange={handleUserCleanupToggle}
+                />
+                <label htmlFor="user-cleanup-enabled-checkbox">
+                  Automatically remove inactive IDIR accounts from my realm.
+                </label>
+              </div>
+              {formData.userCleanupEnabled && (
+                <>
+                  <br />
+                  <div className="checkbox-wrapper">
+                    <input
+                      type="checkbox"
+                      id="user-cleanup-notifications-checkbox"
+                      name="userCleanupNotifications"
+                      checked={Boolean(formData.userCleanupNotifications)}
+                      onChange={(e) => setFormData({ ...formData, userCleanupNotifications: e.target.checked })}
+                    />
+                    <label htmlFor="user-cleanup-notifications-checkbox">
+                      Notify the product owner and technical lead when users are deleted.
+                    </label>
+                    <InfoPopover size="xs">
+                      Your configured email addresses will receive a notification of all users removed from your realm.
+                    </InfoPopover>
+                  </div>
+                </>
+              )}
+            </fieldset>
+          </>
+        )}
 
         {/* Below fields hidden instead of disabled if not in schema */}
 
