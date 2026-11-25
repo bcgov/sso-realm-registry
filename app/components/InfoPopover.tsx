@@ -3,6 +3,7 @@ import OverlayTrigger, { OverlayTriggerType } from 'react-bootstrap/OverlayTrigg
 import Popover from 'react-bootstrap/Popover';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIconProps } from '@fortawesome/react-fontawesome';
 import styled from 'styled-components';
 
 const LeftMargin = styled.span`
@@ -12,11 +13,13 @@ const LeftMargin = styled.span`
 const InfoPopover = ({
   icon = faInfoCircle,
   trigger = ['hover', 'focus'],
+  size,
   children,
 }: {
   icon?: IconDefinition;
   trigger?: OverlayTriggerType[];
-  children: React.ReactNode;
+  size?: FontAwesomeIconProps['size'];
+  children?: React.ReactNode;
 }) => {
   return (
     <OverlayTrigger
@@ -30,7 +33,7 @@ const InfoPopover = ({
       delay={{ show: 200, hide: 200 }}
     >
       <LeftMargin>
-        <FontAwesomeIcon color="#777777" icon={icon} />
+        <FontAwesomeIcon color="#777777" icon={icon} size={size} />
       </LeftMargin>
     </OverlayTrigger>
   );

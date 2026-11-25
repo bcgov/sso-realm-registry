@@ -12,11 +12,6 @@ export enum LoginIDPEnum {
   AZUREIDIR = 'azureidir',
 }
 
-export enum CleanupUserTypeEnum {
-  IDIR = 'idir',
-  AZUREIDIR = 'azureidir',
-}
-
 export enum StatusEnum {
   PENDING = 'pending',
   PRSUCCESS = 'prSuccess',
@@ -76,32 +71,6 @@ const commonSchema = yup.object().shape({
   division: yup.string().optional().nullable(),
   branch: yup.string().optional().nullable(),
   userCleanupEnabled: yup.boolean().default(false),
-  userCleanupTypes: yup
-    .array()
-    .of(yup.string().oneOf(Object.values(CleanupUserTypeEnum)).required())
-    .when('userCleanupEnabled', {
-      is: true,
-      then: (schema) => schema.min(1).required(),
-      otherwise: (schema) => schema.max(0).default([]),
-    }),
-  userCleanupIdirAlias: yup
-    .string()
-    .nullable()
-    .default(null)
-    .when(['userCleanupEnabled', 'userCleanupTypes'], {
-      is: (enabled: boolean, types: string[] | undefined) => enabled && types?.includes(CleanupUserTypeEnum.IDIR),
-      then: (schema) => schema.trim().required(),
-      otherwise: (schema) => schema.oneOf([null]).default(null),
-    }),
-  userCleanupAzureidirAlias: yup
-    .string()
-    .nullable()
-    .default(null)
-    .when(['userCleanupEnabled', 'userCleanupTypes'], {
-      is: (enabled: boolean, types: string[] | undefined) => enabled && types?.includes(CleanupUserTypeEnum.AZUREIDIR),
-      then: (schema) => schema.trim().required(),
-      otherwise: (schema) => schema.oneOf([null]).default(null),
-    }),
   userCleanupNotifications: yup
     .boolean()
     .default(false)

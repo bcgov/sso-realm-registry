@@ -34,7 +34,6 @@ type Status =
   | 'applyFailed';
 
 export type MemberRole = 'product_owner' | 'technical_lead' | 'additional';
-export type UserCleanupType = 'idir' | 'azureidir';
 
 /**
  * A membership slot as the form holds it. Only `userId` / `azureId` are sent to the
@@ -72,9 +71,6 @@ export interface CustomRealmFormData {
   primaryEndUsers: PrimaryEndUser[];
   preferredAdminLoginMethod?: string;
   userCleanupEnabled?: boolean;
-  userCleanupTypes?: UserCleanupType[];
-  userCleanupIdirAlias?: string | null;
-  userCleanupAzureidirAlias?: string | null;
   userCleanupNotifications?: boolean;
   productOwner: RealmMember | null;
   technicalLead: RealmMember | null;

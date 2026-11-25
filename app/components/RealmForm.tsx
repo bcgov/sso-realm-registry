@@ -1,4 +1,4 @@
-import { CustomRealmFormData, PrimaryEndUser, RealmMember, UserCleanupType } from 'types/realm-profile';
+import { CustomRealmFormData, PrimaryEndUser, RealmMember } from 'types/realm-profile';
 import styled from 'styled-components';
 import React, { useState, ChangeEvent, useEffect, useMemo, Dispatch, SetStateAction } from 'react';
 import { Grid as SpinnerGrid } from 'react-loader-spinner';
@@ -12,6 +12,8 @@ import AsyncSelect from 'react-select/async';
 import { getIdirUsersByEmail } from 'services/azure';
 import { realmTakenError } from 'pages/custom-realm-form';
 import { MAX_ADDITIONAL_USERS } from 'utils/constants';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faWarning } from '@fortawesome/free-solid-svg-icons';
 
 const SForm = styled.form<{ collapse: boolean }>`
   display: grid;
@@ -377,37 +379,10 @@ export default function RealmForm({
 
   const handleUserCleanupToggle = (e: ChangeEvent<HTMLInputElement>) => {
     const enabled = e.target.checked;
-    setFormErrors({ ...formErrors, userCleanupTypes: false });
     setFormData({
       ...formData,
       userCleanupEnabled: enabled,
-      ...(enabled
-        ? {}
-        : {
-            userCleanupTypes: [],
-            userCleanupIdirAlias: null,
-            userCleanupAzureidirAlias: null,
-            userCleanupNotifications: false,
-          }),
-    });
-  };
-
-  const handleUserCleanupTypeChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const userCleanupTypes = formData.userCleanupTypes ?? [];
-    const userType = e.target.value as UserCleanupType;
-    setFormErrors({ ...formErrors, userCleanupTypes: false });
-    setFormData({
-      ...formData,
-      userCleanupTypes: e.target.checked
-        ? userCleanupTypes.includes(userType)
-          ? userCleanupTypes
-          : [...userCleanupTypes, userType]
-        : userCleanupTypes.filter((selectedType) => selectedType !== userType),
-      ...(e.target.checked
-        ? {}
-        : userType === 'idir'
-        ? { userCleanupIdirAlias: null }
-        : { userCleanupAzureidirAlias: null }),
+      ...(enabled ? {} : { userCleanupNotifications: false }),
     });
   };
 
@@ -484,7 +459,6 @@ export default function RealmForm({
   }, [formData.division]);
 
   const schemaFields = Object.keys(validationSchema.fields);
-  const cleanupUserTypes = formData.userCleanupTypes ?? [];
   // Membership is shared between the product owner and technical lead, so it is in the
   // schema for every role that can reach this form.
   const membershipEditable = schemaFields.includes('productOwner');
@@ -817,15 +791,26 @@ export default function RealmForm({
 
         {showUserCleanup && (
           <>
-            <h3>Stale User Deletion</h3>
+            <h3 className="span-cols">
+              Inactive User Deletion
+              <InfoPopover size="xs">
+                Check below to have old IDIR accounts automatically deleted from your realm. Accounts will be checked
+                nightly against the upstream provider, and removed from keycloak if they are no longer active.
+              </InfoPopover>
+            </h3>
+            <p className="span-cols">
+              <FontAwesomeIcon icon={faWarning} color="red" /> <strong>Important:</strong> To use this feature, your
+              identity provider must be connected through a standard client. For more information on configuring your
+              identity provider see our{' '}
+              <a
+                href="https://bcgov.github.io/sso-docs/advanced/custom-realms/guides/setup-idps-mappers"
+                target="_blank"
+              >
+                documentation
+              </a>
+              .
+            </p>
             <fieldset className="span-cols" disabled={!schemaFields.includes('userCleanupEnabled')}>
-              <p>
-                If your realm uses an identity provider connecting to IDIR through siteminder or Entra, you can request
-                to have users removed from your realm when they are removed from the identity provider. Please indicate
-                which type of connections your realm will be using. This option applies only to realms connecting an
-                identity provider through a standard client or directly with SiteMinder. Identity Providers connecting
-                directly to entra cannot use this feature.
-              </p>
               <div className="checkbox-wrapper">
                 <input
                   type="checkbox"
@@ -834,80 +819,12 @@ export default function RealmForm({
                   checked={Boolean(formData.userCleanupEnabled)}
                   onChange={handleUserCleanupToggle}
                 />
-                <label htmlFor="user-cleanup-enabled-checkbox">Opt in to stale user cleanup</label>
+                <label htmlFor="user-cleanup-enabled-checkbox">
+                  Automatically remove old IDIR accounts from my realm
+                </label>
               </div>
               {formData.userCleanupEnabled && (
                 <>
-                  <br />
-                  <fieldset disabled={!schemaFields.includes('userCleanupTypes')}>
-                    <legend>Which user types can be cleaned up? (select all that apply)</legend>
-                    <div className="cleanup-grid">
-                      <div className="cleanup-column">
-                        <div className="checkbox-wrapper">
-                          <input
-                            type="checkbox"
-                            id="user-cleanup-idir-checkbox"
-                            name="userCleanupTypes"
-                            value="idir"
-                            checked={(formData.userCleanupTypes ?? []).includes('idir')}
-                            onChange={handleUserCleanupTypeChange}
-                          />
-                          <label htmlFor="user-cleanup-idir-checkbox">IDIR</label>
-                        </div>
-                        <div className="input-wrapper">
-                          <label htmlFor="user-cleanup-idir-alias-input" className="required">
-                            IDIR IDP alias
-                          </label>
-                          <input
-                            id="user-cleanup-idir-alias-input"
-                            name="userCleanupIdirAlias"
-                            value={formData.userCleanupIdirAlias ?? ''}
-                            onChange={handleFormInputChange}
-                            required={cleanupUserTypes.includes('idir')}
-                            disabled={
-                              !cleanupUserTypes.includes('idir') || !schemaFields.includes('userCleanupIdirAlias')
-                            }
-                          />
-                          {formErrors.userCleanupIdirAlias && <p className="error-message">This field is required.</p>}
-                        </div>
-                      </div>
-                      <div className="cleanup-column">
-                        <div className="checkbox-wrapper">
-                          <input
-                            type="checkbox"
-                            id="user-cleanup-azureidir-checkbox"
-                            name="userCleanupTypes"
-                            value="azureidir"
-                            checked={(formData.userCleanupTypes ?? []).includes('azureidir')}
-                            onChange={handleUserCleanupTypeChange}
-                          />
-                          <label htmlFor="user-cleanup-azureidir-checkbox">IDIR-MFA</label>
-                        </div>
-                        <div className="input-wrapper">
-                          <label htmlFor="user-cleanup-azureidir-alias-input" className="required">
-                            IDIR-MFA IDP alias
-                          </label>
-                          <input
-                            id="user-cleanup-azureidir-alias-input"
-                            name="userCleanupAzureidirAlias"
-                            value={formData.userCleanupAzureidirAlias ?? ''}
-                            onChange={handleFormInputChange}
-                            required={cleanupUserTypes.includes('azureidir')}
-                            disabled={
-                              !cleanupUserTypes.includes('azureidir') ||
-                              !schemaFields.includes('userCleanupAzureidirAlias')
-                            }
-                          />
-                          {formErrors.userCleanupAzureidirAlias && (
-                            <p className="error-message">This field is required.</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {formErrors.userCleanupTypes && (
-                      <p className="error-message">Select at least one user type for cleanup.</p>
-                    )}
-                  </fieldset>
                   <br />
                   <div className="checkbox-wrapper">
                     <input
@@ -918,8 +835,11 @@ export default function RealmForm({
                       onChange={(e) => setFormData({ ...formData, userCleanupNotifications: e.target.checked })}
                     />
                     <label htmlFor="user-cleanup-notifications-checkbox">
-                      Notify the product owner and technical lead when users are deleted
+                      Notify the product owner and technical lead when users are deleted.
                     </label>
+                    <InfoPopover size="xs">
+                      Your configured email addresses will receive a notification of all users removed from your realm.
+                    </InfoPopover>
                   </div>
                 </>
               )}
