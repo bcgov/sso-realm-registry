@@ -1,9 +1,8 @@
 import React from 'react';
 import OverlayTrigger, { OverlayTriggerType } from 'react-bootstrap/OverlayTrigger';
 import Popover from 'react-bootstrap/Popover';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { FontAwesomeIcon, FontAwesomeIconProps } from '@fortawesome/react-fontawesome';
 import { IconDefinition, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIconProps } from '@fortawesome/react-fontawesome';
 import styled from 'styled-components';
 
 const LeftMargin = styled.span`
